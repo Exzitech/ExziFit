@@ -1,0 +1,135 @@
+/*
+ * Style « Fiche de perso » (maquette B) : Chakra Petch partout (ses angles coupés vont avec le pixel art
+ * sans fatiguer la lecture), libellés en capitales espacées, angles carrés, bordures épaisses,
+ * bouton principal en relief.
+ * Cibles tactiles larges : saisie debout, d'une main, entre deux séries.
+ */
+:root {
+  --police-titre: "Chakra Petch", system-ui, sans-serif;
+  --police: "Chakra Petch", system-ui, sans-serif;
+  --trait: 3px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--fond);
+  color: var(--texte);
+  font: 17px/1.4 var(--police);
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+#racine { min-height: 100%; display: flex; flex-direction: column; }
+
+main { flex: 1; padding: 20px 16px 16px; }
+h1 { font: 700 24px/1.15 var(--police-titre); margin: 0 0 14px; }
+h2 { font: 700 14px var(--police-titre); color: var(--texte-doux); margin: 28px 0 10px; }
+/* Libellés courts : capitales espacées, l'esprit « fiche de perso » sans police pixel. */
+h2, nav button, .reglage span, button.lien, .badge, .question, .seg button { text-transform: uppercase; letter-spacing: .06em; }
+p { margin: 0 0 12px; }
+.doux { color: var(--texte-doux); }
+.petit { font-size: 14px; overflow-wrap: anywhere; }
+
+.carte { background: var(--surface); border: var(--trait) solid var(--bord); padding: 16px; }
+
+button {
+  display: block; width: 100%; min-height: 60px; padding: 0 18px;
+  font: 600 19px var(--police); border-radius: 0; cursor: pointer;
+  background: var(--surface); color: var(--texte); border: var(--trait) solid var(--bord);
+}
+button:focus-visible { outline: var(--trait) solid var(--accent); outline-offset: 2px; }
+/* Relief pixel : le bouton s'enfonce sous le pouce. */
+button.principal { background: var(--accent); color: var(--sur-accent); border-color: var(--accent);
+                   font-family: var(--police-titre); font-weight: 700;
+                   box-shadow: 0 5px 0 var(--accent-ombre); margin-bottom: 5px; }
+button.principal:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--accent-ombre); }
+button:not(.principal):active { background: var(--bord); }
+
+.choix { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choix button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+.carte button + p { margin: 12px 0 0; }
+.compte { font: 700 64px/1 var(--police-titre); text-align: center; margin: 8px 0 16px; }
+
+.erreurs { padding: 12px 16px 0; }
+.erreur { background: var(--surface); border: var(--trait) solid var(--alerte); color: var(--alerte);
+          padding: 12px; margin-bottom: 8px; font-size: 15px; }
+
+.maj { margin: 12px 16px 0; padding: 12px; background: var(--surface); border: var(--trait) solid var(--accent); }
+.maj p { margin: 0 0 10px; }
+.alerte { color: var(--alerte); }
+button:disabled { opacity: .6; }
+
+nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      background: var(--surface); border-top: var(--trait) solid var(--bord); }
+nav button { min-height: 64px; border: 0; background: transparent; color: var(--texte-doux);
+             font: 600 15px var(--police-titre); }
+nav button[aria-current="page"] { color: var(--accent); box-shadow: inset 0 var(--trait) 0 var(--accent); }
+
+/* Séance */
+.espace { margin-top: 24px; }
+.liste { display: grid; gap: 8px; }
+.liste button { text-align: left; }
+.reglage { display: grid; grid-template-columns: 76px minmax(0, 1fr) 76px; gap: 10px; margin-bottom: 10px; }
+.reglage button { min-height: 76px; font-size: 32px; padding: 0; background: var(--fond); }
+.reglage label { display: flex; align-items: baseline; justify-content: center; gap: 6px;
+                 background: var(--surface); border: var(--trait) solid var(--bord); }
+.reglage input { width: 5.2ch; background: transparent; border: 0; color: var(--texte); text-align: right;
+                 font: 700 42px var(--police); padding: 12px 0; -moz-appearance: textfield; }
+.reglage input::-webkit-inner-spin-button, .reglage input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.reglage span { color: var(--texte-doux); font: 600 13px var(--police-titre); }
+.reglage output { font: 700 42px var(--police); padding: 12px 0; }
+button.valider { min-height: 88px; font-size: 22px; margin-top: 4px; }
+.rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.rir button { min-height: 76px; font: 700 26px var(--police-titre); padding: 0; background: var(--fond); }
+.rir button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--sur-accent); }
+.compte.fini { color: var(--accent); }
+.series { margin: 0; padding-left: 24px; font: 600 19px var(--police); }
+.series li { padding: 4px 0; }
+
+/* Programme : commandes en bas d'écran, à portée du pouce. */
+.bas { position: sticky; bottom: 0; margin: 20px -16px -16px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+       background: var(--fond); border-top: var(--trait) solid var(--bord); }
+.bas .reglage { margin-bottom: 8px; }
+.bas .compte { font-size: 44px; margin: 4px 0 8px; }
+.espace-bas { margin-bottom: 8px; }
+.haut { display: flex; justify-content: space-between; margin: -8px 0 4px; }
+button.lien { display: inline-block; width: auto; min-height: 48px; padding: 0 4px; background: transparent;
+              border: 0; color: var(--accent); font: 600 14px var(--police-titre); }
+.cible { font-weight: 600; margin-bottom: 8px; }
+.question { text-align: center; color: var(--texte-doux); margin: 0 0 8px; font: 700 15px var(--police-titre); }
+.seg { display: grid; gap: 6px; margin-bottom: 10px; }
+.seg button { min-height: 56px; padding: 0; font: 700 15px/1.1 var(--police-titre); background: var(--fond); }
+.seg button small { display: block; font: 500 11px var(--police); color: var(--texte-doux); margin-top: 2px; }
+.seg button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+.titre-carte { margin: 0 0 8px; color: var(--texte); font: 700 18px/1.2 var(--police-titre); }
+.apercu { margin: 0 0 10px; padding-left: 22px; }
+.apercu li { padding: 5px 0; }
+.apercu li > span.doux { display: block; font-size: 14px; }
+.badge { font: 600 11px var(--police-titre); color: var(--texte-doux); border: 2px solid var(--bord);
+         padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+button.ligne { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+               text-align: left; padding: 10px 16px; font-weight: 500; }
+button.ligne small { display: block; color: var(--texte-doux); font-size: 14px; }
+button.ligne.faite { opacity: .55; }
+button.ligne.faite .avance { color: var(--ok); }
+.avance { font: 700 18px var(--police); white-space: nowrap; }
+.disques { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+.disque { min-width: 38px; padding: 6px 6px; text-align: center; color: #111;
+          font: 700 14px var(--police); }
+p.series { display: flex; flex-wrap: wrap; gap: 6px; }
+button.puce { display: inline-block; width: auto; min-height: 40px; padding: 0 10px; font: 600 16px var(--police);
+              border-width: 2px; }
+button.puce:disabled { opacity: 1; }
+details.rm { margin: 16px 0 8px; }
+details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: pointer; }
+details.rm label { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0; }
+details.rm input { width: 7ch; min-height: 48px; font: 600 19px var(--police); text-align: right;
+                   background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; padding: 0 8px; }
+/* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
+.saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px); }
+.saisie .bas { margin-top: auto; }
+p.series { padding-left: 0; font: inherit; }
+.espace-haut { margin-top: 16px; }
+.record { font-weight: 600; color: var(--accent); }
+p.alerte { word-break: normal; }

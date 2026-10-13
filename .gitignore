@@ -1,0 +1,8 @@
+node_modules/
+dist/
+src-tauri/target/
+*.local.json
+src-tauri/gen/android/keystore.properties
+# Liens de partage Nextcloud (sauvegarde.json est en écriture) : jamais dans le dépôt public.
+src-tauri/maj.json
+src-tauri/sauvegarde.json

@@ -1,0 +1,71 @@
+/*
+ * Toutes les couleurs de l'app. Règle 60/30/10 par thème :
+ * --fond (60 %), --surface et --bord (30 %), --accent (10 % : action principale, état actif).
+ * --accent-ombre : relief sous le bouton principal (accent assombri).
+ * Aucun composant n'écrit de couleur en dur.
+ */
+/* Braise : couleurs de la maquette B (« Fiche de perso »), thème par défaut. */
+:root,
+[data-theme="braise"] {
+  --fond: #15110f;
+  --surface: #231c18;
+  --bord: #3a2e27;
+  --texte: #f3e9df;
+  --texte-doux: #ab9d91;
+  --accent: #ff8a3d;
+  --accent-ombre: #a24d12;
+  --sur-accent: #15110f;
+  --alerte: #ff6b6b;
+  --ok: #8fe07a;
+  color-scheme: dark;
+}
+[data-theme="nuit"] {
+  --fond: #111316;
+  --surface: #1c2026;
+  --bord: #2a3038;
+  --texte: #e7e9ec;
+  --texte-doux: #9aa3ad;
+  --accent: #6f9cf0;
+  --accent-ombre: #2f5596;
+  --sur-accent: #0d1117;
+  --alerte: #f07167;
+  --ok: #5fcf8a;
+  color-scheme: dark;
+}
+[data-theme="foret"] {
+  --fond: #0f1412;
+  --surface: #18201c;
+  --bord: #26322b;
+  --texte: #e4ece7;
+  --texte-doux: #93a39a;
+  --accent: #5fcf8a;
+  --accent-ombre: #2a7a48;
+  --sur-accent: #07140c;
+  --alerte: #f07167;
+  --ok: #5fcf8a;
+  color-scheme: dark;
+}
+[data-theme="craie"] {
+  --fond: #f3f1ed;
+  --surface: #ffffff;
+  --bord: #dcd7ce;
+  --texte: #1b1d21;
+  --texte-doux: #5d6470;
+  --accent: #2357c6;
+  --accent-ombre: #123272;
+  --sur-accent: #ffffff;
+  --alerte: #c0392b;
+  --ok: #1f8a4c;
+  color-scheme: light;
+}
+
+/* Disques : couleurs des vrais disques (normes IWF), indépendantes du thème. */
+:root {
+  --disque-25: #d32f2f;
+  --disque-20: #1e5bc6;
+  --disque-15: #f2c400;
+  --disque-10: #2e9e4f;
+  --disque-5: #f4f4f4;
+  --disque-2-5: #c62828;
+  --disque-1-25: #b0b4b8;
+}

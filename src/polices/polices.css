@@ -1,0 +1,9 @@
+/*
+ * Polices embarquées dans l'APK : l'app doit marcher en mode avion, donc pas de Google Fonts.
+ * Chakra Petch (titres, texte, chiffres), licence SIL OFL 1.1 (OFL-chakra-petch.txt).
+ * Sous-ensemble latin seulement (couvre le français) ; un glyphe absent retombe sur la police système.
+ */
+@font-face { font-family: "Chakra Petch"; font-weight: 400; font-display: block; src: url("./chakra-petch-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 500; font-display: block; src: url("./chakra-petch-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 600; font-display: block; src: url("./chakra-petch-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-weight: 700; font-display: block; src: url("./chakra-petch-latin-700-normal.woff2") format("woff2"); }

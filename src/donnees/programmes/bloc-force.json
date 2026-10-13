@@ -1,0 +1,87 @@
+{
+  "format": 1,
+  "programmes": [
+    {
+      "id": "bloc-force",
+      "nom": "Bloc Force",
+      "semaines": [
+        { "nom": "S1", "label": "Calib.",
+          "schemas": {
+            "std": { "series": 5, "reps": 5, "pct": [0.80] },
+            "dl":  { "series": 3, "reps": 5, "pct": [0.80] },
+            "vol": { "series": 4, "reps": 6, "pct": [0.75] } } },
+        { "nom": "S2", "label": "85 %",
+          "schemas": {
+            "std": { "series": 5, "reps": 4, "pct": [0.85] },
+            "dl":  { "series": 3, "reps": 4, "pct": [0.85] },
+            "vol": { "series": 4, "reps": 6, "pct": [0.775] } } },
+        { "nom": "S3", "label": "Pic",
+          "schemas": {
+            "std": { "series": 5, "reps": 3, "pct": [0.88, 0.90] },
+            "dl":  { "series": 3, "reps": 3, "pct": [0.88, 0.90] },
+            "vol": { "series": 4, "reps": 5, "pct": [0.80] } } },
+        { "nom": "S4", "label": "Test",
+          "schemas": {
+            "std": { "series": 3, "reps": 3, "pct": [0.75] },
+            "dl":  { "series": 3, "reps": 3, "pct": [0.75] },
+            "vol": { "series": 3, "reps": 5, "pct": [0.70] } },
+          "test": { "developpe-couche": 1, "*": 3 } }
+      ],
+      "jours": [
+        { "id": "J1", "nom": "Bench lourd", "objectif": "force", "lourd": true,
+          "exercices": [
+            { "exo": "developpe-couche", "role": "principal", "prescription": { "type": "pct1rm", "schema": "std" }, "repos": 240 },
+            { "exo": "dips-lestes", "prescription": { "type": "fourchette", "series": 3, "repsMin": 6, "repsMax": 8, "rir": 2 }, "repos": 180 },
+            { "exo": "extension-triceps-poulie-haute", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 10, "rir": 2 }, "repos": 90 },
+            { "exo": "developpe-incline-halteres", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 }
+          ] },
+        { "id": "J2", "nom": "Jambes lourd", "objectif": "force", "lourd": true,
+          "exercices": [
+            { "exo": "hack-squat", "role": "principal", "prescription": { "type": "pct1rm", "schema": "std" }, "repos": 240 },
+            { "exo": "fentes-bulgares", "note": "par jambe", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 },
+            { "exo": "leg-curl-allonge", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
+            { "exo": "mollets-debout", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 10, "rir": 2 }, "repos": 90 }
+          ] },
+        { "id": "J3", "nom": "Tirage + épaules", "objectif": "force", "lourd": true,
+          "exercices": [
+            { "exo": "tractions-lestees", "role": "principal", "prescription": { "type": "pct1rm", "schema": "std" }, "repos": 240 },
+            { "exo": "developpe-militaire-barre", "prescription": { "type": "rpe", "series": 4, "reps": 5, "rpe": 8 }, "repos": 180 },
+            { "exo": "rowing-barre", "prescription": { "type": "fourchette", "series": 3, "repsMin": 6, "repsMax": 8, "rir": 2 }, "repos": 180 },
+            { "exo": "ecarte-inverse-poulie", "optionnel": true, "alternatives": ["face-pull"], "note": "Face pull à la place si l'épaule grince", "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 12, "rir": 2 }, "repos": 90 }
+          ] },
+        { "id": "J4", "nom": "Soulevé de terre", "objectif": "force", "lourd": true,
+          "exercices": [
+            { "exo": "souleve-de-terre", "role": "principal", "prescription": { "type": "pct1rm", "schema": "dl" }, "repos": 300 },
+            { "exo": "hip-thrust", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 },
+            { "exo": "crunch-poulie-haute", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "exo": "leg-extension", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 12, "rir": 2 }, "repos": 90 }
+          ] },
+        { "id": "J5", "nom": "Bench volume", "objectif": "hypertrophie", "lourd": true,
+          "exercices": [
+            { "exo": "developpe-couche", "role": "principal", "prescription": { "type": "pct1rm", "schema": "vol" }, "repos": 180 },
+            { "exo": "rowing-haltere", "note": "par bras", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 },
+            { "superset": ["curl-poulie-basse", "extension-corde-nuque"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 10, "rir": 2 }, "repos": 90 },
+            { "exo": "elevations-laterales-poulie", "note": "un bras", "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J6", "nom": "Points faibles", "objectif": "endurance", "lourd": false, "optionnel": true,
+          "note": "RPE ≤ 7. Volume léger pour les postérieurs, les bras et la poigne.",
+          "exercices": [
+            { "superset": ["ecarte-inverse-poulie", "tractions-australiennes"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 3 }, "repos": 90 },
+            { "superset": ["curl-marteau", "dips"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 3 }, "repos": 90 },
+            { "exo": "farmer-walk", "prescription": { "type": "distance", "series": 4, "metres": 30 }, "repos": 90 },
+            { "exo": "elevations-laterales-poulie", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 15, "rir": 3 }, "repos": 60 }
+          ] }
+      ],
+      "regles": [
+        { "type": "ecart", "exos": ["hack-squat", "souleve-de-terre"], "heures": 48 },
+        { "type": "max-lourds-consecutifs", "jours": 5 }
+      ],
+      "notes": [
+        "1 à 2 reps en réserve sur chaque série. Jamais à l'échec.",
+        "Vidé en fin de série de jours ? Fais 85 % au lieu de 90 %.",
+        "Isolations à la poulie, mouvements de force en poids libre.",
+        "S4 : décharge, puis test (1RM au bench, 3RM ailleurs)."
+      ]
+    }
+  ]
+}
