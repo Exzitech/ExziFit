@@ -104,19 +104,20 @@ Dossier de données de l'app (`app_data_dir`, affiché dans Réglages). Voir
 Après la copie locale du jour, l'app envoie en arrière-plan la copie la plus récente
 (`src-tauri/src/envoi.rs`) dans le dossier Nextcloud `ExziFit-backups`, partagé par lien ;
 le lien est dans `src-tauri/sauvegarde.json`, intégré à la compilation (fichier local, hors
-dépôt : le lien donne l'écriture sur les sauvegardes ; modèle dans `sauvegarde.exemple.json`). Ce dossier est distinct
-de `ExziFit`, dont le lien public permet de tout lire.
+dépôt ; modèle dans `sauvegarde.exemple.json`). Ce dossier est distinct de `ExziFit`, dont le
+lien public permet de tout lire.
 
-**Risque connu** : le lien est en « peut modifier » (le dépôt seul, droit 4 dans `oc_share`,
-n'a pas été trouvé dans l'interface). Or il est extractible de l'APK, téléchargeable par
-quiconque a le lien de mise à jour : lire, écraser et supprimer les sauvegardes est donc
-possible pour un tiers. Avant de diffuser ce lien, passer le partage en dépôt seul (l'app
-n'a besoin que d'envoyer).
+Le partage est en **dépôt seul** (« File request », droit 4 dans `oc_share`) : le lien,
+extractible de l'APK, permet d'envoyer un fichier, jamais de lire, d'écraser ni d'effacer.
+L'app n'en demande pas plus : chaque envoi crée un nouveau fichier (un nom déjà pris
+serait renommé « (2) » par Nextcloud, jamais écrasé).
 
-- Un build de dev (`npm run tauri dev`, APK debug) envoie `exzifit-AAAA-MM-JJ-dev.json`, pour ne
-  jamais écraser la copie du téléphone.
-- Un fichier `exzifit-AAAA-MM-JJ.json` : `{ format, jour, fichiers }`, `fichiers` associant
-  chaque chemin relatif à son texte exact. Restaurer = réécrire chaque entrée à son chemin.
+- Un fichier `exzifit-AAAA-MM-JJ-EMPREINTE.json` (8 premiers caractères du SHA-256 du
+  contenu) : `{ format, jour, fichiers }`, `fichiers` associant chaque chemin relatif à son texte
+  exact. Plusieurs envois le même jour donnent plusieurs fichiers ; restaurer = prendre le plus
+  récent (date du fichier dans Nextcloud) et réécrire chaque entrée à son chemin.
+- Un build de dev (`npm run tauri dev`, APK debug) ajoute `-dev` au nom, pour distinguer ses
+  copies de celles du téléphone.
 - Envoyé seulement si le contenu a changé depuis le dernier envoi (`sauvegardes/envoyee.json`
   garde jour et empreinte) : un jour sans séance n'envoie rien.
 - Hors réseau, rien ne s'affiche ; nouvel essai au lancement suivant. Une autre erreur

@@ -1,5 +1,5 @@
 //! Envoi de la dernière copie locale (`sauvegardes/`) sur Nextcloud : un fichier
-//! `exzifit-AAAA-MM-JJ.json` par jour où les données ont changé, dans un dossier partagé en
+//! `exzifit-AAAA-MM-JJ-EMPREINTE.json` par contenu nouveau, dans un dossier partagé en
 //! **dépôt de fichiers** (lien public en écriture seule, dans sauvegarde.json). Le lien est
 //! dans l'APK, lui-même public : il permet de déposer, jamais de lire ni d'effacer.
 //! Sans réseau, rien ne se passe ; la copie part au prochain lancement connecté.
@@ -33,10 +33,10 @@ pub async fn sauvegarde_envoyer(app: tauri::AppHandle) -> Result<Option<String>,
     let racine = fichiers::racine(&app)?;
     tauri::async_runtime::spawn_blocking(move || {
         let Some(p) = fichiers::paquet_a_envoyer(&racine)? else { return Ok(None) };
-        // Build de dev (`npm run tauri dev` sur le PC, APK debug) : nom à part, pour ne jamais
-        // écraser la copie du jour envoyée par le téléphone.
+        // Un nom par contenu : en dépôt seul, un nom déjà pris devient « nom (2).json ». Build de dev
+        // (`npm run tauri dev` sur le PC, APK debug) : `-dev`, pour le distinguer du téléphone.
         let suffixe = if cfg!(debug_assertions) { "-dev" } else { "" };
-        let url = format!("{}/exzifit-{}{suffixe}.json", dav(&lien()?)?, p.jour);
+        let url = format!("{}/exzifit-{}-{}{suffixe}.json", dav(&lien()?)?, p.jour, &p.empreinte[..8]);
         let envoi = ureq::AgentBuilder::new()
             .timeout_connect(Duration::from_secs(20))
             .timeout_read(Duration::from_secs(60))

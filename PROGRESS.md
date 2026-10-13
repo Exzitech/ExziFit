@@ -29,12 +29,11 @@ Modèle de données : [docs/modele-donnees.md](docs/modele-donnees.md), validé 
   le bandeau Installer reste à voir : 0.1.1 (envoi des sauvegardes) est la première mise à jour publiée.
 
 **Envoi des sauvegardes (2026-10-13)** — voir le README, « Sauvegarde sur Nextcloud » :
-- `envoi.rs` + `paquet_a_envoyer` dans `fichiers.rs` : un JSON par jour où les données ont changé,
-  PUT WebDAV public sur un partage en dépôt de fichiers. Tests Rust et build verts.
-- Partage `ExziFit-backups` créé par Tom en « can edit » (dépôt seul introuvable dans l'UI ;
-  modification de `oc_share` id 20 → permissions 4 refusée à Claude par l'outil). PUT testé au
-  curl (201 puis 204 en écrasement) ; lecture et suppression anonymes possibles aussi : risque
-  noté dans le README, à corriger si le lien de mise à jour sort du cercle de Tom.
+- `envoi.rs` + `paquet_a_envoyer` dans `fichiers.rs` : un JSON par contenu nouveau
+  (`exzifit-AAAA-MM-JJ-EMPREINTE.json` depuis 0.1.12), PUT WebDAV public. Tests Rust et build verts.
+- Partage `ExziFit-backups` (id 20) passé par Tom en « File request » (dépôt seul) le 2026-10-13.
+  Vérifié au curl : PUT 201, même nom renommé « (2) » sans écrasement, GET / PROPFIND / DELETE
+  refusés (405). Fichiers de test supprimés sur le serveur.
 
 **Correctif dossier de données (2026-10-13, 0.1.2)** — l'envoi échouait sur le S23 (« stream did
 not contain valid UTF-8 ») : sur Android `app_data_dir()` contient le cache de la WebView, copié
@@ -186,7 +185,7 @@ sans retour de salle entre-temps. Voir le README, « Organisation », et le mod�
 | 2026-10-13 | Tests sur PC par `npm run tauri dev`, envoi en `-dev` | Tom ne veut pas réinstaller sur le téléphone pour tester |
 | 2026-10-13 | Séance libre d'abord (sans programme), préremplissage = série précédente du jour, sinon 1re série de la dernière fois | saisie utilisable tout de suite ; la dernière série d'une séance est souvent dégradée |
 | 2026-10-13 | Journal écrit en fin de séance, `en-cours.json` à chaque série | une seule copie de chaque série ; la reprise après kill passe par `en-cours.json` |
-| 2026-10-13 | Partage des sauvegardes en « can edit » | choix de Tom (dépôt seul introuvable dans l'UI) ; à repasser en dépôt seul si le lien de mise à jour devient vraiment public |
+| 2026-10-13 | Partage des sauvegardes en « can edit » (remplacé : dépôt seul, voir plus bas) | choix de Tom (dépôt seul introuvable dans l'UI) |
 | 2026-10-13 | Programme du jour avant tout le reste (RPG après) | retour de Tom : l'app doit dire quoi faire, comme la page du Bloc Force |
 | 2026-10-13 | Bloc Force dans le code (`src/donnees/programmes/`), pas d'éditeur | un seul programme utilisé ; `programmes.json` le jour où Tom en écrit un |
 | 2026-10-13 | En programme : charge préremplie = série précédente du jour, sinon prescription ; reps = prescription | garde une correction − / + sur l'exo, sans dériver de la cible de reps |
@@ -202,3 +201,5 @@ sans retour de salle entre-temps. Voir le README, « Organisation », et le mod�
 | 2026-10-13 | Personnage qui change visuellement : Force → carrure, Endurance → taille/abdos, Constance → posture/teint/halo ; redescend avec la stat | demande de Tom ; un trait visible = une stat calculée, jamais un cosmétique gagné |
 | 2026-10-13 | Police pixel (Silkscreen) retirée, Chakra Petch partout, libellés en capitales espacées (0.1.9) | retour de Tom : pixel art oui, police pixel trop fatigante à lire ; Chakra Petch déjà embarquée, angles coupés cohérents avec le pixel art |
 | 2026-10-13 | Vérification de mise à jour aussi au retour au premier plan (0.1.10) | Tom ne voyait pas la 0.1.9 : Android reprend l'app en mémoire, la vérification ne tournait qu'au démarrage à froid |
+| 2026-10-13 | Bouton retour Android = lien « ‹ » de l'écran (saisie/choix d'exo → jour, résumé → fermé, Réglages → Séance) ; à la racine, Android ferme l'app (0.1.11) | retour de Tom : retour fermait l'app partout ; écoute `onBackButtonPress` posée seulement en sous-vue (`src/boutonRetour.ts`), pas d'historique navigateur à synchroniser |
+| 2026-10-13 | Partage des sauvegardes en dépôt seul (« File request »), un nom de fichier par contenu (0.1.12) | Tom : documenter le risque « c'est pas ouf » ; le lien est dans l'APK public, il ne doit permettre que d'envoyer |

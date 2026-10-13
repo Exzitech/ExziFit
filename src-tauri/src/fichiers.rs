@@ -236,7 +236,7 @@ fn a_elaguer(mut jours: Vec<String>) -> Vec<String> {
 pub(crate) struct Paquet {
     pub jour: String,
     pub texte: String,
-    empreinte: String,
+    pub empreinte: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
