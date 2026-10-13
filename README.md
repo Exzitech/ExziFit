@@ -110,7 +110,8 @@ installée, il faut la désinstaller avec ses données.
 
 Le code, la doc et les notes de Claude sont dans le dépôt ; cinq fichiers locaux n'y sont
 **pas** (secrets ou liens de partage, dépôt public) et se copient à la main, par clé USB ou
-dossier privé, jamais par git :
+dossier privé, jamais par git. Copie à jour dans le dossier Nextcloud **non partagé**
+`ExziFit-prive` (avec un `LISEZMOI.txt` qui dit où remettre chaque fichier) :
 
 | Fichier | Sert à |
 |---|---|
