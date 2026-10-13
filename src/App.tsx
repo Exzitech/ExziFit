@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBoutonRetour } from "./boutonRetour";
 import { jourLocal } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
 import EcranReglages from "./ecrans/Reglages";
@@ -18,6 +19,8 @@ export default function App() {
 
   const signaler = (contexte: string) => (e: unknown) =>
     setErreurs((l) => [...l, `${contexte} : ${e instanceof Error ? e.message : String(e)}`]);
+
+  useBoutonRetour(ecran === "reglages" ? () => setEcran("seance") : null, signaler("Bouton retour"));
 
   useEffect(() => {
     lireReglages()

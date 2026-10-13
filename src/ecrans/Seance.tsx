@@ -11,6 +11,7 @@ import {
   PROGRAMME, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc, semaineDe, type Bilan, type Cible,
   type Poste, type Semaine,
 } from "../donnees/programme";
+import { useBoutonRetour } from "../boutonRetour";
 import { annulerRepos, lancerRepos, useReste } from "../minuteur";
 
 /** Repos d'un exo hors programme. */
@@ -205,6 +206,13 @@ export default function EcranSeance(
   }, []);
 
   useEffect(() => onEnSeance(seance !== null), [seance !== null]);
+
+  // Retour = le lien « ‹ » de l'écran : saisie et choix d'exo reviennent à la vue du jour, le
+  // résumé se ferme. Depuis la vue du jour, Android ferme l'app (la séance en cours est sur disque).
+  const sousVue = seance
+    ? vue !== "jour" && (vue !== "saisie" || lignes(seance)[ligne] !== undefined)
+    : resume !== null;
+  useBoutonRetour(sousVue ? () => (seance ? setVue("jour") : setResume(null)) : null, onErreur);
 
   function proposer(p: Seance[], blocId: string) {
     choisirJour(p, blocId, prochainJour(PROGRAMME, p, blocId, new Date()));
