@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
 import { jourLocal } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
+import EcranJournal from "./ecrans/Journal";
+import EcranPersonnage from "./ecrans/Personnage";
 import EcranReglages from "./ecrans/Reglages";
 import EcranSeance from "./ecrans/Seance";
 import MiseAJour, { surAndroid } from "./MiseAJour";
 import { stockage } from "./stockage";
 import { appliquerTheme } from "./themes";
 
-type Ecran = "seance" | "reglages";
+type Ecran = "seance" | "journal" | "personnage" | "reglages";
 
 export default function App() {
   const [ecran, setEcran] = useState<Ecran>("seance");
@@ -20,7 +22,7 @@ export default function App() {
   const signaler = (contexte: string) => (e: unknown) =>
     setErreurs((l) => [...l, `${contexte} : ${e instanceof Error ? e.message : String(e)}`]);
 
-  useBoutonRetour(ecran === "reglages" ? () => setEcran("seance") : null, signaler("Bouton retour"));
+  useBoutonRetour(ecran !== "seance" ? () => setEcran("seance") : null, signaler("Bouton retour"));
 
   useEffect(() => {
     lireReglages()
@@ -54,6 +56,8 @@ export default function App() {
       {surAndroid && <MiseAJour />}
       <main>
         {ecran === "seance" && <EcranSeance onErreur={signaler("Séance")} onEnSeance={setEnSeance} />}
+        {ecran === "journal" && <EcranJournal onErreur={signaler("Journal")} />}
+        {ecran === "personnage" && <EcranPersonnage onErreur={signaler("Personnage")} />}
         {ecran === "reglages" && reglages && (
           <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Minuteur")} />
         )}
@@ -61,6 +65,12 @@ export default function App() {
       {!enSeance && <nav>
         <button aria-current={ecran === "seance" ? "page" : undefined} onClick={() => setEcran("seance")}>
           Séance
+        </button>
+        <button aria-current={ecran === "journal" ? "page" : undefined} onClick={() => setEcran("journal")}>
+          Journal
+        </button>
+        <button aria-current={ecran === "personnage" ? "page" : undefined} onClick={() => setEcran("personnage")}>
+          Perso
         </button>
         <button aria-current={ecran === "reglages" ? "page" : undefined} onClick={() => setEcran("reglages")}>
           Réglages

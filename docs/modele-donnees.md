@@ -26,7 +26,8 @@ du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programm
 
 | Fichier | Contenu | Écrit quand |
 |---|---|---|
-| `journal/2026-10.json` | les séances faites ce mois-là (mois du début de séance) | en fin de séance (mois courant seulement) |
+| `journal/2026-10.json` | les séances faites ce mois-là (mois du début de séance) | en fin de séance (mois courant) ; à une correction ou suppression depuis l'onglet Journal (mois de la séance) |
+| `corbeille.json` | versions des séances remplacées ou supprimées depuis l'onglet Journal (`le` + `seance`), à recopier à la main pour annuler | avant chaque correction ou suppression |
 | `en-cours.json` | la séance en cours, pour survivre à un kill de l'app | à chaque série ; supprimé en fin de séance |
 | `programmes.json` | les programmes écrits | à l'édition d'un programme |
 | `blocs.json` | historique des blocs lancés, avec leurs 1RM figés | au début / à la fin d'un bloc |
@@ -175,6 +176,9 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
 }
 ```
 
+- `poulie` (optionnel, `2`) : salle à poulie double (moufle). Sur les exos `charge: "poulie"`,
+  `kg` est la **charge effective** (pile ÷ 2) : les calculs comparent les salles sans conversion,
+  seul l'écran multiplie. Absent = poulie simple. Ajouté le 2026-10-13, pas de migration.
 - `test` (optionnel, `true`) : tentative du test de fin de bloc. Champ ajouté le 2026-10-13,
   absent des anciennes séances : pas de migration.
 - `prevu` : ce que l'app avait proposé. Sert à mesurer le point 3 de la v1 (« assez bonne
@@ -193,7 +197,7 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
 - **Charge proposée** : selon la prescription, arrondie au `pas`.
 - **Avertissements** des règles (« hack squat il y a 30 h »).
 - **Stats du personnage**, à partir du journal et des pesées, avec décroissance quand
-  l'entraînement s'arrête. Leurs formules feront l'objet d'un document à part.
+  l'entraînement s'arrête. Formules : [stats.md](stats.md).
 
 ## Hors du modèle pour l'instant
 

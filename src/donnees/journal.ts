@@ -1,6 +1,6 @@
 import { stockage } from "../stockage";
-import type { Exercice } from "./exercices";
-import { cheminJournal, ecrireJson, FORMAT, lireJson } from "./fichier";
+import { exercice, type Exercice } from "./exercices";
+import { cheminJournal, ecrireJson, FORMAT, horodatage, lireJson } from "./fichier";
 
 /** Types du journal (docs/modele-donnees.md, « Séance faite »). */
 export interface Serie {
@@ -27,6 +27,8 @@ export interface Seance {
   bloc?: string;
   semaine?: number;
   jour?: string;
+  /** Poulie double (moufle) dans la salle du jour : la pile affiche 2 × la charge notée. */
+  poulie?: 2;
   exercices: ExoFait[];
 }
 
@@ -41,6 +43,20 @@ interface EnCours {
 }
 
 const EN_COURS = "en-cours.json";
+
+/**
+ * Multiplicateur d'affichage : sur une poulie double, la pile affiche le double de la charge
+ * effective, seule notée au journal (les calculs comparent ainsi les salles entre elles).
+ */
+export const facteurPoulie = (s: Seance, e: Exercice) => (e.charge === "poulie" ? s.poulie ?? 1 : 1);
+
+/** Montage de la dernière séance qui a eu un exo à la poulie : `{ poulie: 2 }` ou `{}`. */
+export function poulieRetenue(passees: Seance[]): { poulie?: 2 } {
+  for (let i = passees.length - 1; i >= 0; i--) {
+    if (passees[i].exercices.some((x) => exercice(x.exo).charge === "poulie")) return passees[i].poulie ? { poulie: 2 } : {};
+  }
+  return {};
+}
 
 /** Toutes les séances terminées, de la plus ancienne à la plus récente. */
 export async function lireSeances(): Promise<Seance[]> {
@@ -96,4 +112,40 @@ export function proposition(passees: Seance[], enCours: Seance, e: Exercice): { 
 export function ajusterKg(kg: number, pas: number, sens: 1 | -1): number {
   const v = Math.round((kg + sens * pas) / pas) * pas;
   return Math.max(0, Math.round(v * 100) / 100);
+}
+
+/**
+ * Journal après correction : la séance commencée à `debut` remplacée par `nouvelle`, ou retirée
+ * si `nouvelle` est `null` ou n'a plus de série. `debut` (à la seconde) identifie la séance.
+ */
+export function corrigerListe(seances: Seance[], debut: string, nouvelle: Seance | null): Seance[] {
+  const i = seances.findIndex((s) => s.debut === debut);
+  if (i < 0) throw new Error(`séance du ${debut} introuvable dans le journal`);
+  const garde = nouvelle && { ...nouvelle, exercices: nouvelle.exercices.filter((x) => x.series.length) };
+  return garde?.exercices.length
+    ? seances.map((s, j) => (j === i ? garde : s))
+    : seances.filter((_, j) => j !== i);
+}
+
+interface Corbeille {
+  format: number;
+  /** Versions remplacées ou supprimées, à recopier à la main dans le journal pour annuler. */
+  seances: { le: string; seance: Seance }[];
+}
+
+const CORBEILLE = "corbeille.json";
+
+/**
+ * Corrige ou supprime (`nouvelle` = `null`) une séance terminée. L'ancienne version est d'abord
+ * ajoutée à `corbeille.json` : une erreur de doigt ne détruit jamais une séance.
+ */
+export async function corrigerSeance(debut: string, nouvelle: Seance | null): Promise<void> {
+  const chemin = cheminJournal(new Date(debut));
+  const j = await lireJson<Journal>(chemin, () => ({ format: FORMAT, seances: [] }));
+  const ancienne = j.seances.find((s) => s.debut === debut);
+  const seances = corrigerListe(j.seances, debut, nouvelle);
+  const c = await lireJson<Corbeille>(CORBEILLE, () => ({ format: FORMAT, seances: [] }));
+  c.seances.push({ le: horodatage(new Date()), seance: ancienne as Seance });
+  await ecrireJson(CORBEILLE, c);
+  await ecrireJson(chemin, { ...j, seances } as Journal);
 }

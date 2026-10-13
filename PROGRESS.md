@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : style « Fiche de perso » publié en 0.1.8, à essayer à la salle (2026-10-13)
+## Statut : personnage dessiné publié en 0.1.18, essai à la salle prévu le 2026-10-14
 
 Les trois chantiers ExziHub (sous-titres *Rick and Morty*, module tâches, profil Malt) sont en
 sommeil depuis le 2026-10-13 — état dans `ExziHub/docs/pi/REPRISE.md`, « Chantiers en sommeil ».
@@ -133,18 +133,90 @@ sans retour de salle entre-temps. Voir le README, « Organisation », et le mod�
 - Pas encore fait : le personnage (attend les formules de stats), les pastilles de séries et les
   disques dessinés de la maquette sur l'écran de saisie.
 
+**Stats du personnage, calcul (2026-10-13)** — formules dans [docs/stats.md](docs/stats.md),
+validées par Tom (Force relative, Endurance = capacité de travail, Constance au seuil du programme) :
+- `src/donnees/stats.ts` : `stats(seances, pesees, seuil, maintenant)` pur ; `e1rmSerie` exporté de
+  programme.ts. Rien d'affiché ni de publié : l'app est inchangée pour Tom.
+- Vérifié : 50 tests Vitest (12 nouveaux : usure, lesté, filtres, plafond, tranches, seuil),
+  `npm run build`.
+- Limite : `lirePoidsCorps` ne rend que la dernière pesée ; l'affichage devra lire toutes les pesées.
+
+**Stats affichées (0.1.13)** — onglet « Perso » (`src/ecrans/Personnage.tsx`) : Force, Endurance,
+Constance puis les 11 groupes, chacun en barre de 10 cases sous son nom et sa valeur (« pesée
+manquante » pour la Force sans pesée). Résumé de fin de séance : carte « Personnage » avec les
+stats qui ont bougé d'au moins un point (avant → après, même instant). `lirePoidsCorps` remplacé par
+`lirePesees` (toutes les pesées) ; le poids de corps reste la dernière notée.
+- Vérifié : `tsc`, 50 tests Vitest, `npm run build`. Publié en 0.1.13 (version.json 0.1.13).
+- Vu dans Edge headless à 390 px (2026-10-13), 6 semaines de données de test, 80 kg : onglet Perso
+  lisible (Force 87, Endurance 42, Constance 63 = 5 tranches sur 8, valeurs recalculées à la main) ;
+  séance libre 3 × 100 × 5 R1 au développé couché → carte « Personnage » Endurance 42 → 43,
+  Pectoraux 60 → 68, Épaules et Triceps 60 → 64, Force inchangée (e1RM sous le max existant).
+  Pas vu sur le S23.
+
+**Progression (2026-10-13, 0.1.14)** — demande de Tom : une fois la dose des groupes atteinte, plus
+rien ne bougeait. Formules dans [docs/stats.md](docs/stats.md), « Progression » :
+- `progres()` : par exo, meilleur 1RM estimé des 14 derniers jours contre 28 à 42 jours (séries
+  dures ≤ 15 reps, corps compté au poids du corps). Stat Progression = part des exos comparables qui
+  montent d'au moins 1 %. Onglet Perso : 4e barre + liste « ▲ +6 % / ▼ −2 % / = / nouveau » ;
+  la stat entre aussi dans la carte du résumé.
+- Vérifié : 53 tests Vitest (3 nouveaux), `npm run build`, capture Edge headless 390 px (12 exos,
+  10 qui montent → 83). Publié en 0.1.14. Pas vu sur le S23.
+- Expliqué à Tom : les groupes comptent des séries dures, jamais des kilos (charge lourde = Force).
+
+**Poulie simple / double (2026-10-13, 0.1.15)** — Tom va dans plusieurs salles, poulies simples ou
+à moufle (26 kg ici = 52 kg là) ; uni/bilatéral est déjà dans le nom de l'exo :
+- `poulie: 2` sur la séance ; `kg` des exos à la poulie = charge effective. Écran : bascule « Poulie
+  simple / double » sur la saisie, affichage × 2 (préremplissage, cible, puces, historique, résumé),
+  ÷ 2 à la validation. Montage repris de la dernière séance qui a eu un exo à la poulie.
+  Les calculs (1RM, double progression, stats, tonnage) n'ont pas changé.
+- Vérifié : 55 tests Vitest (2 nouveaux), `npm run build`, parcours Edge headless 390 px (30 en
+  simple → 60 en double, journal à 30 + `poulie: 2`, tonnage 360, séance suivante en double).
+  Publié en 0.1.15. Pas vu sur le S23.
+
+**Journal : corriger / supprimer une séance (2026-10-13, 0.1.16)** — demande de Tom : sa première
+séance contenait des données de test. Onglet « Journal » (4e onglet) :
+- Liste des séances terminées → séance ouverte : charge, reps, RIR modifiables par série, ✕ retire
+  une série (un exo sans série disparaît), Enregistrer ; « Supprimer la séance » en deux taps.
+- `corrigerSeance` (journal.ts) : l'ancienne version est d'abord ajoutée à `corbeille.json`, puis
+  le mois est réécrit. Annuler = recopier à la main depuis la corbeille. Une séance supprimée sort
+  de la rotation, des 1RM estimés et des stats (tout est recalculé depuis le journal).
+- Vérifié : 59 tests Vitest (4 nouveaux, `corrigerListe`), `npm run build`, parcours piloté dans Edge
+  headless à 390 px (102,5 × 4 corrigé sur une poulie double, série retirée, séance supprimée,
+  journal et corbeille relus). Barre de nav passée en 4 colonnes, libellés en 13 px. Pas vu sur le S23.
+- Pas couvert : le 1RM du bloc et le poids de corps se corrigent déjà depuis l'accueil (« 1RM du
+  bloc ») ; une séance en cours se termine puis se corrige dans le Journal.
+
+**Pesée visible (2026-10-13, 0.1.17)** — Tom voyait « pesée manquante » sans endroit pour la noter :
+champ « Poids de corps » en tête de l'onglet Perso (enregistré à la sortie du champ, ignoré si
+identique à la dernière pesée), « pesée manquante » repris dans le titre du panneau 1RM de l'accueil.
+- Publiée en 0.1.17 (version.json relu sur le partage : 0.1.17, 6 279 853 octets = APK compilé).
+  Revérifié après coup : 59 tests Vitest, `tsc` sans erreur. Pas vu sur le S23.
+
+**Personnage dessiné (2026-10-13, 0.1.18)** — demande de Tom après validation du résumé. Seuils et
+dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
+- `src/donnees/avatar.ts` : paliers (Force 40/55/70/85, Endurance 25/50/75, Constance 50/75),
+  grille 24 × 27 symétrique reprise de la maquette B et retouchée (bras collés à l'épaule, épaules
+  arrondies, abdos lisibles), bandes horizontales → un `<rect>` SVG par bande.
+- Onglet Perso : personnage du jour (pixel 6 px) à côté de celui d'il y a 8 semaines (même calcul
+  à cette date, affiché seulement s'il diffère), puis par stat « palier n/N · à X : effet · sous Y,
+  il redescend ». Constance 0 = filtre terne, Constance max = halo à l'accent. Peau et cheveux en
+  variables fixes (`--peau`, `--peau-ombre`, `--cheveux`), short à l'accent.
+- Vérifié : 67 tests Vitest (8 nouveaux : seuils, Force sans pesée, symétrie, chaque palier change
+  la silhouette, bandes = grille), `tsc`, planche des paliers rendue en PNG et relue, capture Edge
+  headless 390 px (Force 87 → palier 4, Endurance 42 → 1, Constance 63 → 1). Publié en 0.1.18,
+  APK servi par le partage = empreinte de `version.json`. Halo (Constance ≥ 75) pas vu en capture.
+  Pas vu sur le S23.
+
 ## Prochaine étape
 
 1. **Essai à la salle par Tom** (0.1.7) : saisir les 1RM et le poids de corps à l'accueil
    (« 1RM du bloc »), choisir la bonne semaine / le bon jour si le bloc est déjà commencé ;
    juger la saisie d'une main, la vibration en fin de repos, la reprise si l'app est tuée, le
    recalage par le RIR. Noter précisément ce qui gêne encore.
-2. Puis le personnage (stats calculées) : écrire d'abord le document des formules (modèle de
-   données, « Stats du personnage »), puis le résumé de fin de séance affichera leur évolution.
-3. **Suite du design B** (le style de base est en 0.1.8) : retours de Tom sur le style, puis le
-   personnage dessiné depuis les paliers de stats.
-   Maquettes : https://claude.ai/artifact/WaGhMQfmgDLjNcm6bqfryC (rangées B et « B · Le personnage
-   change avec les stats » ; les seuils de paliers y sont fictifs).
+2. Retours de Tom sur l'onglet « Perso » et la carte du résumé (lisibilité, valeurs crédibles).
+3. **Personnage (0.1.18)** : avis de Tom sur le dessin et sur les seuils, une fois ses vraies
+   stats calculées (seuils posés sans données réelles). Maquettes :
+   https://claude.ai/artifact/WaGhMQfmgDLjNcm6bqfryC. Résumé de fin de séance : validé par Tom.
 
 ## Décisions
 
@@ -203,3 +275,9 @@ sans retour de salle entre-temps. Voir le README, « Organisation », et le mod�
 | 2026-10-13 | Vérification de mise à jour aussi au retour au premier plan (0.1.10) | Tom ne voyait pas la 0.1.9 : Android reprend l'app en mémoire, la vérification ne tournait qu'au démarrage à froid |
 | 2026-10-13 | Bouton retour Android = lien « ‹ » de l'écran (saisie/choix d'exo → jour, résumé → fermé, Réglages → Séance) ; à la racine, Android ferme l'app (0.1.11) | retour de Tom : retour fermait l'app partout ; écoute `onBackButtonPress` posée seulement en sous-vue (`src/boutonRetour.ts`), pas d'historique navigateur à synchroniser |
 | 2026-10-13 | Partage des sauvegardes en dépôt seul (« File request »), un nom de fichier par contenu (0.1.12) | Tom : documenter le risque « c'est pas ouf » ; le lien est dans l'APK public, il ne doit permettre que d'envoyer |
+| 2026-10-13 | Stats : Force relative (e1RM ÷ poids, usure après 21 j), groupes = séries dures plafonnées à 10/sem, Endurance = moyenne des groupes, Constance = tranches de 7 j sur 8 semaines au seuil du programme | choix de Tom sur la proposition `docs/stats.md` ; rien ne récompense volume poubelle, PR risqués ni série de jours |
+| 2026-10-13 | Stat Progression (1RM estimé 14 j contre 28–42 j, part des exos qui montent) + écart par exo | Tom : il faut une motivation de progression ; un exo comparé à lui-même, pas de référence à inventer, baisse si on stagne |
+| 2026-10-13 | Poulie double = drapeau de séance, journal en charge effective (0.1.15) | Tom change de salle ; aucun calcul à adapter, un seul historique par exo |
+| 2026-10-13 | Stats dans un 3e onglet « Perso » + carte des écarts dans le résumé (0.1.13) | l'accueil reste « quoi faire aujourd'hui » ; le résumé ne montre que ce qui a bougé |
+| 2026-10-13 | Pesée saisissable dans l'onglet Perso, « pesée manquante » aussi dans le titre du panneau 1RM (0.1.17) | Tom : « pesée manquante » affiché sans aucun endroit visible pour la noter (champ caché dans le panneau 1RM, absent en fin de bloc) |
+| 2026-10-13 | Personnage : paliers Force 40/55/70/85, Endurance 25/50/75, Constance 50/75 ; comparaison avec il y a 8 semaines (0.1.18) | seuils de Force serrés au niveau intermédiaire pour qu'un progrès se voie en quelques mois ; à revoir sur données réelles |

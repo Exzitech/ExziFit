@@ -8,6 +8,10 @@
   --police-titre: "Chakra Petch", system-ui, sans-serif;
   --police: "Chakra Petch", system-ui, sans-serif;
   --trait: 3px;
+  /* Personnage : comme les disques, ces couleurs suivent le réel et pas le thème. */
+  --peau: #e0ab83;
+  --peau-ombre: #b97b55;
+  --cheveux: #5a3a24;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
@@ -59,11 +63,11 @@ button:not(.principal):active { background: var(--bord); }
 .alerte { color: var(--alerte); }
 button:disabled { opacity: .6; }
 
-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
       padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
       background: var(--surface); border-top: var(--trait) solid var(--bord); }
-nav button { min-height: 64px; border: 0; background: transparent; color: var(--texte-doux);
-             font: 600 15px var(--police-titre); }
+nav button { min-height: 64px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--texte-doux);
+             font: 600 13px var(--police-titre); letter-spacing: .03em; }
 nav button[aria-current="page"] { color: var(--accent); box-shadow: inset 0 var(--trait) 0 var(--accent); }
 
 /* Séance */
@@ -123,8 +127,8 @@ button.puce { display: inline-block; width: auto; min-height: 40px; padding: 0 1
 button.puce:disabled { opacity: 1; }
 details.rm { margin: 16px 0 8px; }
 details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: pointer; }
-details.rm label { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0; }
-details.rm input { width: 7ch; min-height: 48px; font: 600 19px var(--police); text-align: right;
+.rm label { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0; }
+.rm input { width: 7ch; min-height: 48px; font: 600 19px var(--police); text-align: right;
                    background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; padding: 0 8px; }
 /* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
 .saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px); }
@@ -132,4 +136,33 @@ details.rm input { width: 7ch; min-height: 48px; font: 600 19px var(--police); t
 p.series { padding-left: 0; font: inherit; }
 .espace-haut { margin-top: 16px; }
 .record { font-weight: 600; color: var(--accent); }
+/* Journal : correction d'une série (n°, charge, reps, RIR, supprimer). */
+.corr { display: grid; grid-template-columns: 2.6ch minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 6px;
+        align-items: center; margin-bottom: 6px; }
+.corr label { display: flex; align-items: baseline; gap: 3px; font-size: 12px; color: var(--texte-doux); }
+.corr input { width: 100%; min-width: 0; min-height: 48px; font: 600 18px var(--police); text-align: right;
+              background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; padding: 0 6px; }
+.corr button { min-height: 48px; padding: 0; font-size: 18px; background: var(--fond); }
 p.alerte { word-break: normal; }
+
+/* Personnage : barres de stats en 10 cases. */
+.stat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 6px 0; }
+.stat > b { text-align: right; white-space: nowrap; }
+.stat > .barre { grid-column: 1 / -1; }
+.barre { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.barre i { height: 16px; border: 2px solid var(--bord); background: var(--fond); }
+.barre i.pleine { background: var(--accent); border-color: var(--accent); }
+
+/* Personnage (onglet Perso) : short à l'accent, yeux au fond, chaussures au texte. */
+.avatars { display: flex; justify-content: center; align-items: flex-end; gap: 28px; margin-bottom: 12px; }
+.avatars figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.avatars figcaption { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.avatar .px1 { fill: var(--peau); }
+.avatar .px2 { fill: var(--cheveux); }
+.avatar .px3 { fill: var(--fond); }
+.avatar .px4 { fill: var(--accent); }
+.avatar .px5 { fill: var(--peau-ombre); }
+.avatar .px6 { fill: var(--texte); }
+.avatar.terne { filter: saturate(.4) brightness(.8); }
+.avatar.halo { filter: drop-shadow(0 0 6px var(--accent)); }
+.stat > .pleine-largeur { grid-column: 1 / -1; }

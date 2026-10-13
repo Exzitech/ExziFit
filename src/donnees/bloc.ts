@@ -1,4 +1,5 @@
 import { ecrireJson, FORMAT, lireJson } from "./fichier";
+import type { Pesee } from "./stats";
 
 /** Types de `blocs.json` et `poids.json` (docs/modele-donnees.md, « Bloc » et « Fichiers »). */
 export interface Bloc {
@@ -11,7 +12,7 @@ export interface Bloc {
 }
 
 interface Blocs { format: number; blocs: Bloc[] }
-interface Poids { format: number; pesees: { date: string; kg: number }[] }
+interface Poids { format: number; pesees: Pesee[] }
 
 const BLOCS = "blocs.json";
 const POIDS = "poids.json";
@@ -22,10 +23,9 @@ export async function lireBlocs(): Promise<Bloc[]> {
 
 export const ecrireBlocs = (blocs: Bloc[]) => ecrireJson(BLOCS, { format: FORMAT, blocs } as Blocs);
 
-/** Dernière pesée, `undefined` s'il n'y en a pas. */
-export async function lirePoidsCorps(): Promise<number | undefined> {
-  const p = await lireJson<Poids>(POIDS, () => ({ format: FORMAT, pesees: [] }));
-  return p.pesees[p.pesees.length - 1]?.kg;
+/** Toutes les pesées, dans l'ordre d'écriture (la dernière notée en dernier). */
+export async function lirePesees(): Promise<Pesee[]> {
+  return (await lireJson<Poids>(POIDS, () => ({ format: FORMAT, pesees: [] }))).pesees;
 }
 
 /** Ajoute une pesée ; une seule par jour (la nouvelle remplace celle du jour). */

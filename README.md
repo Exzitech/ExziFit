@@ -37,7 +37,11 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
 - `src/donnees/` : fichiers du modèle (`format` contrôlé à la lecture, JSON indenté, dates locales).
   `exercices.ts` : catalogue de base (dans le code). `journal.ts` : séance en cours
   (`en-cours.json`, réécrit à chaque série) et journal mensuel (séance ajoutée à la fin), plus
-  le calcul de la charge préremplie.
+  le calcul de la charge préremplie. `corrigerSeance` : correction ou suppression d'une séance
+  terminée (identifiée par `debut`), l'ancienne version copiée d'abord dans `corbeille.json`.
+- `src/ecrans/Journal.tsx` : onglet « Journal », séances terminées (la plus récente en haut) ;
+  une séance ouverte = charge (affichée × 2 sur poulie double), reps et RIR modifiables par série,
+  ✕ pour retirer une série, suppression de la séance en deux taps.
 - `src/donnees/programme.ts` : programme en cours (le Bloc Force, transcrit dans
   `src/donnees/programmes/bloc-force.json`, dans le code tant qu'il n'y a pas d'éditeur), jour
   et semaine proposés (rotation, jour optionnel sauté après 5 jours lourds d'affilée), charge
@@ -45,7 +49,7 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   série par série par le RIR (`recalage`), échauffement et disques par côté, avertissements des
   règles `ecart`, semaine de test (`etatTest`, `resultatTest`), fin de bloc (`blocFini`,
   `rmNouveauBloc`) et résumé de fin de séance (`bilan`).
-  `bloc.ts` : `blocs.json` (1RM figés du bloc) et `poids.json` (poids de corps, pour les lestés).
+  `bloc.ts` : `blocs.json` (1RM figés du bloc) et `poids.json` (poids de corps, pour les lestés et la Force).
 - `src/ecrans/Seance.tsx` : accueil = jour proposé (semaine et jour modifiables d'un tap), aperçu
   des exos avec séries × reps, charge et repos, 1RM du bloc à saisir (vide = estimé depuis la
   dernière séance, sinon montée guidée en séance : paliers +20 % tant que le RIR est 4+, notés en
@@ -56,12 +60,20 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   Supersets alternés (repos après le dernier exo du tour), Remplacer (alternatives du programme,
   puis même muscle), exo hors programme, séance libre. Terminer demande un second tap ; une
   séance interrompue reprend au lancement. La barre de navigation est masquée pendant une séance.
+  Exos à la poulie : bascule « Poulie simple / double » (moufle, la pile affiche 2 × la charge),
+  valable pour la séance et reprise à la suivante ; le journal note la charge effective.
   Accueil : avertissement en rouge si une règle `ecart` est touchée (« Hack squat il y a 30 h »),
   sans rien bloquer. Semaine de test : après les séries prévues du principal, tentatives de 1RM
   (bench) ou 3RM, ouverture à 95 % du max estimé puis recalage à 0 RIR, fini à 0 RIR ou sous les
   reps ; « Passer le test » reste possible. Bloc fini (dernière semaine bouclée) : l'accueil
   propose « Nouveau bloc » avec les 1RM du test (sinon le meilleur estimé). Terminer affiche le
-  résumé : durée, séries, tonnage, records de 1RM estimé.
+  résumé : durée, séries, tonnage, records de 1RM estimé, stats du personnage qui ont bougé.
+- `src/donnees/stats.ts` : stats du personnage (formules dans `docs/stats.md`), fonctions pures
+  du journal et des pesées. `src/ecrans/Personnage.tsx` : onglet « Perso », Force, Endurance,
+  Constance, Progression et groupes en barres de 10 cases, écart de 1RM estimé par exo sur 4 semaines.
+- `src/donnees/avatar.ts` : personnage en pixel art (24 × 27), grille calculée depuis les paliers
+  de Force, Endurance et Constance (seuils dans `docs/stats.md`, « Personnage »), dessiné en SVG
+  dans l'onglet Perso à côté de celui d'il y a 8 semaines.
 - `src/minuteur.ts` : repos = notification programmée en alarme exacte (permissions
   `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` dans
   `src-tauri/gen/android/app/src/main/AndroidManifest.xml`), jamais un compteur JS.

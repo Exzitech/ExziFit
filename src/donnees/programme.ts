@@ -144,7 +144,7 @@ export function avertissements(p: Programme, jour: Jour, seances: Seance[], main
 export const epley = (kg: number, reps: number, rir = 0) => kg * (1 + (reps + rir) / 30);
 
 /** 1RM d'une série (total) : la charge elle-même pour un single à 0 RIR, Epley avec la réserve sinon. */
-const e1rmSerie = (total: number, reps: number, rir: number) => (reps + rir === 1 ? total : epley(total, reps, rir));
+export const e1rmSerie = (total: number, reps: number, rir: number) => (reps + rir === 1 ? total : epley(total, reps, rir));
 
 export function arrondir(kg: number, pas: number): number {
   return Math.round(Math.round(kg / pas) * pas * 100) / 100;
