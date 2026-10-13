@@ -1,0 +1,387 @@
+<title>Programmes ExziFit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Silkscreen&display=swap">
+<style>
+/* Layout : fiche de perso de l'app (thème Braise), un programme = une fiche, jours en grille avec leur durée sur 60 min, volume en barres de cases. */
+:root {
+  --fond: #15110f; --surface: #231c18; --bord: #3a2e27; --texte: #f3e9df; --doux: #ab9d91;
+  --accent: #ff8a3d; --ok: #8fe07a; --alerte: #ff6b6b;
+  --f-texte: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-pixel: "Silkscreen", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--fond); color: var(--texte); font-family: var(--f-texte); font-size: 15px; line-height: 1.45; }
+.page { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; display: flex; flex-direction: column; gap: 28px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+.pixel { font-family: var(--f-pixel); letter-spacing: .04em; text-transform: uppercase; }
+header { display: flex; flex-direction: column; gap: 10px; }
+header h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 700; }
+header p { margin: 0; color: var(--doux); max-width: 70ch; }
+.regle { border: 3px solid var(--bord); background: var(--surface); padding: 14px 16px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.regle div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.regle b { color: var(--accent); }
+.regle span { color: var(--doux); font-size: 14px; }
+nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--fond); padding-block: 8px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+nav a { border: 3px solid var(--bord); background: var(--surface); color: var(--texte); text-decoration: none; padding: 8px 6px; text-align: center; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+nav a strong { font-family: var(--f-texte); font-size: 14px; text-transform: none; letter-spacing: 0; }
+nav a:hover, nav a:focus-visible { border-color: var(--accent); outline: none; }
+.prog { border: 3px solid var(--bord); scroll-margin-top: 90px; }
+.prog-tete { background: var(--surface); padding: 16px; border-bottom: 3px solid var(--bord); display: flex; flex-direction: column; gap: 10px; }
+.prog-tete .lettre { color: var(--accent); font-size: 13px; }
+.prog-tete h2 { font-size: 26px; }
+.prog-tete p { margin: 0; color: var(--doux); max-width: 72ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta span { border: 2px solid var(--bord); padding: 3px 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.corps { padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.jours { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.jour { border: 3px solid var(--bord); background: var(--surface); display: flex; flex-direction: column; min-width: 0; }
+.jour.opt { border-style: dashed; }
+.jour h3 { font-size: 15px; padding: 8px 12px 6px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.jour h3 small { font-family: var(--f-pixel); font-size: 10px; color: var(--doux); font-weight: 400; text-transform: uppercase; }
+.duree { padding: 0 12px 8px; border-bottom: 3px solid var(--bord); display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.duree .jauge { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+.duree .jauge i { height: 8px; border: 1px solid var(--bord); }
+.duree .jauge i.on { background: var(--ok); border-color: var(--ok); }
+.jour ul { list-style: none; margin: 0; padding: 4px 0; }
+.jour li { padding: 6px 12px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
+.jour li + li { border-top: 1px solid var(--bord); }
+.nom { min-width: 0; }
+.sch { font-variant-numeric: tabular-nums; color: var(--doux); font-size: 14px; text-align: right; }
+.sch small { display: block; font-size: 12px; }
+.princ .nom { font-weight: 700; }
+.princ .sch { color: var(--accent); }
+.ss .nom { display: flex; flex-direction: column; border-left: 3px solid var(--accent); padding-left: 8px; }
+.nom { display: flex; flex-direction: column; gap: 1px; }
+.why { font-size: 12.5px; color: var(--doux); font-weight: 400; line-height: 1.35; }
+.ss .why + span { margin-top: 6px; }
+.jp { margin: 0; padding: 8px 12px; border-bottom: 3px solid var(--bord); font-size: 13px; color: var(--texte); }
+.sans-pourquoi .why, .sans-pourquoi .jp { display: none; }
+.outils { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.outils button { font: inherit; font-size: 13px; color: var(--texte); background: var(--surface); border: 3px solid var(--bord); padding: 6px 12px; cursor: pointer; }
+.outils button:hover, .outils button:focus-visible { border-color: var(--accent); outline: none; }
+.outils span { color: var(--doux); font-size: 13px; }
+.preuves { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.preuves div { border: 3px solid var(--bord); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.preuves h2 { font-size: 12px; }
+.preuves ul { margin: 0; padding-left: 18px; color: var(--doux); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.preuves b { color: var(--texte); font-weight: 600; }
+.tag { font-family: var(--f-pixel); font-size: 9px; padding: 1px 4px; margin-left: 6px; vertical-align: 2px; border: 1px solid currentColor; }
+.tag.neuf { color: var(--ok); }
+.tag.retouche { color: var(--accent); }
+.tag.opt { color: var(--doux); }
+.vol h3 { font-size: 12px; color: var(--doux); margin-bottom: 8px; font-weight: 400; }
+.vol-grille { display: grid; gap: 6px 18px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.ligne { display: grid; grid-template-columns: 92px 1fr 34px; gap: 8px; align-items: center; font-size: 13px; }
+.ligne b { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+.cases { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; }
+.cases i { height: 12px; border: 1px solid var(--bord); }
+.cases i.on { background: var(--accent); border-color: var(--accent); }
+.cases i.op { border-color: var(--accent); }
+.cases i:nth-child(8) { box-shadow: 3px 0 0 -1px var(--doux); }
+.ligne.bas b { color: var(--alerte); }
+.legende { color: var(--doux); font-size: 13px; margin: 6px 0 0; }
+.pourquoi { border-top: 3px solid var(--bord); padding-top: 14px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.pourquoi p { margin: 0; font-size: 14px; color: var(--doux); }
+.pourquoi p b { color: var(--texte); font-weight: 600; }
+footer { color: var(--doux); font-size: 13px; border-top: 3px solid var(--bord); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+footer h2 { font-size: 12px; color: var(--texte); }
+footer ul { margin: 0; padding-left: 18px; }
+@media (max-width: 520px) {
+  nav a { font-size: 10px; padding: 6px 2px; }
+  nav a strong { font-size: 12px; }
+  .jours { grid-template-columns: 1fr; }
+  .ligne { grid-template-columns: 80px 1fr 30px; }
+}
+</style>
+
+<div class="page">
+  <header>
+    <span class="pixel" style="color:var(--accent);font-size:12px">ExziFit · propositions v3</span>
+    <h1>Quatre programmes, une heure maximum</h1>
+    <p>Chaque séance tient sous 60 minutes, échauffement et repos compris. La durée de chaque jour est calculée, pas estimée à l'œil : elle s'affiche en haut de chaque carte, avec une jauge de 12 cases de 5 minutes.</p>
+  </header>
+
+  <section class="regle" aria-label="Règles communes">
+    <div><b>Moins d'exercices, pas moins de séries</b><span>Ce qui fait progresser, ce sont les séries dures par muscle, pas le nombre de machines. Trois ou quatre postes par séance, les isolations groupées en supersets.</span></div>
+    <div><b>Le repos suit l'objectif</b><span>Force : 4 à 5 min sur le principal, d'où 3 postes seulement. Hypertrophie : 2 à 2,5 min sur les polyarticulaires, 1 min sur l'isolation. Endurance : 45 à 60 s.</span></div>
+    <div><b>Plancher de physique</b><span>Au moins 8 séries dures par semaine pour les muscles visibles, et un mouvement lourd chaque jour. Le trait gris des barres marque ce seuil.</span></div>
+    <div><b>Comment la durée est calculée</b><span>6 min d'échauffement sur le principal (4 au 2e lourd), effort de 25 s (≤ 6 reps), 45 s (≤ 12) ou 60 s (au-delà), doublé en superset et en unilatéral, plus 2 min pour changer de poste.</span></div>
+    <div><b>Un exo en plus, quand tu veux</b><span>« Ajouter un exo » reste disponible pendant toute séance de programme. Il reste 8 à 25 min de marge selon le jour : la jauge montre ce qui reste avant l'heure.</span></div>
+  </section>
+
+  <section class="preuves" aria-label="Niveau de preuve">
+    <div>
+      <h2 class="pixel" style="color:var(--ok)">Solide, plusieurs études concordantes</h2>
+      <ul>
+        <li><b>Le volume fait grossir</b>, avec un rendement décroissant : la 15e série par semaine rapporte moins que la 5e, mais rapporte encore.</li>
+        <li><b>Les repos longs</b> sur les polyarticulaires (2 à 3 min) font mieux qu'1 min, en force comme en muscle.</li>
+        <li><b>Le muscle étiré</b> grossit plus : leg curl assis, extension à la nuque, curl incliné, écarté à la poulie.</li>
+        <li><b>Les supersets</b> font gagner du temps sans perte de résultats (méta-analyse 2025).</li>
+        <li><b>La charge lourde</b> maintient la force et le muscle avec peu de volume.</li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="pixel" style="color:var(--accent)">Ce que j'ai corrigé en vérifiant</h2>
+      <ul>
+        <li><b>La fréquence compte peu</b> pour le muscle à volume égal (Pelland 2024). Deux passages par semaine servent surtout à répartir les séries, pas à grossir plus. Pour la force, elle compte davantage.</li>
+        <li><b>L'échec n'est pas neutre</b> : les études divergent (Refalo 2023 : équivalent ; Robinson 2023 : un peu mieux près de l'échec). Pour un maximum, la dernière série d'isolation se fait à 0–1 RIR. Les gros mouvements restent à 1–2 RIR, pour la sécurité et la récupération.</li>
+      </ul>
+    </div>
+    <div>
+      <h2 class="pixel" style="color:var(--doux)">Mes choix, pas des preuves</h2>
+      <ul>
+        <li>Les nombres exacts de séries et de reps, et le plancher de 8 séries.</li>
+        <li>Le modèle de durée : à vérifier sur tes premières séances, l'app enregistre le début et la fin.</li>
+        <li>La réponse varie d'une personne à l'autre. Le vrai juge, c'est ta stat Progression dans 4 à 6 semaines.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="outils">
+    <button id="bascule" type="button" aria-pressed="true">Masquer les pourquoi</button>
+    <span>Sous chaque jour : pourquoi cette séance. Sous chaque exercice : pourquoi lui.</span>
+  </div>
+
+  <nav aria-label="Programmes" id="nav"></nav>
+  <main id="progs" style="display:flex;flex-direction:column;gap:28px"></main>
+
+  <footer>
+    <h2 class="pixel">Sources</h2>
+    <ul>
+      <li>Schoenfeld et al. 2016 : un repos de 3 min fait plus progresser en force et en muscle qu'un repos de 1 min sur les polyarticulaires.</li>
+      <li>Singer et al. 2024 (méta-analyse) : petit avantage constant aux repos de plus de 60 s.</li>
+      <li>Schoenfeld, Ogborn, Krieger 2017 : relation dose-réponse du volume.</li>
+      <li>Pelland et al. 2024 (67 études, 2 058 participants) : rendement décroissant du volume, plus marqué pour la force ; effet de la fréquence faible pour le muscle, net pour la force.</li>
+      <li>Refalo et al. 2023 et Robinson et al. 2023 : proximité de l'échec, résultats divergents.</li>
+      <li>Zhang, Weakley et al. 2025 : supersets, même volume et mêmes adaptations en moins de temps, mais plus de fatigue ressentie.</li>
+      <li>Maeo et al. 2021 et 2023 : leg curl assis et extension à la nuque supérieurs (muscle étiré).</li>
+      <li>Bickel et al. 2011, Spiering et al. 2021 : maintien avec environ un tiers du volume si l'intensité est gardée.</li>
+      <li>Robbins et al. 2010 et revues sur les supersets : même volume en paires antagonistes, en nettement moins de temps.</li>
+    </ul>
+    <p style="margin:0"><span class="tag neuf" style="margin-left:0">NEW</span> = exercice à ajouter au catalogue de l'app.</p>
+  </footer>
+</div>
+
+<script>
+// Groupes principaux de chaque exercice (repris de exercices.ts, et pour les nouveaux).
+const MUSC = {
+  "Bench press":["Pectoraux"],"Incline dumbbell press":["Pectoraux"],"Cable fly":["Pectoraux"],
+  "Dip":["Pectoraux","Triceps"],"Weighted dip":["Pectoraux","Triceps"],"Overhead press":["Épaules"],"Seated dumbbell press":["Épaules"],"Cable lateral raise":["Épaules"],
+  "Cable reverse fly":["Épaules"],"Face pull":["Épaules"],"Weighted pull-up":["Dos"],"Dumbbell row":["Dos"],
+  "Barbell row":["Dos"],"Inverted row":["Dos"],"Neutral-grip lat pulldown":["Dos"],"Cable pullover":["Dos"],
+  "Deadlift":["Ischios","Fessiers","Dos"],"Romanian deadlift":["Ischios","Fessiers"],"Hack squat":["Quadriceps"],
+  "Leg press":["Quadriceps","Fessiers"],"Bulgarian split squat":["Quadriceps","Fessiers"],"Leg extension":["Quadriceps"],
+  "Seated leg curl":["Ischios"],"Lying leg curl":["Ischios"],"Hip thrust":["Fessiers"],
+  "Standing calf raise":["Mollets"],"Seated calf raise":["Mollets"],"Cable curl":["Biceps"],"Hammer curl":["Biceps"],
+  "Incline dumbbell curl":["Biceps"],"Triceps pushdown":["Triceps"],"Overhead rope extension":["Triceps"],
+  "Cable crunch":["Abdos"],"Farmer's walk":["Avant-bras"],
+};
+const RAISON = {
+  "Bench press":"La poussée qui se charge le plus lourd : pectoraux, triceps, avant d'épaule. Déjà ton principal, l'historique continue.",
+  "Incline dumbbell press":"Le haut des pectoraux, peu touché par le bench plat. Les haltères descendent plus bas qu'une barre.",
+  "Cable fly":"Garde la tension sur les pectoraux étirés, là où les haltères ne pèsent plus rien.",
+  "Dip":"Bas des pectoraux et triceps en un seul poste, au poids du corps.",
+  "Weighted dip":"Pectoraux bas et triceps lourds : l'accessoire qui fait le plus monter le bench.",
+  "Overhead press":"La poussée verticale lourde, debout : épaules et gainage, chargée en RPE.",
+  "Seated dumbbell press":"Les épaules en poussée verticale, assis pour ne tricher ni avec les jambes ni avec le dos.",
+  "Cable lateral raise":"Le seul exercice qui vise le deltoïde latéral, celui de la largeur. La poulie garde la tension en bas.",
+  "Cable reverse fly":"L'arrière d'épaule : équilibre tous les développés et tient la posture.",
+  "Face pull":"Arrière d'épaule et rotateurs : protège les épaules d'un programme riche en poussées.",
+  "Weighted pull-up":"Le meilleur mouvement de largeur du dos, et il se charge comme un exercice de force.",
+  "Dumbbell row":"Épaisseur du dos, un bras à la fois : grande amplitude, bas du dos au repos.",
+  "Barbell row":"Rowing lourd pour l'épaisseur du dos, qui progresse en kilos.",
+  "Inverted row":"Tirage horizontal au poids du corps, facile à enchaîner en séries longues.",
+  "Neutral-grip lat pulldown":"Grand dorsal en prise neutre, douce pour les épaules ; se dose au kilo près, contrairement aux tractions.",
+  "Cable pullover":"Le grand dorsal sans les biceps : les bras ne limitent plus le dos.",
+  "Deadlift":"Toute la chaîne arrière en un mouvement, la plus grosse charge de la semaine.",
+  "Romanian deadlift":"Ischios et fessiers étirés, sans la fatigue d'un soulevé depuis le sol.",
+  "Hack squat":"Quadriceps lourds, dos calé : moins technique et moins usant qu'un squat barre. Déjà dans ton historique.",
+  "Leg press":"Beaucoup de volume pour quadriceps et fessiers, sans charger le dos.",
+  "Bulgarian split squat":"Une jambe à la fois : corrige les déséquilibres et étire les fessiers avec peu de charge.",
+  "Leg extension":"Le droit fémoral, que les squats touchent peu. Seul exercice qui le cible.",
+  "Seated leg curl":"Ischios étirés, hanche fléchie : plus de croissance que le leg curl allongé (Maeo 2021).",
+  "Lying leg curl":"Ischios sous un autre angle que le leg curl assis.",
+  "Hip thrust":"Fessiers en contraction maximale, sans fatiguer le bas du dos.",
+  "Standing calf raise":"Le gastrocnémien, jambe tendue.",
+  "Seated calf raise":"Le soléaire, genou fléchi : l'autre moitié du mollet.",
+  "Cable curl":"Biceps sous tension constante, sans élan.",
+  "Hammer curl":"Brachial et avant-bras : épaissit le bras vu de face.",
+  "Incline dumbbell curl":"Biceps étiré, bras derrière le corps : la position qui le fait le plus grossir.",
+  "Triceps pushdown":"Chefs latéral et médial du triceps, lourd sans risque pour les coudes.",
+  "Overhead rope extension":"Chef long du triceps étiré : nettement plus de croissance qu'à la poulie haute (Maeo 2023).",
+  "Cable crunch":"Abdos chargés et progressifs, comme n'importe quel muscle.",
+  "Farmer's walk":"Poigne, gainage et cardio en même temps.",
+};
+const JOUR = {
+  "hypertrophie:Push A":"Les deux poussées lourdes quand tu es frais, puis épaules latérales et triceps.",
+  "hypertrophie:Pull A":"Largeur (tractions) puis épaisseur (rowing), bras étirés à la fin.",
+  "hypertrophie:Legs A":"Quadriceps lourds, ischios étirés : la séance de jambes la plus exigeante.",
+  "hypertrophie:Push B":"Pas de bench : les épaules mènent, les pectoraux travaillent étirés à la poulie.",
+  "hypertrophie:Pull B":"L'inverse du Pull A : épaisseur d'abord, largeur ensuite, angle différent.",
+  "hypertrophie:Legs B":"Plus de reps, unilatéral et mollets : du volume sans écraser le dos.",
+  "force:J1 · Bench lourd":"Le bench en vague de %, puis les triceps qui le portent : dips lestés et poulie.",
+  "force:J2 · Jambes lourd":"Hack squat lourd, unilatéral pour l'équilibre, ischios étirés.",
+  "force:J3 · Tirage + épaules":"Tractions en %, militaire barre lourd, rowing : tout le haut qui tire et pousse vers le haut.",
+  "force:J4 · Soulevé de terre":"Le plus lourd de la semaine, puis fessiers et ischios sans recharger le dos.",
+  "force:J5 · Bench volume":"Deuxième bench de la semaine, plus léger et plus long ; bras et épaules latérales pour le physique.",
+  "force:J6 · Points faibles":"Volume léger pour arrière d'épaule, bras et poigne. Sauté seul après 5 jours lourds d'affilée.",
+  "endurance:Jour 1":"Ancre au bench, puis un superset haut, jambes, épaules et bras.",
+  "endurance:Jour 2":"Ancre au hack squat, jambes en unilatéral.",
+  "endurance:Jour 3":"Ancre aux tractions, la poussée passe en incliné.",
+  "endurance:Jour 4":"Ancre au soulevé, pas de jambes ensuite : elles ont déjà travaillé.",
+  "superset:Haut A":"Poussée lourde seule, puis paires poussée / tirage et biceps / triceps.",
+  "superset:Bas A":"Hack lourd seul, puis quadriceps / ischios et ischios / mollets.",
+  "superset:Haut B":"Tirage lourd seul, puis les paires inverses du Haut A.",
+  "superset:Bas B":"Presse, unilatéral et fessiers : le volume des jambes en 40 min.",
+};
+const NEUFS = new Set(["Romanian deadlift","Leg press","Seated calf raise","Seated dumbbell press","Cable fly","Incline dumbbell curl","Neutral-grip lat pulldown","Cable pullover"]);
+const UNILAT = new Set(["Bulgarian split squat"]);
+const MUSCLES = ["Pectoraux","Dos","Épaules","Biceps","Triceps","Quadriceps","Ischios","Fessiers","Mollets","Abdos"];
+const VISIBLES = new Set(["Pectoraux","Dos","Épaules","Biceps","Triceps","Quadriceps","Ischios"]);
+
+// e(nom ou [a, b], séries, reps, repos s, options) ; p = principal (6 min d'échauffement), p2 = 2e lourd (4 min)
+const e = (n, s, r, repos, o = {}) => ({ n, s, r, repos, ...o });
+const P = [
+ { id:"hypertrophie", lettre:"A", court:"Hypertrophie", nom:"Push / Pull / Legs", parSemaine:1,
+   but:"Chaque muscle deux fois par rotation, quatre postes par séance au plus. La variante A est lourde, la B travaille le muscle étiré. Le principal monte en % du 1RM sur 4 semaines, puis une semaine de décharge.",
+   meta:["6 jours en rotation","Principal 70 → 77,5 %","1–2 RIR, isolation finie à 0–1","Repos 1 à 2,5 min"],
+   jours:[
+    ["Push A","lourd",[e("Bench press",4,"6–8",150,{p:1}),e("Incline dumbbell press",3,"8–12",120),e("Cable lateral raise",4,"12–15",60),e(["Dip","Overhead rope extension"],3,"8–12",90)]],
+    ["Pull A","lourd",[e("Weighted pull-up",4,"6–8",150,{p:1}),e("Dumbbell row",3,"8–12",120),e(["Cable reverse fly","Incline dumbbell curl"],3,"10–15",90),e("Hammer curl",3,"10–12",60)]],
+    ["Legs A","lourd",[e("Hack squat",4,"6–10",150,{p:1}),e("Romanian deadlift",3,"8–10",120),e(["Leg extension","Seated leg curl"],3,"10–15",90),e("Standing calf raise",3,"10–15",60)]],
+    ["Push B","étirement",[e("Seated dumbbell press",3,"8–10",120,{p:1}),e("Cable fly",3,"12–15",75),e("Cable lateral raise",4,"15–20",60),e("Triceps pushdown",3,"10–15",60)]],
+    ["Pull B","étirement",[e("Barbell row",4,"8–10",120,{p:1}),e("Neutral-grip lat pulldown",3,"10–12",90),e(["Face pull","Cable curl"],3,"12–15",75)]],
+    ["Legs B","étirement",[e("Leg press",4,"10–15",120,{p:1}),e("Bulgarian split squat",3,"8–12",90),e("Lying leg curl",3,"10–12",75),e(["Seated calf raise","Cable crunch"],3,"12–15",60)]],
+   ],
+   pourquoi:[["Ce qui a sauté","Les doublons : un seul exercice d'isolation par muscle et par séance, et les bras en superset. Les séries des gros mouvements sont gardées."],["Pour le physique","Les élévations latérales restent à 4 séries deux fois par rotation : c'est la largeur qui change le plus la silhouette."]] },
+
+ { id:"force", lettre:"B", court:"Force", nom:"Bloc Force (le tien, retouché)",
+   but:"Ton programme d'octobre, gardé tel quel sauf deux postes : il tient déjà dans l'heure, garde le bench deux fois par semaine et la vague de % sur les quatre principaux. Seul point faible corrigé : les ischios.",
+   meta:["6 jours, J6 optionnel","S1 80 % → S3 88–90 % → S4 test","1–2 RIR, jamais l'échec","Repos 1 à 5 min"],
+   jours:[
+    ["J1 · Bench lourd","lourd",[e("Bench press",5,"5 → 3",240,{p:1,x:"80 → 90 %"}),e("Weighted dip",3,"6–8",180),e("Triceps pushdown",3,"10",90),e("Incline dumbbell press",3,"8",120,{o:1})]],
+    ["J2 · Jambes lourd","lourd",[e("Hack squat",5,"5 → 3",240,{p:1,x:"80 → 90 %"}),e("Bulgarian split squat",3,"8",120),e("Seated leg curl",3,"8–10",120,{t:1}),e("Standing calf raise",3,"10",90,{o:1})]],
+    ["J3 · Tirage + épaules","lourd",[e("Weighted pull-up",5,"5 → 3",240,{p:1,x:"80 → 90 %"}),e("Overhead press",4,"5",180,{x:"RPE 8"}),e("Barbell row",3,"6–8",180),e("Cable reverse fly",3,"12",90,{o:1})]],
+    ["J4 · Soulevé de terre","lourd",[e("Deadlift",3,"5 → 3",300,{p:1,x:"80 → 90 %"}),e("Hip thrust",3,"8",120),e("Seated leg curl",3,"10–12",90,{t:1}),e("Cable crunch",3,"10–12",90)]],
+    ["J5 · Bench volume","volume",[e("Bench press",4,"6",180,{p:1,x:"75 → 80 %"}),e("Dumbbell row",3,"8",120),e(["Cable curl","Overhead rope extension"],3,"10",90),e("Cable lateral raise",3,"12–15",60)]],
+    ["J6 · Points faibles","optionnel · RPE ≤ 7",[e(["Cable reverse fly","Inverted row"],3,"12–15",90),e(["Hammer curl","Dip"],3,"10–15",90),e("Farmer's walk",4,"30 m",90),e("Cable lateral raise",3,"15",60,{o:1})],true],
+   ],
+   pourquoi:[["Retouche J2","Leg curl assis au lieu d'allongé : même temps, plus de croissance des ischios (Maeo 2021). Le leg curl allongé reste proposé en remplacement si la machine manque."],["Retouche J4","Leg curl assis à la place du leg extension optionnel, et il devient obligatoire : les ischios passent de 6 à 9 séries par semaine. Pas de soulevé roumain ici, il refatiguerait le dos juste après le soulevé lourd."],["Ce qui n'a pas bougé","Le bench 2 fois par semaine (la fréquence compte pour la force), la vague de % et le test S4, le militaire barre lourd, les dips lestés, la règle des 48 h entre hack squat et soulevé."]] },
+
+ { id:"endurance", lettre:"C", court:"Endurance", nom:"Capacité de travail (full body)",
+   but:"Une ancre lourde avec 3 min de repos, puis trois supersets à 15–20 reps avec 45 à 60 s de repos. Le cardio monte, la force reste grâce à l'ancre.",
+   meta:["4 jours full body","Ancre 3 × 5 à 75–80 %","Supersets 2–3 RIR","Repos 45–60 s"],
+   jours:[
+    ["Jour 1","ancre bench",[e("Bench press",3,"5",180,{p:1,x:"75–80 %"}),e(["Dumbbell row","Dip"],3,"15–20",60),e(["Leg press","Seated leg curl"],3,"15–20",60),e(["Cable lateral raise","Hammer curl"],3,"15–20",45)]],
+    ["Jour 2","ancre hack",[e("Hack squat",3,"5",180,{p:1,x:"75–80 %"}),e(["Neutral-grip lat pulldown","Seated dumbbell press"],3,"15–20",60),e(["Bulgarian split squat","Hip thrust"],3,"12–15",60),e(["Cable curl","Triceps pushdown"],3,"15–20",45)]],
+    ["Jour 3","ancre traction",[e("Weighted pull-up",3,"5",180,{p:1,x:"75–80 %"}),e(["Incline dumbbell press","Inverted row"],3,"15–20",60),e(["Leg extension","Lying leg curl"],3,"15–20",60),e(["Face pull","Incline dumbbell curl"],3,"15–20",45)]],
+    ["Jour 4","ancre soulevé",[e("Deadlift",3,"5",180,{p:1,x:"75 %"}),e(["Cable fly","Cable pullover"],3,"15–20",60),e(["Cable lateral raise","Overhead rope extension"],3,"15–20",45),e("Farmer's walk",4,"30 m",60)]],
+   ],
+   pourquoi:[["Pourquoi garder l'ancre","À 15–20 reps près de l'effort, le muscle grossit autant qu'en lourd, mais la force baisse. Trois séries de 5 suffisent à la tenir."],["Pourquoi des supersets","Deux muscles qui ne se gênent pas : le cœur ne redescend pas entre les séries, et c'est lui qu'on entraîne ici."]] },
+
+ { id:"superset", lettre:"D", court:"Superset", nom:"Haut / bas express",
+   but:"Le principal reste seul avec un repos complet ; tout le reste se fait en paires antagonistes. Le plus court des quatre, pour les semaines chargées.",
+   meta:["4 jours","Principal seul, 1–2 RIR","Paires 1–2 RIR","Repos 1 à 1,5 min par paire"],
+   jours:[
+    ["Haut A","lourd",[e("Bench press",4,"6–8",150,{p:1}),e(["Incline dumbbell press","Dumbbell row"],3,"8–12",90),e(["Cable lateral raise","Cable reverse fly"],3,"12–15",60),e(["Incline dumbbell curl","Overhead rope extension"],4,"10–12",60)]],
+    ["Bas A","lourd",[e("Hack squat",4,"6–10",150,{p:1}),e(["Leg extension","Seated leg curl"],3,"10–15",60),e(["Romanian deadlift","Standing calf raise"],3,"8–12",90)]],
+    ["Haut B","volume",[e("Weighted pull-up",4,"6–8",150,{p:1}),e(["Seated dumbbell press","Neutral-grip lat pulldown"],3,"8–12",90),e(["Cable fly","Cable pullover"],3,"12–15",60),e(["Cable curl","Triceps pushdown"],4,"10–15",60)]],
+    ["Bas B","volume",[e("Leg press",4,"10–15",120,{p:1}),e(["Bulgarian split squat","Lying leg curl"],3,"8–12",75),e(["Hip thrust","Cable crunch"],3,"10–15",60)]],
+   ],
+   pourquoi:[["Pourquoi antagonistes","Pousser et tirer, fléchir et étendre : le second muscle travaille pendant que le premier récupère. Même volume, 30 à 40 % de temps en moins."],["Limite","Plus essoufflant, et deux postes à garder en même temps dans une salle bondée."]] },
+];
+
+// Durée d'un poste, en secondes (règles affichées en tête de page).
+const effort = (r, nom) => {
+  const max = parseInt(String(r).split(/[–-]/).pop(), 10);
+  const t = /m$/.test(r) ? 30 : max <= 6 ? 25 : max <= 12 ? 45 : 60;
+  return UNILAT.has(nom) ? 2 * t : t;
+};
+const dureePoste = (x) => {
+  const noms = Array.isArray(x.n) ? x.n : [x.n];
+  const travail = noms.reduce((t, n) => t + effort(x.r, n), 0);
+  return x.s * travail + (x.s - 1) * x.repos + 120 + (x.p ? 360 : x.p2 ? 240 : 0);
+};
+const dureeJour = (exos, avecOpt = false) => Math.round(exos.filter((x) => avecOpt || !x.o).reduce((t, x) => t + dureePoste(x), 0) / 60);
+function volume(p) {
+  const v = {}, o = {};
+  for (const [, , exos, opt] of p.jours) for (const x of exos) {
+    const cible = opt || x.o ? o : v;
+    for (const n of Array.isArray(x.n) ? x.n : [x.n]) for (const m of MUSC[n]) cible[m] = (cible[m] || 0) + x.s;
+  }
+  return { v, o };
+}
+
+if (typeof document === "undefined") {
+  for (const p of P) {
+    console.log(p.court, p.jours.map(([j, , ex]) => `${j} ${dureeJour(ex)}`).join(" | "));
+    console.log("  ", JSON.stringify(volume(p)));
+  }
+} else {
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+  const nomExo = (n) => `<span>${esc(n)}${NEUFS.has(n) ? '<span class="tag neuf">NEW</span>' : ""}</span><small class="why">${esc(RAISON[n])}</small>`;
+  const repos = (s) => s >= 60 ? `${Math.floor(s / 60)} min${s % 60 ? " " + (s % 60) : ""}` : `${s} s`;
+  const ligneExo = (x) => {
+    const sch = `${x.s} × ${esc(x.r)}<small>${x.x ? esc(x.x) + " · " : ""}repos ${repos(x.repos)}</small>`;
+    return Array.isArray(x.n)
+      ? `<li class="ss"><span class="nom">${nomExo(x.n[0])}${nomExo(x.n[1])}</span><span class="sch">${sch}</span></li>`
+      : `<li class="${x.p ? "princ" : ""}"><span class="nom">${nomExo(x.n).replace("</span><small", (x.t ? '<span class="tag retouche">RETOUCHE</span>' : "") + (x.o ? '<span class="tag opt">OPT</span>' : "") + "</span><small")}</span><span class="sch">${sch}</span></li>`;
+  };
+  const jauge = (min) => `<span class="jauge" aria-hidden="true">${Array.from({ length: 12 }, (_, i) => `<i class="${i * 5 < min ? "on" : ""}"></i>`).join("")}</span>`;
+  function barres(p) {
+    const { v, o } = volume(p);
+    return MUSCLES.map((m) => {
+      const a = v[m] || 0, b = o[m] || 0;
+      const cases = Array.from({ length: 20 }, (_, i) => `<i class="${i < a ? "on" : i < a + b ? "op" : ""}"></i>`).join("");
+      return `<div class="ligne${VISIBLES.has(m) && a + b < 8 ? " bas" : ""}"><span>${m}</span><span class="cases" role="img" aria-label="${m} : ${a}${b ? " + " + b + " optionnelles" : ""} séries">${cases}</span><b>${a}${b ? "+" + b : ""}</b></div>`;
+    }).join("");
+  }
+  document.getElementById("nav").innerHTML = P.map((p) =>
+    `<a href="#${p.id}"><span class="pixel">${p.lettre}</span><strong>${p.court}</strong></a>`).join("");
+  document.getElementById("progs").innerHTML = P.map((p) => {
+    const durees = p.jours.filter((j) => !j[3]).map((j) => dureeJour(j[2]));
+    const meta = [...p.meta, `${Math.min(...durees)}–${Math.max(...durees)} min`];
+    return `
+<section class="prog" id="${p.id}">
+  <div class="prog-tete">
+    <span class="lettre pixel">Programme ${p.lettre} · ${p.court}</span>
+    <h2>${p.nom}</h2>
+    <p>${p.but}</p>
+    <div class="meta">${meta.map((m) => `<span>${m}</span>`).join("")}</div>
+  </div>
+  <div class="corps">
+    <div class="jours">${p.jours.map(([nom, sous, exos, opt]) => {
+      const min = dureeJour(exos), max = dureeJour(exos, true);
+      return `
+      <article class="jour${opt ? " opt" : ""}">
+        <h3>${nom}<small>${sous}</small></h3>
+        <div class="duree">${jauge(min)}<span>≈ ${min} min${max > min ? ` · ${max} avec opt.` : ""}</span></div>
+        <p class="jp">${esc(JOUR[p.id + ":" + nom])}</p>
+        <ul>${exos.map(ligneExo).join("")}</ul>
+      </article>`; }).join("")}
+    </div>
+    <div class="vol">
+      <h3 class="pixel">Séries dures par rotation (≈ une semaine)</h3>
+      <div class="vol-grille">${barres(p)}</div>
+      <p class="legende">Une case = une série, comptée pour chaque groupe principal de l'exercice. Le trait gris marque 8 séries.${Object.keys(volume(p).o).length ? " Les cases vides orange viennent des exercices et jours optionnels." : ""} En rouge : sous le plancher.</p>
+    </div>
+    <div class="pourquoi">${p.pourquoi.map(([t, x]) => `<p><b>${t}.</b> ${x}</p>`).join("")}</div>
+  </div>
+</section>`; }).join("");
+  const bouton = document.getElementById("bascule");
+  const appliquer = (cache) => {
+    document.body.classList.toggle("sans-pourquoi", cache);
+    bouton.textContent = cache ? "Afficher les pourquoi" : "Masquer les pourquoi";
+    bouton.setAttribute("aria-pressed", String(!cache));
+  };
+  let cache = false;
+  try { cache = localStorage.getItem("pourquoi-caches") === "1"; } catch {}
+  appliquer(cache);
+  bouton.addEventListener("click", () => {
+    cache = !cache;
+    appliquer(cache);
+    try { localStorage.setItem("pourquoi-caches", cache ? "1" : "0"); } catch {}
+  });
+}
+</script>

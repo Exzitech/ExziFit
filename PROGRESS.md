@@ -3,7 +3,19 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : personnage dessiné publié en 0.1.18, essai à la salle prévu le 2026-10-14
+## Statut : 0.1.20 publiée (noms anglais, Bloc Force retouché), essai à la salle le 2026-10-14
+
+**Reprise (2026-10-14, autre PC)** — installation : README, « Travailler sur un autre poste ».
+1. Retour de Tom après la séance : leg curl assis (J2 / J4), noms anglais, durée réelle des
+   séances contre le calcul de la page (début / fin dans le Journal).
+2. Programmes proposés : [docs/propositions-programmes.html](docs/propositions-programmes.html)
+   (copie de l'artefact claude.ai/artifact/4jAraXnA7YCzaBMaDgFzcn) : A Hypertrophie PPL,
+   B = Bloc Force retouché (fait), C Endurance, D Superset. Tom n'a pas encore choisi A / C / D.
+   Pour les coder : ~9 exos neufs (marqués NEW), un JSON par programme dans
+   `src/donnees/programmes/`, sélecteur sur l'accueil (`PROGRAMME` est en dur dans
+   programme.ts, utilisé par Seance, Journal, Personnage) ; garder « Ajouter un exo ».
+   Limite connue : la semaine de décharge ne baisse que le principal, pas les accessoires.
+
 
 Les trois chantiers ExziHub (sous-titres *Rick and Morty*, module tâches, profil Malt) sont en
 sommeil depuis le 2026-10-13 — état dans `ExziHub/docs/pi/REPRISE.md`, « Chantiers en sommeil ».
@@ -281,3 +293,22 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
 | 2026-10-13 | Stats dans un 3e onglet « Perso » + carte des écarts dans le résumé (0.1.13) | l'accueil reste « quoi faire aujourd'hui » ; le résumé ne montre que ce qui a bougé |
 | 2026-10-13 | Pesée saisissable dans l'onglet Perso, « pesée manquante » aussi dans le titre du panneau 1RM (0.1.17) | Tom : « pesée manquante » affiché sans aucun endroit visible pour la noter (champ caché dans le panneau 1RM, absent en fin de bloc) |
 | 2026-10-13 | Personnage : paliers Force 40/55/70/85, Endurance 25/50/75, Constance 50/75 ; comparaison avec il y a 8 semaines (0.1.18) | seuils de Force serrés au niveau intermédiaire pour qu'un progrès se voie en quelques mois ; à revoir sur données réelles |
+
+**Noms anglais et propositions de programmes (2026-10-13, 0.1.19)** — demande de Tom :
+- Noms des exercices en anglais dans l'app (`exercices.ts`, champ `nom` seul ; les identifiants
+  et le journal ne changent pas). 67 tests Vitest, `npm run build`, publié en 0.1.19. Pas vu sur le S23.
+- Quatre programmes proposés (artefact « Programmes ExziFit », claude.ai/artifact/4jAraXnA7YCzaBMaDgFzcn) :
+  A Push/Pull/Legs, B Force & physique haut/bas, C Endurance full body, D Superset express.
+  Contrainte de Tom : 1 h maximum par séance, moins de postes plutôt que moins de repos ; durées
+  calculées (35 à 52 min). En attente du choix de Tom. À coder ensuite : ~9 exercices neufs,
+  sélecteur de programme sur l'accueil (`PROGRAMME` est en dur dans programme.ts).
+  Page v3 : pourquoi de chaque jour et exercice, niveau de preuve vérifié (recherches web) :
+  fréquence peu utile au muscle à volume égal (Pelland 2024) ; échec : études divergentes
+  (Refalo / Robinson 2023) → isolation finie à 0–1 RIR en hypertrophie, gros mouvements 1–2 RIR.
+  « Ajouter un exo » existe déjà en séance de programme (Seance.tsx) : à garder dans les nouveaux.
+- **0.1.20** (accord de Tom, « fais au mieux ») : Bloc Force gardé comme programme de force (la
+  proposition B le dégradait : bench 1×/sem, tractions et militaire hors %), deux retouches pour
+  les ischios (6 → 9 séries/sem) : J2 `leg-curl-assis` (ex-allongé, proposé en remplacement),
+  J4 `leg-curl-assis` 3 × 10–12 obligatoire à la place du leg extension optionnel (pas de roumain
+  après le soulevé lourd). Exo `leg-curl-assis` ajouté. 67 tests, tsc, build verts ; publié.
+  Pas vu sur le S23. Les autres programmes (A, C, D) restent à coder si Tom les choisit.

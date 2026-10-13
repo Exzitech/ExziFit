@@ -1,0 +1,2 @@
+- [Signaler le /clear](signaler-clear.md) — dire à Tom quand faire /clear, après avoir mis PROGRESS.md à jour
+- [Publier après changement](publier-apres-changement.md) — npm run publier sans demander, après build/tests verts

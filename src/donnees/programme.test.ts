@@ -168,7 +168,7 @@ describe("règles du bloc", () => {
 
   it("soulevé moins de 48 h après le hack squat → avertissement, compté depuis la fin de séance", () => {
     expect(avertissements(PROGRAMME, J4, [hack("2026-10-14T17:00:00+02:00", "2026-10-14T18:00:00+02:00")], new Date("2026-10-16T00:00:00+02:00")))
-      .toEqual(["Hack squat il y a 30 h : 48 h conseillées avant Soulevé de terre."]);
+      .toEqual(["Hack squat il y a 30 h : 48 h conseillées avant Deadlift."]);
   });
   it("48 h passées, ou jour sans exo de la règle → rien", () => {
     expect(avertissements(PROGRAMME, J4, [hack("2026-10-14T18:00:00+02:00")], new Date("2026-10-16T18:00:00+02:00"))).toEqual([]);

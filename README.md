@@ -106,6 +106,25 @@ Signature : `src-tauri/gen/android/keystore.properties` (local) pointe vers
 sûr** : un APK signé par une autre clé (dont la clé de debug) ne peut pas mettre à jour l'app
 installée, il faut la désinstaller avec ses données.
 
+## Travailler sur un autre poste
+
+Le code, la doc et les notes de Claude sont dans le dépôt ; cinq fichiers locaux n'y sont
+**pas** (secrets ou liens de partage, dépôt public) et se copient à la main, par clé USB ou
+dossier privé, jamais par git :
+
+| Fichier | Sert à |
+|---|---|
+| `C:\Users\tomro\.android\exzifit-release.jks` | clé de signature : sans elle, plus de mise à jour de l'app installée |
+| `src-tauri/gen/android/keystore.properties` | mot de passe et chemin de la clé |
+| `src-tauri/maj.json` | lien public du dossier `ExziFit` (mise à jour en ligne ; modèle : `maj.exemple.json`) |
+| `src-tauri/sauvegarde.json` | lien de dépôt `ExziFit-backups` (modèle : `sauvegarde.exemple.json`) |
+| `publier.local.json` | chemin du dossier Nextcloud local où `npm run publier` dépose l'APK |
+
+Puis : `git pull`, `npm ci`, recopier `docs/memoire/*.md` (sauf `README.md`) dans le dossier
+de mémoire de Claude (voir [docs/memoire/README.md](docs/memoire/README.md)), et lancer
+`npm test` et `npm run build`. Le client Nextcloud doit synchroniser le dossier `ExziFit`
+pour que `npm run publier` dépose l'APK. Chaîne Android (SDK, NDK, Rust) : la même que pour ExziHub.
+
 ## Données
 
 Dossier de données de l'app (`app_data_dir`, affiché dans Réglages). Voir

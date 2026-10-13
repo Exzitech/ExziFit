@@ -39,7 +39,7 @@
           "exercices": [
             { "exo": "hack-squat", "role": "principal", "prescription": { "type": "pct1rm", "schema": "std" }, "repos": 240 },
             { "exo": "fentes-bulgares", "note": "par jambe", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 },
-            { "exo": "leg-curl-allonge", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
+            { "exo": "leg-curl-assis", "alternatives": ["leg-curl-allonge"], "note": "Leg curl allongé si pas de leg curl assis", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
             { "exo": "mollets-debout", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 10, "rir": 2 }, "repos": 90 }
           ] },
         { "id": "J3", "nom": "Tirage + épaules", "objectif": "force", "lourd": true,
@@ -53,8 +53,8 @@
           "exercices": [
             { "exo": "souleve-de-terre", "role": "principal", "prescription": { "type": "pct1rm", "schema": "dl" }, "repos": 300 },
             { "exo": "hip-thrust", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 8, "rir": 2 }, "repos": 120 },
-            { "exo": "crunch-poulie-haute", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 2 }, "repos": 90 },
-            { "exo": "leg-extension", "optionnel": true, "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 12, "rir": 2 }, "repos": 90 }
+            { "exo": "leg-curl-assis", "alternatives": ["leg-curl-allonge"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "exo": "crunch-poulie-haute", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 2 }, "repos": 90 }
           ] },
         { "id": "J5", "nom": "Bench volume", "objectif": "hypertrophie", "lourd": true,
           "exercices": [
