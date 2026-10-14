@@ -1,6 +1,7 @@
 mod envoi;
 mod fichiers;
 mod maj;
+mod synchro;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,6 +18,11 @@ pub fn run() {
             fichiers::dossier_donnees,
             fichiers::sauvegarde_envoyee,
             envoi::sauvegarde_envoyer,
+            fichiers::sauvegarde_synchro,
+            synchro::synchro_compte,
+            synchro::synchro_configurer,
+            synchro::synchro_lire,
+            synchro::synchro_ecrire,
             maj::maj_verifier,
             #[cfg(target_os = "android")]
             maj::android::maj_installer,

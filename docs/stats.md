@@ -47,6 +47,7 @@ Références (× poids de corps, = 100, niveau « très avancé » naturel) :
 | Soulevé de terre | 2,75 |
 | Tractions lestées (corps + lest) | 1,75 |
 | Hack squat | 3,0 (dépend de la machine, valeur indicative) |
+| Back squat | 2,5 (ajouté en 0.1.21, remplaçant du hack squat) |
 
 Sans pesée : Force non calculée (affichée « pesée manquante »), plutôt qu'un poids inventé.
 

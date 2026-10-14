@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
-import { jourLocal } from "./donnees/fichier";
+import { jourLocal, quandEcrit } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
+import { estSynchronise, synchroniser, type Bilan } from "./donnees/synchro";
 import EcranJournal from "./ecrans/Journal";
 import EcranPersonnage from "./ecrans/Personnage";
 import EcranReglages from "./ecrans/Reglages";
@@ -12,17 +13,65 @@ import { appliquerTheme } from "./themes";
 
 type Ecran = "seance" | "journal" | "personnage" | "reglages";
 
+/** Délai entre une écriture et la synchro qu'elle appelle (plusieurs écritures = une synchro). */
+const SYNCHRO_APRES_MS = 5000;
+/** Au retour au premier plan, pas plus d'une synchro par minute. */
+const SYNCHRO_RETOUR_MS = 60_000;
+
 export default function App() {
   const [ecran, setEcran] = useState<Ecran>("seance");
   const [reglages, setReglages] = useState<Reglages | null>(null);
   const [erreurs, setErreurs] = useState<string[]>([]);
   // Pendant une séance, le bas de l'écran est à la saisie (pouce) : pas de barre de navigation.
   const [enSeance, setEnSeance] = useState(false);
+  const [bilan, setBilan] = useState<Bilan | null>(null);
+  /** Change à chaque arrivée de données d'un autre appareil : les écrans se remontent et relisent. */
+  const [generation, setGeneration] = useState(0);
+  const [aRelire, setARelire] = useState(false);
+  // Lus par la synchro, qui se termine hors du rendu : l'état du moment, pas celui du lancement.
+  const ici = useRef({ ecran, enSeance });
+  ici.current = { ecran, enSeance };
 
   const signaler = (contexte: string) => (e: unknown) =>
     setErreurs((l) => [...l, `${contexte} : ${e instanceof Error ? e.message : String(e)}`]);
 
   useBoutonRetour(ecran !== "seance" ? () => setEcran("seance") : null, signaler("Bouton retour"));
+
+  const synchro = () =>
+    synchroniser()
+      .then((b) => {
+        setBilan(b);
+        if (b.etat !== "ok" || !b.recues) return;
+        // En séance ou en pleine correction au Journal, relire ferait perdre l'écran en cours : bandeau.
+        if (ici.current.enSeance || ici.current.ecran === "journal") setARelire(true);
+        else setGeneration((g) => g + 1);
+      })
+      .catch(signaler("Synchro"));
+
+  const relire = () => {
+    setARelire(false);
+    setGeneration((g) => g + 1);
+  };
+
+  useEffect(() => {
+    let minuterie: ReturnType<typeof setTimeout> | undefined;
+    quandEcrit((chemin) => {
+      if (!estSynchronise(chemin)) return;
+      clearTimeout(minuterie);
+      minuterie = setTimeout(synchro, SYNCHRO_APRES_MS);
+    });
+    let derniere = Date.now();
+    const auRetour = () => {
+      if (document.visibilityState !== "visible" || Date.now() - derniere < SYNCHRO_RETOUR_MS) return;
+      derniere = Date.now();
+      synchro();
+    };
+    document.addEventListener("visibilitychange", auRetour);
+    return () => {
+      clearTimeout(minuterie);
+      document.removeEventListener("visibilitychange", auRetour);
+    };
+  }, []);
 
   useEffect(() => {
     lireReglages()
@@ -37,7 +86,8 @@ export default function App() {
       .sauvegardeDuJour(jourLocal(new Date()))
       .catch(signaler("Sauvegarde du jour"))
       .then(() => stockage.envoyerSauvegarde())
-      .catch(signaler("Envoi de la sauvegarde"));
+      .catch(signaler("Envoi de la sauvegarde"))
+      .then(synchro);
   }, []);
 
   const changerReglages = (r: Reglages) => {
@@ -54,12 +104,18 @@ export default function App() {
         </div>
       )}
       {surAndroid && <MiseAJour />}
-      <main>
+      {aRelire && !enSeance && (
+        <div className="erreurs">
+          <button className="principal" onClick={relire}>Données reçues de l'autre appareil · Actualiser</button>
+        </div>
+      )}
+      <main key={generation}>
         {ecran === "seance" && <EcranSeance onErreur={signaler("Séance")} onEnSeance={setEnSeance} />}
         {ecran === "journal" && <EcranJournal onErreur={signaler("Journal")} />}
         {ecran === "personnage" && <EcranPersonnage onErreur={signaler("Personnage")} />}
         {ecran === "reglages" && reglages && (
-          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Minuteur")} />
+          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Réglages")}
+                         bilan={bilan} onSynchro={synchro} />
         )}
       </main>
       {!enSeance && <nav>

@@ -17,7 +17,7 @@ fn dav(lien: &str) -> Result<String, String> {
     Ok(format!("{hote}/public.php/dav/files/{jeton}"))
 }
 
-fn lien() -> Result<String, String> {
+pub(crate) fn lien() -> Result<String, String> {
     #[derive(serde::Deserialize)]
     struct Config {
         lien: String,

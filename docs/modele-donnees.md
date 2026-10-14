@@ -34,7 +34,8 @@ du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programm
 | `exercices.json` | exercices **perso** uniquement | à la création d'un exercice |
 | `poids.json` | pesées | à chaque pesée |
 | `reglages.json` | thème, disques disponibles, barre | dans les réglages |
-| `sauvegardes/` | copies datées de tout le dossier | au lancement, une fois par jour |
+| `suppressions.json` | séances supprimées depuis le Journal (`debut` + `le`), pour que la synchro les retire aussi de l'autre appareil | à chaque suppression |
+| `sauvegardes/` | copies datées de tout le dossier ; `sync-AAAAMMJJ-HHMMSS/` avant chaque fusion de synchro (20 gardées) | au lancement, une fois par jour ; avant d'appliquer une synchro |
 
 Les exercices de base sont **dans le code** (identifiants stables : `developpe-couche`,
 `souleve-de-terre`…). Un exercice perso a le même format, préfixé `perso-`.
@@ -59,6 +60,9 @@ reste de l'ordre de la milliseconde pendant des années ; aucun index ni base de
   `poulie`, `poids-corps-leste` (1RM = corps + lest), `poids-corps`, `distance` (farmer's walk).
 - `pas` : arrondi des charges proposées pour cet exercice.
 - `force: true` : compte dans la stat Force (gros mouvements).
+- `mouvement` : schéma (`squat`, `fente`, `charniere`, `poussee-horizontale`…), pour proposer les
+  remplaçants : alternatives du programme, même schéma (le premier est le « top »), mêmes muscles
+  principaux, puis le reste.
 - Groupes musculaires (liste fermée, pour la stat par groupe) : `pectoraux`, `dos`, `epaules`,
   `biceps`, `triceps`, `quadriceps`, `ischios`, `fessiers`, `mollets`, `abdos`, `avant-bras`.
 
@@ -184,6 +188,13 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
 - `prevu` : ce que l'app avait proposé. Sert à mesurer le point 3 de la v1 (« assez bonne
   pour être suivie sans discuter ») : part des séries faites telles que proposées.
 - `remplace` : exo remplacé (machine prise) ; la progression reste celle de l'exo réellement fait.
+  Les séries déjà faites sur l'exo remplacé comptent pour le poste (1 série de hack squat sur 4,
+  puis squat → 3 séries de squat).
+- `rattrapage` (optionnel, depuis 0.1.21) : `[{ "jour": "J4", "poste": 2 }]`, postes d'autres jours
+  ajoutés en fin de séance (`poste` = rang dans `jours[].exercices`). Proposés sur l'accueil :
+  postes sans aucune série dans une séance du bloc des 8 derniers jours, pas refaits depuis, hors
+  jours et postes optionnels ; pas proposés tant que le repos manque (règle `ecart` du programme,
+  ou 48 h entre deux gros mouvements de jambes qui partagent un muscle principal, squat → deadlift).
 - `semaine` et `jour` sont recopiés au moment de la séance : ce sont des faits, la rotation
   future se déduit de la dernière séance du bloc.
 - `rir` absent sur l'échauffement ; série au poids de corps lestée : `kg` = lest seul.
@@ -198,6 +209,24 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
 - **Avertissements** des règles (« hack squat il y a 30 h »).
 - **Stats du personnage**, à partir du journal et des pesées, avec décroissance quand
   l'entraînement s'arrête. Formules : [stats.md](stats.md).
+
+## Synchro PC ↔ téléphone (0.1.22)
+
+`etat.json` dans le dossier Nextcloud privé `ExziFit-sync` : `{ format, seances, suppressions,
+blocs, pesees }`, tout ce qui se synchronise. Chaque appareil le lit, fusionne
+(`src/donnees/synchro.ts`, `fusionner`), écrit chez lui ce qui change, puis renvoie la fusion si
+elle diffère (`If-Match` sur l'ETag ; un autre appareil a écrit entre-temps → relire, refusionner).
+
+- **Séances** par `debut`. Une séance corrigée (`modifie`, posé par le Journal) l'emporte sur une
+  jamais corrigée ; entre deux corrections, la plus récente. Jamais comparée à l'heure de fin :
+  les horloges des appareils peuvent différer.
+- **Suppressions** : retirent la séance de l'autre appareil, sauf si elle a été corrigée après.
+- **Blocs** par `id`, le plus récent `modifie` (posé par `ecrireBlocs` sur un bloc changé).
+  **Pesées** par jour, le plus récent `le`. Champs ajoutés en 0.1.22, absents avant : pas de migration.
+- Avant d'appliquer : copie `sauvegardes/sync-…` de tout le dossier ; séances remplacées ou
+  retirées par la fusion → `corbeille.json`.
+- Pas synchronisés : `en-cours.json` (la séance en cours reste sur son appareil), `corbeille.json`,
+  `reglages.json` (thème propre à chaque appareil).
 
 ## Hors du modèle pour l'instant
 

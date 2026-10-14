@@ -3,19 +3,13 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.20 publiée (noms anglais, Bloc Force retouché), essai à la salle le 2026-10-14
+## Statut : 0.1.22 (synchro PC ↔ téléphone), compte Nextcloud créé, mot de passe à saisir
 
-**Reprise (2026-10-14, autre PC)** — installation : README, « Travailler sur un autre poste ».
-1. Retour de Tom après la séance : leg curl assis (J2 / J4), noms anglais, durée réelle des
-   séances contre le calcul de la page (début / fin dans le Journal).
-2. Programmes proposés : [docs/propositions-programmes.html](docs/propositions-programmes.html)
-   (copie de l'artefact claude.ai/artifact/4jAraXnA7YCzaBMaDgFzcn) : A Hypertrophie PPL,
-   B = Bloc Force retouché (fait), C Endurance, D Superset. Tom n'a pas encore choisi A / C / D.
-   Pour les coder : ~9 exos neufs (marqués NEW), un JSON par programme dans
-   `src/donnees/programmes/`, sélecteur sur l'accueil (`PROGRAMME` est en dur dans
-   programme.ts, utilisé par Seance, Journal, Personnage) ; garder « Ajouter un exo ».
-   Limite connue : la semaine de décharge ne baisse que le principal, pas les accessoires.
-
+**Retours de Tom après la séance (2026-10-13)** : traités en 0.1.21 ; « pas synchro avec le PC »
+(consulter **et** modifier) traité en 0.1.22, accord de Tom le 2026-10-14. Attend la mise en place
+Nextcloud par Tom (README, « Synchro PC ↔ téléphone ») : jamais testée contre le vrai serveur.
+Programmes A / C / D ([docs/propositions-programmes.html](docs/propositions-programmes.html)) :
+toujours pas choisis. Limite connue : la semaine de décharge ne baisse que le principal.
 
 Les trois chantiers ExziHub (sous-titres *Rick and Morty*, module tâches, profil Malt) sont en
 sommeil depuis le 2026-10-13 — état dans `ExziHub/docs/pi/REPRISE.md`, « Chantiers en sommeil ».
@@ -221,14 +215,13 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
 
 ## Prochaine étape
 
-1. **Essai à la salle par Tom** (0.1.7) : saisir les 1RM et le poids de corps à l'accueil
-   (« 1RM du bloc »), choisir la bonne semaine / le bon jour si le bloc est déjà commencé ;
-   juger la saisie d'une main, la vibration en fin de repos, la reprise si l'app est tuée, le
-   recalage par le RIR. Noter précisément ce qui gêne encore.
-2. Retours de Tom sur l'onglet « Perso » et la carte du résumé (lisibilité, valeurs crédibles).
-3. **Personnage (0.1.18)** : avis de Tom sur le dessin et sur les seuils, une fois ses vraies
-   stats calculées (seuils posés sans données réelles). Maquettes :
-   https://claude.ai/artifact/WaGhMQfmgDLjNcm6bqfryC. Résumé de fin de séance : validé par Tom.
+1. **Synchro** : compte `exzifit` + dossier + mot de passe d'application créés le 2026-10-14
+   (README). Reste : Tom saisit le mot de passe dans Réglages › Synchro (PC et téléphone), puis
+   premier essai réel : séance au téléphone → visible au PC ; correction au PC → téléphone.
+   Constat resté vrai : l'envoi des **sauvegardes** ne part qu'au lancement (1×/jour).
+2. Essai 0.1.21 à la salle : vibration (3 × 1 s), chiffres centrés, remplacement (top, séries
+   gardées), carte « Rattrapage ».
+3. Personnage : avis sur le dessin et les seuils avec les vraies stats.
 
 ## Décisions
 
@@ -293,6 +286,8 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
 | 2026-10-13 | Stats dans un 3e onglet « Perso » + carte des écarts dans le résumé (0.1.13) | l'accueil reste « quoi faire aujourd'hui » ; le résumé ne montre que ce qui a bougé |
 | 2026-10-13 | Pesée saisissable dans l'onglet Perso, « pesée manquante » aussi dans le titre du panneau 1RM (0.1.17) | Tom : « pesée manquante » affiché sans aucun endroit visible pour la noter (champ caché dans le panneau 1RM, absent en fin de bloc) |
 | 2026-10-13 | Personnage : paliers Force 40/55/70/85, Endurance 25/50/75, Constance 50/75 ; comparaison avec il y a 8 semaines (0.1.18) | seuils de Force serrés au niveau intermédiaire pour qu'un progrès se voie en quelques mois ; à revoir sur données réelles |
+| 2026-10-14 | Synchro PC ↔ téléphone par un etat.json dans un dossier Nextcloud privé, utilisateur dédié + mot de passe d'application saisi dans Réglages | Tom veut consulter et modifier sur le PC ; le lien des sauvegardes est public (APK) et en dépôt seul, il ne peut pas servir à lire |
+| 2026-10-14 | Remplaçants par schéma de mouvement, séries de l'exo remplacé gardées, rattrapage sous condition de repos | retours de la 1re séance à la salle |
 
 **Noms anglais et propositions de programmes (2026-10-13, 0.1.19)** — demande de Tom :
 - Noms des exercices en anglais dans l'app (`exercices.ts`, champ `nom` seul ; les identifiants
@@ -312,3 +307,58 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
   J4 `leg-curl-assis` 3 × 10–12 obligatoire à la place du leg extension optionnel (pas de roumain
   après le soulevé lourd). Exo `leg-curl-assis` ajouté. 67 tests, tsc, build verts ; publié.
   Pas vu sur le S23. Les autres programmes (A, C, D) restent à coder si Tom les choisit.
+
+**Retours de la salle (2026-10-13, 0.1.21)** — liste de Tom après sa première séance :
+- **Chiffres de saisie décalés** : calés à droite d'une case de 5,2 ch, « REPS » coupé à 360 px.
+  Chiffre centré sur toute la case, unité dessous (`styles.css`, `.reglage`).
+- **Vibrations plus longues** : le plugin ne sait que la vibration par défaut. Canal `repos-long`
+  créé par `MainActivity.kt` (3 × 1 s, ≈ 3,8 s), ancien canal `repos` supprimé. Un motif de canal
+  est figé à sa création : le changer = changer l'identifiant (Kotlin + `minuteur.ts`).
+- **Remplacement guidé** : champ `mouvement` sur chaque exo (17 schémas), `remplacants()` :
+  alternatives du programme, même schéma (« top »), mêmes muscles, puis « Autres exercices ».
+  13 exos ajoutés (Back squat `force`, réf. 2,5 ; Leg press, Goblet squat, Split squat, Walking
+  lunge, Romanian deadlift, DB bench, Machine chest press, Seated DB press, Lat pulldown, Seated
+  cable row, Seated calf raise, Hanging leg raise).
+- **Séries gardées au remplacement** : `faitesMembre` compte la chaîne des remplacements (1 hack
+  squat sur 5 puis squat → « Série 2/5 » au squat, qui garde sa propre progression).
+- **Rattrapage** : `aRattraper()` + champ `rattrapage` de la séance (voir le modèle) ; carte sur
+  l'accueil, cochée par défaut sur un jour optionnel (J6), à cocher sur un jour lourd ; un poste
+  dont le repos manque est affiché « plus tard » avec la raison (`reposManquant` : règle `ecart`,
+  ou 48 h entre gros mouvements de jambes sur un muscle commun — squat → deadlift).
+- Vérifié : 75 tests Vitest (8 nouveaux : remplaçants, rattrapage), `tsc`, `npm run build`,
+  captures Edge headless 360 px (saisie, remplacement hack → squat, rattrapage J4 sur J5 avec
+  deadlift bloqué par un squat à 12 h). Vibration : pas testable sur PC, à confirmer sur le S23.
+- Limites : le remplaçant en % du 1RM sans historique repart de la barre (montée guidée) ; le
+  rattrapage ne regarde que les postes à zéro série (pas les postes à moitié faits).
+
+**Synchro PC ↔ téléphone (2026-10-14, 0.1.22)** — voir le README et le modèle, « Synchro » :
+- `synchro.rs` : WebDAV authentifié sur `ExziFit-sync/etat.json` (Basic + mot de passe
+  d'application, `If-Match` / `If-None-Match: *`), hors ligne = silence, 401 / 404 / 409 expliqués.
+  Compte dans `acces-synchro.json` hors de `donnees/` (jamais dans les sauvegardes ni renvoyé au
+  front). `sauvegarde_synchro` : copie `sauvegardes/sync-AAAAMMJJ-HHMMSS/` avant chaque fusion (20 gardées).
+  Dépendance `base64 0.22` (déjà tirée par ureq, même version).
+- `synchro.ts` : `fusionner` (pure) ; séance corrigée > jamais corrigée, puis `modifie` le plus
+  récent (jamais comparé à l'heure de fin : un premier essai le faisait, le test à deux appareils a
+  montré qu'une correction datée avant la fin perdait) ; suppressions (`suppressions.json`) ;
+  blocs `modifie` (posé par `ecrireBlocs`), pesées `le`. Séances remplacées → corbeille.
+- App : synchro au lancement, au retour (1/min), 5 s après une écriture synchronisée
+  (`quandEcrit` dans fichier.ts) ; données reçues → écrans remontés, sauf en séance ou au Journal
+  (bandeau « Actualiser »). Réglages : compte (serveur prérempli depuis le partage des sauvegardes),
+  état de la dernière synchro, « Synchroniser maintenant ».
+- Vérifié : 85 tests Vitest (10 nouveaux : 7 de fusion, 3 de bout en bout avec deux appareils et un
+  serveur à ETag simulés), 11 tests Rust, `tsc`, `npm run build`. **Pas testé contre Nextcloud**
+  (le compte n'existe pas encore), ni l'écran Réglages (absent dans le navigateur, visible dans
+  `tauri dev` seulement).
+- Limites : une séance en cours n'est pas synchronisée (normal) ; un bloc changé sur les deux
+  appareils entre deux synchros → le plus récent gagne en entier (pas de fusion des 1RM un à un).
+
+**Synchro en réel (2026-10-14, 0.1.23 et 0.1.24)** — compte `exzifit` créé sur la VM `services`
+(dossier dans ses propres fichiers, pas de partage ; README). Premier essai : envoi refusé en
+boucle (412) : Apache, dans le conteneur Nextcloud, compresse la réponse et ajoute `-gzip` à
+l'ETag, que Nextcloud ne reconnaît plus en `If-Match`. 0.1.23 : `Accept-Encoding: identity` et
+`etag_fort` (retire `-gzip` et `W/`). Vérifié dans le journal du proxy : PUT 204 depuis le
+téléphone, `etat.json` = 3 séances, 2 blocs, 1 pesée.
+- Trouvé dans les données : la séance J1 du 2026-10-14 02 h 31 a ouvert un **second bloc**
+  (`2026-10-14-bloc-force`) alors que celui du 13 était ouvert (l'écran ne le voyait pas ; cause
+  exacte non établie). 0.1.24 : `assurerBloc` relit `blocs.json` et reprend le bloc ouvert.
+  Réparation des données (J1 rattachée au bloc du 13, bloc du 14 retiré) : à faire avec l'accord de Tom.

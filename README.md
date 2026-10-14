@@ -131,6 +131,28 @@ pour que `npm run publier` dépose l'APK. Chaîne Android (SDK, NDK, Rust) : la 
 Dossier de données de l'app (`app_data_dir`, affiché dans Réglages). Voir
 [docs/modele-donnees.md](docs/modele-donnees.md). Ne jamais tester sur le fichier vivant.
 
+### Synchro PC ↔ téléphone
+
+Les deux appareils partagent `etat.json` dans le dossier Nextcloud privé `ExziFit-sync`
+(format et règles de fusion : modèle de données, « Synchro »). Transport : `src-tauri/src/synchro.rs`
+(WebDAV authentifié) ; fusion : `src/donnees/synchro.ts`. Synchro au lancement, au retour dans
+l'app (1 par minute au plus) et 5 s après une écriture de séance, bloc ou pesée ; hors réseau, rien.
+
+Mise en place (faite le 2026-10-14, VM `services`, Nextcloud en Docker) :
+1. `occ user:add --password-from-env --display-name 'ExziFit synchro' exzifit`, quota 200 Mo
+   (`occ user:setting exzifit files quota '200 MB'`). Mot de passe de connexion aléatoire, jamais noté.
+2. Dossier `ExziFit-sync` dans **ses propres fichiers** (`data/exzifit/files/ExziFit-sync`, puis
+   `occ files:scan --path=exzifit/files`) : aucun partage, le compte de Tom n'est pas touché.
+3. Mot de passe d'application : `occ user:auth-tokens:add --password-from-env --name ExziFit exzifit`.
+   Révocation : `occ user:auth-tokens:list exzifit` puis `user:auth-tokens:delete`.
+4. Dans ExziFit, sur le téléphone **et** sur le PC : Réglages › Synchro, utilisateur `exzifit` et ce
+   mot de passe d'application (serveur prérempli).
+
+Le mot de passe est gardé dans `acces-synchro.json`, à la racine de `app_data_dir()`, **hors** de
+`donnees/` : il ne part ni dans les sauvegardes ni dans le dépôt. Le compte `exzifit` n'a que
+`ExziFit-sync` : un téléphone perdu n'expose rien d'autre ; révoquer le mot de passe d'application
+dans Nextcloud suffit.
+
 ### Sauvegarde sur Nextcloud
 
 Après la copie locale du jour, l'app envoie en arrière-plan la copie la plus récente
