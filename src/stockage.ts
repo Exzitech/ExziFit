@@ -19,7 +19,20 @@ export interface Stockage {
   exporter(jour: string): Promise<string>;
   /** Remplace toutes les données par un export ; copie d'abord les actuelles, renvoie où (`null` si rien à copier). */
   importer(texte: string, etiquette: string): Promise<string | null>;
+  /** Copie horodatée avant une fusion de synchro (`AAAAMMJJ-HHMMSS`). */
+  sauvegardeSynchro(instant: string): Promise<string>;
+  synchroCompte(): Promise<InfoSynchro>;
+  /** `motDePasse` vide : garder celui déjà enregistré. */
+  synchroConfigurer(serveur: string, utilisateur: string, motDePasse: string): Promise<void>;
+  synchroLire(): Promise<LuSynchro>;
+  /** Écrit si la version distante est toujours `etag` (`null` : seulement si absente). */
+  synchroEcrire(texte: string, etag: string | null): Promise<EcritSynchro>;
 }
+
+export interface InfoSynchro { serveur_defaut: string | null; compte: { serveur: string; utilisateur: string } | null }
+export type LuSynchro =
+  | { etat: "non-configure" } | { etat: "hors-ligne" } | { etat: "absent" } | { etat: "ok"; texte: string; etag: string };
+export type EcritSynchro = { etat: "hors-ligne" } | { etat: "conflit" } | { etat: "ok"; etag: string | null };
 
 export const dansTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -34,6 +47,11 @@ const tauri: Stockage = {
   dossier: () => invoke("dossier_donnees"),
   exporter: (jour) => invoke("exporter", { jour }),
   importer: (texte, etiquette) => invoke("importer", { texte, etiquette }),
+  sauvegardeSynchro: (instant) => invoke("sauvegarde_synchro", { instant }),
+  synchroCompte: () => invoke("synchro_compte"),
+  synchroConfigurer: (serveur, utilisateur, motDePasse) => invoke("synchro_configurer", { serveur, utilisateur, motDePasse }),
+  synchroLire: () => invoke("synchro_lire"),
+  synchroEcrire: (texte, etag) => invoke("synchro_ecrire", { texte, etag }),
 };
 
 // `npm run dev` dans le navigateur du PC : même interface sur localStorage, pour travailler
@@ -72,6 +90,11 @@ const navigateur: Stockage = {
     for (const [chemin, contenu] of Object.entries(fichiers)) localStorage.setItem(PREFIXE + chemin, contenu);
     return null;
   },
+  sauvegardeSynchro: async () => "aucune (navigateur)",
+  synchroCompte: async () => ({ serveur_defaut: null, compte: null }),
+  synchroConfigurer: async () => { throw new Error("synchro indisponible dans le navigateur"); },
+  synchroLire: async () => ({ etat: "non-configure" }),
+  synchroEcrire: async () => { throw new Error("synchro indisponible dans le navigateur"); },
 };
 
 export const stockage: Stockage = dansTauri ? tauri : navigateur;

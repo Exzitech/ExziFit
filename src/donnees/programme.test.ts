@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { exercice } from "./exercices";
 import type { Seance, Serie } from "./journal";
 import {
-  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, membres, ouvertureTest, programme,
+  aRattraper, avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, membres, ouvertureTest, programme,
   programmeDe, PROGRAMMES, prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe,
 } from "./programme";
 
@@ -307,5 +307,53 @@ describe("programmes", () => {
     expect(programmeDe({ debut: "", jour: "J1", programme: "endurance", exercices: [] })?.id).toBe("endurance");
     expect(programmeDe({ debut: "", exercices: [] })).toBeUndefined();
     expect(programme("retire").id).toBe("bloc-force");
+  });
+});
+
+describe("rattrapage", () => {
+  const J = (id: string) => PROGRAMME.jours.find((j) => j.id === id)!;
+  /** Séance du bloc « b » : un exo par entrée, une série de travail chacun. */
+  const fait = (debut: string, j: string, exos: string[], extra: Partial<Seance> = {}): Seance =>
+    ({ debut, fin: debut, bloc: "b", jour: j, exercices: exos.map((exo) => ({ exo, series: [t(50, 8, 2)] })), ...extra });
+  const ids = (r: ReturnType<typeof aRattraper>) => r.map((x) => `${x.r.jour}:${x.r.poste}`);
+
+  it("propose les postes sans aucune série, pas les optionnels ni ceux du jour prévu", () => {
+    // J4 fini sans leg curl ni crunch ; le J6 prévu ne contient aucun des deux.
+    const s = [fait("2026-10-14T18:00:00", "J4", ["souleve-de-terre", "hip-thrust"])];
+    const r = aRattraper(PROGRAMME, s, "b", J("J6"), new Date("2026-10-17T18:00:00"));
+    expect(ids(r)).toEqual(["J4:2", "J4:3"]);
+    expect(r.every((x) => x.bloque === null)).toBe(true);
+    // J1 sans l'incliné (optionnel) : rien à rattraper.
+    expect(aRattraper(PROGRAMME, [fait("2026-10-14T18:00:00", "J1", ["developpe-couche", "dips-lestes", "extension-triceps-poulie-haute"])], "b", J("J2"), new Date("2026-10-15T18:00:00"))).toEqual([]);
+  });
+
+  it("deadlift sauté, squat la veille : gardé pour plus tard, avec la raison", () => {
+    const s = [
+      fait("2026-10-12T18:00:00", "J4", ["hip-thrust", "leg-curl-assis", "crunch-poulie-haute"]),
+      { debut: "2026-10-14T18:00:00", exercices: [{ exo: "squat", series: [t(100, 5, 2)] }] }, // séance libre
+    ];
+    const r = aRattraper(PROGRAMME, s, "b", J("J6"), new Date("2026-10-15T18:00:00"));
+    expect(r).toHaveLength(1);
+    expect(r[0].bloque).toBe("Back squat il y a 24 h : 48 h conseillées avant Deadlift.");
+    expect(aRattraper(PROGRAMME, s, "b", J("J6"), new Date("2026-10-16T19:00:00"))[0].bloque).toBeNull();
+  });
+
+  it("règle du programme : pas de deadlift le jour du hack squat", () => {
+    const s = [fait("2026-10-12T18:00:00", "J4", ["hip-thrust"])];
+    const r = aRattraper(PROGRAMME, s, "b", J("J2"), new Date("2026-10-15T18:00:00"));
+    expect(r.find((x) => x.r.poste === 0)?.bloque).toBe("Hack squat au programme du jour : 48 h conseillées avec Deadlift.");
+  });
+
+  it("refait depuis (rattrapage ou remplaçant), trop ancien, autre bloc : plus proposé", () => {
+    const sautee = fait("2026-10-12T18:00:00", "J4", ["souleve-de-terre", "hip-thrust", "leg-curl-assis"]);
+    const maintenant = new Date("2026-10-15T18:00:00");
+    expect(ids(aRattraper(PROGRAMME, [sautee], "b", J("J6"), maintenant))).toEqual(["J4:3"]);
+    const refait = fait("2026-10-13T18:00:00", "J5", [], {
+      bloc: undefined, jour: undefined,
+      exercices: [{ exo: "crunch-poulie-haute", series: [] }, { exo: "releve-jambes", remplace: "crunch-poulie-haute", series: [t(0, 12, 2)] }],
+    });
+    expect(aRattraper(PROGRAMME, [sautee, refait], "b", J("J6"), maintenant)).toEqual([]);
+    expect(aRattraper(PROGRAMME, [sautee], "b", J("J6"), new Date("2026-10-21T18:00:00"))).toEqual([]);
+    expect(aRattraper(PROGRAMME, [sautee], "autre", J("J6"), maintenant)).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { ecrireJson, FORMAT, lireJson } from "./fichier";
+import { ecrireJson, FORMAT, horodatage, lireJson } from "./fichier";
 import type { Pesee } from "./stats";
 
 /** Types de `blocs.json` et `poids.json` (docs/modele-donnees.md, « Bloc » et « Fichiers »). */
@@ -9,19 +9,33 @@ export interface Bloc {
   fin: string | null;
   /** 1RM figés au début du bloc, ou déduits de la série de calibration. Lesté : corps + lest. */
   rm: Record<string, number>;
+  /** Dernier changement (synchro : le plus récent gagne), posé par `ecrireBlocs`. */
+  modifie?: string;
 }
 
-interface Blocs { format: number; blocs: Bloc[] }
-interface Poids { format: number; pesees: Pesee[] }
+export interface Blocs { format: number; blocs: Bloc[] }
+export interface Poids { format: number; pesees: Pesee[] }
 
-const BLOCS = "blocs.json";
-const POIDS = "poids.json";
+export const BLOCS = "blocs.json";
+export const POIDS = "poids.json";
 
 export async function lireBlocs(): Promise<Bloc[]> {
   return (await lireJson<Blocs>(BLOCS, () => ({ format: FORMAT, blocs: [] }))).blocs;
 }
 
-export const ecrireBlocs = (blocs: Bloc[]) => ecrireJson(BLOCS, { format: FORMAT, blocs } as Blocs);
+const sansDate = ({ modifie: _, ...b }: Bloc) => JSON.stringify(b);
+
+/** Écrit la liste ; un bloc nouveau ou changé (hors `modifie`) reçoit l'instant présent. */
+export async function ecrireBlocs(blocs: Bloc[]): Promise<void> {
+  // Inchangé : la version du fichier, avec sa date (l'écran peut tenir une copie sans la dernière).
+  const avant = new Map((await lireBlocs()).map((b) => [b.id, b]));
+  const le = horodatage(new Date());
+  const dates = blocs.map((b) => {
+    const f = avant.get(b.id);
+    return f && sansDate(f) === sansDate(b) ? f : { ...b, modifie: le };
+  });
+  await ecrireJson(BLOCS, { format: FORMAT, blocs: dates } as Blocs);
+}
 
 /** Toutes les pesées, dans l'ordre d'écriture (la dernière notée en dernier). */
 export async function lirePesees(): Promise<Pesee[]> {
@@ -31,6 +45,6 @@ export async function lirePesees(): Promise<Pesee[]> {
 /** Ajoute une pesée ; une seule par jour (la nouvelle remplace celle du jour). */
 export async function noterPoidsCorps(date: string, kg: number): Promise<void> {
   const p = await lireJson<Poids>(POIDS, () => ({ format: FORMAT, pesees: [] }));
-  p.pesees = [...p.pesees.filter((x) => x.date !== date), { date, kg }];
+  p.pesees = [...p.pesees.filter((x) => x.date !== date), { date, kg, le: horodatage(new Date()) }];
   await ecrireJson(POIDS, p);
 }

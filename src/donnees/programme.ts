@@ -1,5 +1,5 @@
-import { exercice, type Exercice, type Muscle } from "./exercices";
-import { historique, type Seance, type Serie } from "./journal";
+import { EXERCICES, exercice, type Exercice, type Muscle } from "./exercices";
+import { historique, type Rattrapage, type Seance, type Serie } from "./journal";
 import blocForce from "./programmes/bloc-force.json";
 import endurance from "./programmes/endurance.json";
 import pushPullLegs from "./programmes/push-pull-legs.json";
@@ -161,6 +161,85 @@ export function avertissements(p: Programme, jour: Jour, seances: Seance[], main
 }
 
 /** 1RM estimé par Epley avec la réserve. */
+const travailSur = (s: Seance, id: string) =>
+  s.exercices.some((x) => x.exo === id && x.series.some((v) => v.type === "travail"));
+
+/** Membre fait dans la séance : du travail sur lui ou sur un de ses remplaçants. */
+function membreFait(s: Seance, m: string): boolean {
+  const vus = [m];
+  for (let id = m; ; ) {
+    if (travailSur(s, id)) return true;
+    const r = s.exercices.find((x) => x.remplace === id);
+    if (!r || vus.includes(r.exo)) return false;
+    vus.push((id = r.exo));
+  }
+}
+
+/** Heures depuis la dernière séance qui a travaillé `id`, `null` s'il n'a jamais été fait. */
+function heuresDepuis(seances: Seance[], id: string, maintenant: Date): number | null {
+  const s = [...seances].reverse().find((x) => travailSur(x, id));
+  return s ? Math.floor((maintenant.getTime() - Date.parse(s.fin ?? s.debut)) / 3_600_000) : null;
+}
+
+const JAMBES: Muscle[] = ["quadriceps", "ischios", "fessiers"];
+/** Repos entre deux gros mouvements de jambes qui partagent un muscle principal (squat → deadlift). */
+const REPOS_JAMBES_H = 48;
+
+/**
+ * Raison de ne pas proposer `id` maintenant, `null` si rien ne s'y oppose : règle `ecart` du
+ * programme, ou gros mouvement de jambes (`force`) sur un muscle commun depuis moins de 48 h.
+ * `auJour` : exos de la séance prévue, comptés comme faits maintenant.
+ */
+export function reposManquant(p: Programme, id: string, seances: Seance[], auJour: string[], maintenant: Date): string | null {
+  const e = exercice(id);
+  const voisins: { y: string; heures: number }[] = [];
+  for (const r of p.regles) {
+    if (r.type === "ecart" && r.exos.includes(id)) voisins.push(...r.exos.filter((y) => y !== id).map((y) => ({ y, heures: r.heures })));
+  }
+  const jambes = e.force ? e.muscles.principaux.filter((m) => JAMBES.includes(m)) : [];
+  for (const f of EXERCICES) {
+    if (f.force && f.id !== id && f.muscles.principaux.some((m) => jambes.includes(m))) voisins.push({ y: f.id, heures: REPOS_JAMBES_H });
+  }
+  for (const { y, heures } of voisins) {
+    if (auJour.includes(y)) return `${exercice(y).nom} au programme du jour : ${heures} h conseillées avec ${e.nom}.`;
+    const h = heuresDepuis(seances, y, maintenant);
+    if (h !== null && h < heures) return `${exercice(y).nom} il y a ${h} h : ${heures} h conseillées avant ${e.nom}.`;
+  }
+  return null;
+}
+
+/** Fenêtre où un poste sauté reste à rattraper : à peu près un tour de rotation. */
+const RATTRAPAGE_JOURS = 8;
+
+export interface ARattraper { r: Rattrapage; poste: Poste; bloque: string | null }
+
+/**
+ * Postes sautés (aucune série de travail) des séances du bloc des 8 derniers jours, pas refaits
+ * depuis, hors jours et postes optionnels et hors exos déjà au jour prévu. `bloque` : raison de
+ * repos (`reposManquant`) ; ce poste n'est pas proposé aujourd'hui mais le sera plus tard.
+ */
+export function aRattraper(p: Programme, seances: Seance[], bloc: string, jour: Jour, maintenant: Date): ARattraper[] {
+  const auJour = jour.exercices.flatMap(membres);
+  const res: ARattraper[] = [];
+  const vus = new Set<string>();
+  seances.forEach((s, i) => {
+    if (s.bloc !== bloc || maintenant.getTime() - Date.parse(s.debut) > RATTRAPAGE_JOURS * JOUR_MS) return;
+    const j = p.jours.find((x) => x.id === s.jour);
+    if (!j || j.optionnel) return;
+    j.exercices.forEach((poste, k) => {
+      const ms = membres(poste);
+      if (poste.optionnel || ms.some((m) => membreFait(s, m)) || ms.every((m) => auJour.includes(m))) return;
+      if (seances.slice(i + 1).some((t) => ms.every((m) => membreFait(t, m)))) return;
+      const cle = ms.join("+");
+      if (vus.has(cle)) return;
+      vus.add(cle);
+      const bloque = ms.map((m) => reposManquant(p, m, seances, auJour, maintenant)).find((x) => x !== null) ?? null;
+      res.push({ r: { jour: j.id, poste: k }, poste, bloque });
+    });
+  });
+  return res;
+}
+
 export const epley = (kg: number, reps: number, rir = 0) => kg * (1 + (reps + rir) / 30);
 
 /** 1RM d'une série (total) : la charge elle-même pour un single à 0 RIR, Epley avec la réserve sinon. */

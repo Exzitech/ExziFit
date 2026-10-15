@@ -30,8 +30,15 @@ export async function lireJson<T extends { format: number }>(chemin: string, vid
 }
 
 /** JSON indenté, relisible et corrigeable à la main. */
-export function ecrireJson(chemin: string, donnees: { format: number }): Promise<void> {
-  return stockage.ecrire(chemin, JSON.stringify(donnees, null, 2) + "\n");
+export const texteJson = (donnees: unknown) => JSON.stringify(donnees, null, 2) + "\n";
+
+let surEcriture: (chemin: string) => void = () => {};
+/** Appelé après chaque écriture de l'app (la synchro s'y abonne ; ses propres écritures n'y passent pas). */
+export const quandEcrit = (f: (chemin: string) => void) => { surEcriture = f; };
+
+export async function ecrireJson(chemin: string, donnees: { format: number }): Promise<void> {
+  await stockage.ecrire(chemin, texteJson(donnees));
+  surEcriture(chemin);
 }
 
 const deux = (n: number) => String(n).padStart(2, "0");

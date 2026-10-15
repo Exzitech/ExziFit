@@ -4,6 +4,7 @@ mod maj;
 mod partage;
 #[cfg(target_os = "android")]
 mod repos;
+mod synchro;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,6 +23,11 @@ pub fn run() {
             envoi::sauvegarde_envoyer,
             partage::exporter,
             fichiers::importer,
+            fichiers::sauvegarde_synchro,
+            synchro::synchro_compte,
+            synchro::synchro_configurer,
+            synchro::synchro_lire,
+            synchro::synchro_ecrire,
             maj::maj_verifier,
             #[cfg(target_os = "android")]
             maj::android::maj_installer,

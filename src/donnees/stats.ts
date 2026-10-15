@@ -4,7 +4,8 @@ import { e1rmSerie, membres, type Programme } from "./programme";
 
 /** Stats du personnage (docs/stats.md) : fonctions pures du journal et des pesées, rien n'est stocké. */
 
-export interface Pesee { date: string; kg: number }
+/** `le` : instant de la saisie (synchro : la plus récente gagne), absent avant la 0.1.22. */
+export interface Pesee { date: string; kg: number; le?: string }
 
 export type Sexe = "homme" | "femme";
 

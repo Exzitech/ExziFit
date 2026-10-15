@@ -21,6 +21,9 @@ export interface ExoFait {
   series: Serie[];
 }
 
+/** Poste d'un autre jour ajouté à la séance : `poste` = rang dans `jours[].exercices`. */
+export interface Rattrapage { jour: string; poste: number }
+
 export interface Seance {
   debut: string;
   fin?: string;
@@ -36,10 +39,14 @@ export interface Seance {
    * pile affichait 2 × la charge notée. Plus écrit depuis.
    */
   poulie?: 2;
+  /** Dernière correction dans le Journal (synchro : la version la plus récente gagne). */
+  modifie?: string;
+  /** Postes sautés d'une séance récente, refaits en fin de celle-ci. */
+  rattrapage?: Rattrapage[];
   exercices: ExoFait[];
 }
 
-interface Journal {
+export interface Journal {
   format: number;
   seances: Seance[];
 }
@@ -150,9 +157,29 @@ export async function corrigerSeance(debut: string, nouvelle: Seance | null): Pr
   const chemin = cheminJournal(new Date(debut));
   const j = await lireJson<Journal>(chemin, () => ({ format: FORMAT, seances: [] }));
   const ancienne = j.seances.find((s) => s.debut === debut);
-  const seances = corrigerListe(j.seances, debut, nouvelle);
-  const c = await lireJson<Corbeille>(CORBEILLE, () => ({ format: FORMAT, seances: [] }));
-  c.seances.push({ le: horodatage(new Date()), seance: ancienne as Seance });
-  await ecrireJson(CORBEILLE, c);
+  const le = horodatage(new Date());
+  const seances = corrigerListe(j.seances, debut, nouvelle && { ...nouvelle, modifie: le });
+  await mettreALaCorbeille([ancienne as Seance], le);
+  // Supprimée : notée, pour que la synchro la retire aussi des autres appareils.
+  if (!seances.some((s) => s.debut === debut)) await noterSuppression({ debut, le });
   await ecrireJson(chemin, { ...j, seances } as Journal);
+}
+
+export async function mettreALaCorbeille(anciennes: Seance[], le: string): Promise<void> {
+  const c = await lireJson<Corbeille>(CORBEILLE, () => ({ format: FORMAT, seances: [] }));
+  c.seances.push(...anciennes.map((seance) => ({ le, seance })));
+  await ecrireJson(CORBEILLE, c);
+}
+
+/** Séance supprimée : `debut` l'identifie, `le` date la suppression. */
+export interface Suppression { debut: string; le: string }
+export interface Suppressions { format: number; seances: Suppression[] }
+export const SUPPRESSIONS = "suppressions.json";
+
+export const lireSuppressions = async () =>
+  (await lireJson<Suppressions>(SUPPRESSIONS, () => ({ format: FORMAT, seances: [] }))).seances;
+
+async function noterSuppression(x: Suppression): Promise<void> {
+  const deja = (await lireSuppressions()).filter((y) => y.debut !== x.debut);
+  await ecrireJson(SUPPRESSIONS, { format: FORMAT, seances: [...deja, x] } as Suppressions);
 }

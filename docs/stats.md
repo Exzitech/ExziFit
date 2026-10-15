@@ -46,10 +46,10 @@ leur faible coefficient. Les isolations à plus de 10 reps n'entrent pas (règle
 
 | Coefficient | Exos (référence) |
 |---|---|
-| 1 — gros mouvements | Développé couché 1,75 · Militaire barre 1,1 · Soulevé de terre 2,75 · Tractions lestées 1,75 · Hack squat 3 |
-| 0,5 — polyarticulaires secondaires | Couché Smith 1,75 · Militaire Smith 1,1 · Militaire haltères 0,45 · Incliné haltères 0,55 · Squat Smith 2,25 · Presse 4 · Soulevé roumain 2 · Tirage vertical prise neutre 1 · Rowing barre 1,5 · Rowing haltère 0,8 · Dips lestés 2 · Fentes bulgares 0,6 · Hip thrust 3 |
+| 1 — gros mouvements | Développé couché 1,75 · Militaire barre 1,1 · Soulevé de terre 2,75 · Tractions lestées 1,75 · Hack squat 3 · Back squat 2,5 |
+| 0,5 — polyarticulaires secondaires | Couché Smith 1,75 · Militaire Smith 1,1 · Militaire haltères 0,45 · Incliné haltères 0,55 · Squat Smith 2,25 · Goblet squat 0,8 · Split squat 0,7 · Fentes marchées 0,5 · Couché haltères 0,7 · Développé machine 1,5 · Tirage vertical 1 · Rowing poulie 1,2 · Presse 4 · Soulevé roumain 2 · Tirage vertical prise neutre 1 · Rowing barre 1,5 · Rowing haltère 0,8 · Dips lestés 2 · Fentes bulgares 0,6 · Hip thrust 3 |
 | 0,25 — isolation | Leg curl allongé 1 · assis 1,1 · Leg extension 1,25 · Mollets debout 2,5 · Mollets assis 1,5 · Élévations latérales 0,15 · Écarté poulie 0,2 · Pullover poulie 0,4 · Écarté inversé 0,15 · Face pull 0,5 · Curl poulie 0,6 · Curl marteau 0,35 · Curl incliné haltères 0,2 · Extension poulie haute 0,75 · Extension corde nuque 0,6 · Crunch poulie 1 |
-| aucun | Dips et tractions australiennes sans lest, farmer's walk |
+| aucun | Dips et tractions australiennes sans lest, relevé de jambes, farmer's walk |
 
 **Femme** (réglage `sexe`, 2026-10-15) : référence × **0,8** si l'exo a un groupe du bas du corps
 (quadriceps, ischios, fessiers, mollets) parmi ses principaux, × **0,65** sinon. Force 100 reste

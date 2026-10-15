@@ -71,7 +71,7 @@ fn valider(chemin: &str) -> Result<(), String> {
 }
 
 /// `.tmp` puis renommage, après `sync_all` : jamais de fichier à moitié écrit, même sur coupure.
-fn ecrire_atomique(p: &Path, texte: &str) -> Result<(), String> {
+pub(crate) fn ecrire_atomique(p: &Path, texte: &str) -> Result<(), String> {
     if let Some(parent) = p.parent() {
         fs::create_dir_all(parent).map_err(|e| erreur("création de", parent, e))?;
     }
@@ -196,6 +196,48 @@ fn contient_donnees(racine: &Path) -> Result<bool, String> {
         }
     }
     Ok(false)
+}
+
+/// Copies faites avant une fusion de synchro (synchro.ts) : `sync-AAAAMMJJ-HHMMSS`, les plus récentes.
+const SYNCHROS_GARDEES: usize = 20;
+
+/// Copie du dossier de données avant d'y appliquer ce qu'un autre appareil a envoyé ; `instant`
+/// = `AAAAMMJJ-HHMMSS` (heure locale, du front). Renvoie le dossier créé.
+#[tauri::command]
+pub fn sauvegarde_synchro(app: tauri::AppHandle, instant: String) -> Result<String, String> {
+    let b = instant.as_bytes();
+    if b.len() != 15 || !b.iter().enumerate().all(|(i, c)| if i == 8 { *c == b'-' } else { c.is_ascii_digit() }) {
+        return Err(format!("instant invalide : {instant:?}"));
+    }
+    let racine = racine(&app)?;
+    let dossier = racine.join(SAUVEGARDES);
+    let mut cible = dossier.join(format!("sync-{instant}"));
+    let mut n = 2;
+    while cible.exists() {
+        cible = dossier.join(format!("sync-{instant}-{n}"));
+        n += 1;
+    }
+    let mut tmp = cible.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
+    if tmp.exists() {
+        fs::remove_dir_all(&tmp).map_err(|e| erreur("suppression de", &tmp, e))?;
+    }
+    copier(&racine, &tmp, true)?;
+    fs::rename(&tmp, &cible).map_err(|e| erreur("renommage de", &tmp, e))?;
+    let mut synchros = Vec::new();
+    for e in fs::read_dir(&dossier).map_err(|e| erreur("lecture de", &dossier, e))? {
+        let nom = e.map_err(|err| erreur("lecture de", &dossier, err))?.file_name().to_string_lossy().into_owned();
+        if nom.starts_with("sync-") && !nom.ends_with(".tmp") {
+            synchros.push(nom);
+        }
+    }
+    synchros.sort();
+    for vieux in &synchros[..synchros.len().saturating_sub(SYNCHROS_GARDEES)] {
+        let p = dossier.join(vieux);
+        fs::remove_dir_all(&p).map_err(|e| erreur("suppression de", &p, e))?;
+    }
+    Ok(cible.display().to_string())
 }
 
 /// Copie récursive ; à la racine, saute `sauvegardes/`. Les `.tmp` (écritures en cours) sont ignorés.

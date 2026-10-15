@@ -1,5 +1,5 @@
 import {
-  cancel, createChannel, Importance, isPermissionGranted, requestPermission, Schedule, sendNotification,
+  cancel, isPermissionGranted, requestPermission, Schedule, sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
@@ -8,7 +8,8 @@ import { dansTauri } from "./stockage";
 // Les commandes de canal, de programmation et d'annulation du plugin n'existent que sur mobile :
 // sur le PC (navigateur ou `tauri dev`), le repos n'est qu'un compte à rebours.
 const surAndroid = dansTauri && /Android/i.test(navigator.userAgent);
-const CANAL = "repos";
+/** Créé au lancement par MainActivity.kt, avec un motif de vibration long que le plugin ne sait pas poser. */
+const CANAL = "repos-long";
 const ID_NOTIF = 1;
 let pret = false;
 
@@ -17,7 +18,6 @@ async function preparer(): Promise<void> {
   if (!(await isPermissionGranted()) && (await requestPermission()) !== "granted") {
     throw new Error("permission de notification refusée : le minuteur ne pourra pas vibrer");
   }
-  await createChannel({ id: CANAL, name: "Fin du repos", importance: Importance.High, vibration: true });
   pret = true;
 }
 

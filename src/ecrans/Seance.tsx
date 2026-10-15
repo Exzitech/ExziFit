@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ecrireBlocs, lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bloc";
-import { EXERCICES, exercice, libelleCharge, type Exercice } from "../donnees/exercices";
+import { EXERCICES, exercice, libelleCharge, remplacants, type Exercice } from "../donnees/exercices";
 import { horodatage, jourLocal } from "../donnees/fichier";
 import {
   ajusterKg, archiverSeance, ecrireEnCours, historique, lireEnCours, lireSeances, proposition, supprimerEnCours,
-  type Seance, type Serie,
+  type Rattrapage, type Seance, type Serie,
 } from "../donnees/journal";
 import {
   ecrireSalles, exerciceEn, lireSalles, montage, normaliser, salleDe, salleRetenue, type Montage, type Salle,
 } from "../donnees/salles";
 import {
-  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
+  aRattraper, avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
   jourDeSeance, preparation, programme, programmeDe, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc,
   semaineDe, type Bilan, type Cible, type Poste, type Programme, type Semaine,
 } from "../donnees/programme";
@@ -28,8 +28,11 @@ const RIR = [0, 1, 2, 3, 4];
 
 type Vue = "jour" | "saisie" | "exos" | "remplacer";
 
-/** Ligne de la séance : un poste du programme, ou un exo ajouté en plus (sans prescription). */
-interface Ligne { membres: string[]; poste?: Poste }
+/**
+ * Ligne de la séance : un poste du programme (du jour, ou d'un autre jour à rattraper), ou un exo
+ * ajouté en plus (sans prescription).
+ */
+interface Ligne { membres: string[]; poste?: Poste; rattrapage?: string }
 
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
@@ -57,18 +60,27 @@ function lignes(s: Seance): Ligne[] {
   const jour = jourDeSeance(s);
   const prog: Ligne[] = jour?.exercices.map((p) => ({ membres: membres(p), poste: p })) ?? [];
   const dansProg = new Set(prog.flatMap((l) => l.membres));
+  for (const r of s.rattrapage ?? []) {
+    const p = programmeDe(s)?.jours.find((j) => j.id === r.jour)?.exercices[r.poste];
+    if (!p || membres(p).some((m) => dansProg.has(m))) continue;
+    prog.push({ membres: membres(p), poste: p, rattrapage: r.jour });
+    membres(p).forEach((m) => dansProg.add(m));
+  }
   return [...prog, ...s.exercices.filter((x) => !x.remplace && !dansProg.has(x.exo)).map((x) => ({ membres: [x.exo] }))];
 }
 
-/** Exo réellement fait pour un membre (machine prise : chaîne des remplacements). */
-function reel(s: Seance, id: string): string {
-  for (let n = 0; n < 10; n++) {
+/** Exos faits pour un membre : lui, puis ses remplaçants successifs (machine prise). */
+function chaine(s: Seance, id: string): string[] {
+  const ids = [id];
+  for (;;) {
     const r = s.exercices.find((x) => x.remplace === id);
-    if (!r) break;
-    id = r.exo;
+    if (!r || ids.includes(r.exo)) return ids;
+    ids.push((id = r.exo));
   }
-  return id;
 }
+
+/** Exo réellement fait pour un membre : le dernier remplaçant. */
+const reel = (s: Seance, id: string) => chaine(s, id).slice(-1)[0];
 
 /** Séries du jour sur un exo, échauffements de calibrage compris. */
 const duJourTout = (s: Seance, id: string) => s.exercices.filter((x) => x.exo === id).flatMap((x) => x.series);
@@ -76,6 +88,18 @@ const faites = (s: Seance, id: string) => duJourTout(s, id).filter((x) => x.type
 
 /** Semaine d'une séance de programme (appelée seulement pour les lignes d'un jour). */
 const semaineDeSeance = (s: Seance): Semaine => programmeDe(s)!.semaines[s.semaine ?? 0];
+
+/**
+ * Séries de travail du poste pour un membre, remplacements compris : 1 série de hack squat sur 4,
+ * puis squat → il reste 3 séries, au squat.
+ */
+const faitesMembre = (s: Seance, m: string) => chaine(s, m).reduce((n, id) => n + faites(s, id).length, 0);
+
+/** Idem, depuis l'exo réellement fait. */
+function faitesPoste(s: Seance, l: Ligne, id: string): number {
+  const m = l.membres.find((x) => reel(s, x) === id);
+  return m ? faitesMembre(s, m) : faites(s, id).length;
+}
 
 /**
  * Contexte des calculs : séances passées réécrites dans les unités de la salle du jour (ce qui se
@@ -114,15 +138,15 @@ const nomTest = (reps: number) => (reps === 1 ? "1RM" : `${reps}RM`);
 
 /** Membre à faire maintenant : celui qui a le moins de séries (superset : on alterne). */
 function courant(s: Seance, l: Ligne): string {
-  const ids = l.membres.map((m) => reel(s, m));
-  return ids.reduce((a, b) => (faites(s, b).length < faites(s, a).length ? b : a));
+  const m = l.membres.reduce((a, b) => (faitesMembre(s, b) < faitesMembre(s, a) ? b : a));
+  return reel(s, m);
 }
 
 function complete(c: Ctx, s: Seance, l: Ligne): boolean {
   return l.membres.every((m) => {
     const id = reel(s, m);
     const ci = cibleDe(c, s, l, id);
-    return ci !== null && faites(s, id).length >= ci.series;
+    return ci !== null && faitesMembre(s, m) >= ci.series;
   });
 }
 
@@ -161,7 +185,7 @@ function prerempli(ctx: Ctx, s: Seance, l: Ligne, id: string): { kg: number; rep
   }
   const duJour = faites(s, id);
   const der = duJour[duJour.length - 1];
-  if (c && der && duJour.length >= c.series && der.reps < c.reps) {
+  if (c && der && faitesPoste(s, l, id) >= c.series && der.reps < c.reps) {
     return { kg: retour(e, der.kg, poids), reps: c.reps, raison: "Série ratée : charge allégée de 10 % pour les séries en plus." };
   }
   const prop = proposition(p, s, e);
@@ -203,6 +227,8 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const [fin, setFin] = useState(0);
   const [jourChoisi, setJourChoisi] = useState(0);
   const [semaineChoisie, setSemaineChoisie] = useState(0);
+  /** Postes à rattraper cochés (`J4:2`), pour le jour choisi ; `null` = choix par défaut. */
+  const [rattChoisis, setRattChoisis] = useState<{ jour: number; cles: string[] } | null>(null);
   // Terminer en deux taps : un geste raté avec les mains moites ne doit pas clore la séance.
   const [finDemandee, setFinDemandee] = useState(false);
   /** Résumé de la séance qui vient d'être terminée. */
@@ -299,8 +325,16 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
 
   async function assurerBloc(): Promise<Bloc> {
     if (bloc) return bloc;
+    // Relu sur disque : l'écran peut tenir une liste périmée (synchro, autre écran) ; ne jamais
+    // ouvrir un second bloc du programme quand un est déjà en cours (vu le 2026-10-14).
+    const surDisque = await lireBlocs();
+    const ouvert = surDisque.filter((x) => x.programme === prog.id && x.fin === null).pop();
+    if (ouvert) {
+      setBlocs(surDisque);
+      return ouvert;
+    }
     const b: Bloc = { id: `${jourLocal(new Date())}-${prog.id}`, programme: prog.id, debut: jourLocal(new Date()), fin: null, rm: {} };
-    const tous = [...blocs, b];
+    const tous = [...surDisque, b];
     await ecrireBlocs(tous);
     setBlocs(tous);
     return b;
@@ -372,7 +406,9 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         const b = finiBloc ? await nouveauBloc(bloc) : await assurerBloc();
         const s: Seance = {
           debut: horodatage(new Date()), bloc: b.id, programme: prog.id, semaine: semaineChoisie,
-          jour: prog.jours[jourChoisi].id, salle: salle.id, exercices: [],
+          jour: prog.jours[jourChoisi].id, salle: salle.id,
+          ...(choisis.length ? { rattrapage: ratt.filter((x) => choisis.includes(cle(x.r))).map((x) => x.r) } : {}),
+          exercices: [],
         };
         enregistrer(s);
         ouvrir(contexte(passees, salles, salle, b, pdc), s, 0);
@@ -386,6 +422,13 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     };
     const jour = prog.jours[jourChoisi];
     const sem = prog.semaines[semaineChoisie];
+    const cle = (r: Rattrapage) => `${r.jour}:${r.poste}`;
+    const ratt = bloc && !finiBloc ? aRattraper(prog, passees, bloc.id, jour, new Date()) : [];
+    // Par défaut, coché sur un jour optionnel (léger, il a la place) ; à cocher soi-même sur un jour lourd.
+    const choisis = rattChoisis?.jour === jourChoisi ? rattChoisis.cles
+      : jour.optionnel ? ratt.filter((x) => !x.bloque).map((x) => cle(x.r)) : [];
+    const basculer = (k: string) =>
+      setRattChoisis({ jour: jourChoisi, cles: choisis.includes(k) ? choisis.filter((x) => x !== k) : [...choisis, k] });
     const apercu: Seance = { debut: "", programme: prog.id, semaine: semaineChoisie, jour: jour.id, salle: salle.id, exercices: [] };
 
     return (
@@ -432,8 +475,35 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
               );
             })}
           </ol>
+          {choisis.length > 0 && <p className="petit">+ {choisis.length} à rattraper en fin de séance (plus bas)</p>}
+          {ratt.length > 0 && !choisis.length && <p className="doux petit">{ratt.length} exo{ratt.length > 1 ? "s" : ""} sauté{ratt.length > 1 ? "s" : ""} à rattraper (plus bas)</p>}
           {prog.semaines.length > 1 && <p className="doux petit">{sem.nom} · {sem.label}</p>}
         </div>
+
+        {ratt.length > 0 && (
+          <div className="carte espace-haut">
+            <h2 className="titre-carte">Rattrapage</h2>
+            <p className="doux petit">Sauté ces derniers jours. Coché = ajouté en fin de séance.</p>
+            <div className="liste">
+              {ratt.map((x) => {
+                const id = membres(x.poste)[0];
+                const c = cibleDe(ctx, apercu, { membres: membres(x.poste), poste: x.poste }, id);
+                return x.bloque ? (
+                  <p key={cle(x.r)} className="doux petit">{nomLigne(membres(x.poste))} ({x.r.jour}), plus tard : {x.bloque}</p>
+                ) : (
+                  <button key={cle(x.r)} className="ligne" aria-pressed={choisis.includes(cle(x.r))} onClick={() => basculer(cle(x.r))}>
+                    <span>
+                      <b>{nomLigne(membres(x.poste))}</b><span className="badge">{x.r.jour}</span>
+                      {c && <small>{texteCible(ctx.x(id), x.poste, c)} · repos {duree(x.poste.repos)}</small>}
+                    </span>
+                    <span className="avance">{choisis.includes(cle(x.r)) ? "✓" : "+"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
 
         {(() => {
           const prep = preparation(jour.exercices.flatMap(membres).map(ctx.x));
@@ -526,18 +596,31 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   if (vue === "exos" || vue === "remplacer") {
     const l = ls[ligne];
     const remplace = vue === "remplacer" && l ? courant(seance, l) : undefined;
-    const alternatives = (remplace && l?.poste?.alternatives) || [];
-    // Alternatives du programme, puis les exos qui travaillent le même muscle principal.
-    const muscles = remplace ? exercice(remplace).muscles.principaux : [];
-    const proche = (e: Exercice) => (e.muscles.principaux.some((m) => muscles.includes(m)) ? 0 : 1);
-    const autres = EXERCICES.filter((e) => !alternatives.includes(e.id) && e.id !== remplace);
-    const liste = [...alternatives.map(exercice), ...autres.sort((a, b) => proche(a) - proche(b))];
+    const liste = remplace
+      ? remplacants(remplace, l?.poste?.alternatives)
+      : EXERCICES.map((e) => ({ e, raison: null }));
+    const c = remplace && l ? cibleDe(ctx, seance, l, remplace) : null;
+    const reste = c && l ? c.series - faitesPoste(seance, l, remplace as string) : 0;
+    const pourquoi = { programme: "prévu par le programme", mouvement: "même mouvement", muscles: "mêmes muscles" } as const;
     return (
       <>
         <button className="lien" onClick={() => setVue("jour")}>‹ Retour</button>
         <h1>{remplace ? `Remplacer ${exercice(remplace).nom}` : "Ajouter un exercice"}</h1>
+        {remplace && c && reste > 0 && reste < c.series && (
+          <p className="doux petit">Séries déjà faites gardées : il en reste {reste} sur {c.series}.</p>
+        )}
         <div className="liste">
-          {liste.map((e) => <button key={e.id} onClick={() => ajouterExo(e.id, remplace)}>{e.nom}</button>)}
+          {liste.map(({ e, raison }, i) => (
+            <Fragment key={e.id}>
+              {remplace && !raison && liste[i - 1]?.raison && <p className="doux petit">Autres exercices</p>}
+              <button className="ligne" onClick={() => ajouterExo(e.id, remplace)}>
+                <span>
+                  <b>{e.nom}</b>{remplace && i === 0 && raison && <span className="badge">top</span>}
+                  {remplace && raison && <small>{pourquoi[raison]}</small>}
+                </span>
+              </button>
+            </Fragment>
+          ))}
         </div>
       </>
     );
@@ -552,13 +635,14 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
           {ls.map((l, i) => {
             const id = courant(seance, l);
             const c = cibleDe(ctx, seance, l, id);
-            const fait = l.membres.map((m) => faites(seance, reel(seance, m)).length);
+            const fait = l.membres.map((m) => faitesMembre(seance, m));
             const ok = complete(ctx, seance, l);
             return (
               <button key={i} className={ok ? "ligne faite" : "ligne"} onClick={() => { setAttente(null); ouvrir(ctx, seance, i); }}>
                 <span>
                   <b>{nomLigne(l.membres.map((m) => reel(seance, m)))}</b>
                   {l.poste?.optionnel && <span className="badge">option</span>}
+                  {l.rattrapage && <span className="badge">rattrapage {l.rattrapage}</span>}
                   {l.poste && c && <small>{texteCible(ctx.x(id), l.poste, c)}</small>}
                 </span>
                 <span className="avance">{ok ? "✓" : `${Math.min(...fait)}/${c?.series ?? "–"}`}</span>
@@ -581,6 +665,8 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const e = ctx.x(id);
   const c = cibleDe(ctx, seance, l, id);
   const duJour = faites(seance, id);
+  /** Séries du poste, celles de l'exo remplacé comprises. */
+  const nPoste = faitesPoste(seance, l, id);
   const tout = duJourTout(seance, id);
   const finie = complete(ctx, seance, l);
   const autres = l.membres.map((m) => reel(seance, m)).filter((x) => x !== id);
@@ -610,7 +696,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     enregistrer(nouvelle);
     setAttente(id);
     // Superset : le repos vient après le dernier exo du tour, pas entre les deux.
-    const compte = l.membres.map((m) => faites(nouvelle, reel(nouvelle, m)).length);
+    const compte = l.membres.map((m) => faitesMembre(nouvelle, m));
     if (compte.every((n) => n === compte[0])) {
       lancerRepos(montee ? REPOS_MONTEE_S : l.poste?.repos ?? REPOS_S).then(setFin, onErreur);
     }
@@ -668,9 +754,9 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         <p className="cible">
           {test
             ? `Test de ${nomTest(test.reps)} · tentative ${tout.filter((x) => x.test).length + 1}`
-            : duJour.length < c.series
-              ? `Série ${duJour.length + 1}/${c.series} · ${texteCible(e, l.poste, c)}`
-              : `Série ${duJour.filter((x) => !x.test).length + 1} (en plus) · ${texteCible(e, l.poste, c)}`}
+            : nPoste < c.series
+              ? `Série ${nPoste + 1}/${c.series} · ${texteCible(e, l.poste, c)}`
+              : `Série ${nPoste - duJour.filter((x) => x.test).length + 1} (en plus) · ${texteCible(e, l.poste, c)}`}
           {" "}· repos {duree(l.poste.repos)}
         </p>
       )}
