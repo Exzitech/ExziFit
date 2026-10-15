@@ -292,15 +292,31 @@ pub(crate) fn paquet_a_envoyer(racine: &Path) -> Result<Option<Paquet>, String> 
     if envoyee.is_some_and(|e| e.sha256 == empreinte) {
         return Ok(None);
     }
-    let texte = serde_json::to_string_pretty(&serde_json::json!({ "format": 1, "jour": jour, "fichiers": fichiers }))
-        .map_err(|e| e.to_string())?;
+    let texte = texte_paquet(&jour, &fichiers)?;
     Ok(Some(Paquet { jour, texte, empreinte }))
 }
 
+fn texte_paquet(jour: &str, fichiers: &BTreeMap<String, String>) -> Result<String, String> {
+    serde_json::to_string_pretty(&serde_json::json!({ "format": 1, "jour": jour, "fichiers": fichiers }))
+        .map_err(|e| e.to_string())
+}
+
+/// Les données telles qu'elles sont maintenant, au format du paquet envoyé (export manuel).
+pub(crate) fn paquet_courant(racine: &Path, jour: &str) -> Result<String, String> {
+    let mut fichiers = BTreeMap::new();
+    lire_tout(racine, "", &mut fichiers)?;
+    texte_paquet(jour, &fichiers)
+}
+
+/// Saute `sauvegardes/` à la racine et les `.tmp` (écritures en cours), comme `copier`.
 fn lire_tout(d: &Path, prefixe: &str, sortie: &mut BTreeMap<String, String>) -> Result<(), String> {
     for e in fs::read_dir(d).map_err(|e| erreur("lecture de", d, e))? {
         let e = e.map_err(|err| erreur("lecture de", d, err))?;
-        let chemin = format!("{prefixe}{}", e.file_name().to_string_lossy());
+        let nom = e.file_name().to_string_lossy().into_owned();
+        if (prefixe.is_empty() && nom == SAUVEGARDES) || nom.ends_with(".tmp") {
+            continue;
+        }
+        let chemin = format!("{prefixe}{nom}");
         if e.path().is_dir() {
             lire_tout(&e.path(), &format!("{chemin}/"), sortie)?;
         } else {
@@ -433,6 +449,12 @@ mod tests {
         ecrire_atomique(&r.join("reglages.json"), "{}").unwrap();
         sauvegarder(&r, "2026-10-15").unwrap().unwrap();
         assert_eq!(paquet_a_envoyer(&r).unwrap().unwrap().jour, "2026-10-15");
+
+        // Export : les données vivantes, sans les copies ni les écritures en cours.
+        ecrire_atomique(&r.join("en-cours.json.tmp"), "{").unwrap();
+        let v: serde_json::Value = serde_json::from_str(&paquet_courant(&r, "2026-10-16").unwrap()).unwrap();
+        let chemins: Vec<_> = v["fichiers"].as_object().unwrap().keys().cloned().collect();
+        assert_eq!(chemins, ["journal/2026-10.json", "reglages.json"]);
 
         fs::remove_dir_all(&r).unwrap();
     }

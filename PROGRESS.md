@@ -3,19 +3,18 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.20 publiée (noms anglais, Bloc Force retouché), essai à la salle le 2026-10-14
+## Statut : 0.1.32 (app pour les potes), retours de salle traités
 
-**Reprise (2026-10-14, autre PC)** — installation : README, « Travailler sur un autre poste ».
-1. Retour de Tom après la séance : leg curl assis (J2 / J4), noms anglais, durée réelle des
-   séances contre le calcul de la page (début / fin dans le Journal).
-2. Programmes proposés : [docs/propositions-programmes.html](docs/propositions-programmes.html)
-   (copie de l'artefact claude.ai/artifact/4jAraXnA7YCzaBMaDgFzcn) : A Hypertrophie PPL,
-   B = Bloc Force retouché (fait), C Endurance, D Superset. Tom n'a pas encore choisi A / C / D.
-   Pour les coder : ~9 exos neufs (marqués NEW), un JSON par programme dans
-   `src/donnees/programmes/`, sélecteur sur l'accueil (`PROGRAMME` est en dur dans
-   programme.ts, utilisé par Seance, Journal, Personnage) ; garder « Ajouter un exo ».
-   Limite connue : la semaine de décharge ne baisse que le principal, pas les accessoires.
-
+**Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
+1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
+2. ~~**Matériel** : variantes Smith / haltères, salles et réglages de machine~~ (0.1.26).
+3. ~~**Échauffement conseillé** en tête de séance~~ (0.1.27).
+4. ~~**Minuteur visible hors de l'app** : notification persistante avec décompte~~ (0.1.28).
+5. ~~**Coefficient de Force par exo**~~ (0.1.29) : valeurs à juger par Tom ([docs/stats.md](docs/stats.md)).
+6. ~~**Changer de programme**~~ (0.1.30) : les trois (A, C, D) codés, à essayer par Tom.
+7. ~~**Homme / femme**~~ (0.1.31) : facteurs de Force et dessin à juger par Tom.
+8. ~~**App pour les potes** : onboarding, export manuel, envoi Nextcloud réservé à Tom~~ (0.1.32).
+Écarté : « sticky notes » (concernait une autre app).
 
 Les trois chantiers ExziHub (sous-titres *Rick and Morty*, module tâches, profil Malt) sont en
 sommeil depuis le 2026-10-13 — état dans `ExziHub/docs/pi/REPRISE.md`, « Chantiers en sommeil ».
@@ -219,6 +218,70 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
   APK servi par le partage = empreinte de `version.json`. Halo (Constance ≥ 75) pas vu en capture.
   Pas vu sur le S23.
 
+**Choix du programme (2026-10-15, 0.1.30)** — point 6 des retours. Les trois programmes proposés
+sont codés à côté du Bloc Force, tels que dans [docs/propositions-programmes.html](docs/propositions-programmes.html) :
+- `push-pull-legs.json` (A, 6 jours, principal des jours A en % : S1 70 % 4 × 8 → S4 77,5 % 4 × 6,
+  S5 décharge 65 % 3 × 6 ; jours B en double progression), `endurance.json` (C, 4 jours, ancre
+  3 × 5 à 75–80 %, une seule semaine répétée), `superset-express.json` (D, 4 jours, tout en
+  double progression). Choix faits sans Tom : semaines de A (la page ne donnait que « 70 → 77,5 % »),
+  RIR visé 1 sur l'isolation de A et D, 2 ailleurs ; aucune règle d'écart dans les trois.
+- Exos neufs : Romanian deadlift, Seated calf raise, Cable fly, Incline dumbbell curl,
+  Neutral-grip lat pulldown, Cable pullover (coefficients de Force dans [docs/stats.md](docs/stats.md),
+  posés sans données). « Seated dumbbell press » = l'exo existant Dumbbell shoulder press.
+- Accueil : carte repliée « Changer de programme » (grille 2 × 2) sous le titre ; le choix va dans
+  `reglages.json` (`programme`). Chaque programme garde son bloc ouvert : revenir au Bloc Force
+  reprend sa rotation. La séance note `programme` (absent = Bloc Force, pas de migration) ; Journal,
+  résumé et reprise lisent le jour dans le programme de la séance (`jourDeSeance`).
+- Programme d'une seule semaine : pas de fin de bloc (`blocFini`), sélecteur de semaine masqué.
+  Sans exo en % : la carte « 1RM du bloc » devient « Poids de corps ». Repos < 1 min affiché « 45 s »
+  (avant : « 0 min 45 »).
+- Vérifié : 83 tests Vitest (3 nouveaux : programmes cohérents — exos connus, schémas présents
+  chaque semaine, jours uniques ; séance sans `programme` ; programme d'une semaine jamais fini),
+  `tsc`, `npm run build`, parcours Edge headless 390 px (Capacité de travail choisi →
+  `reglages.json` écrit, J3 démarré → `en-cours.json` avec `programme: "endurance"`, rechargement =
+  reprise sur Weighted pull-up 3 × 5 75–80 % ; Haut / bas express : 4 jours, sans semaines ; retour
+  au Bloc Force). Publié en 0.1.30, partage vérifié au curl (version.json 0.1.30, empreinte de l'APK
+  identique). Pas vu sur le S23.
+- Limites : la Constance prend le seuil du programme choisi (moitié de ses jours) ; un id de
+  programme inconnu retombe sur le Bloc Force. Le Journal n'affiche pas le nom du programme
+  (« J1 · Push A » suffit à les distinguer).
+
+**Homme / femme (2026-10-15, 0.1.31)** — point 7 des retours. Détail dans [docs/stats.md](docs/stats.md) :
+- Réglages → « Personnage » : Homme / Femme, écrit `sexe` dans `reglages.json` (absent = homme,
+  pas de migration).
+- Force : au lieu de seuils de personnage différents, la **référence** de chaque exo est multipliée
+  pour une femme (× 0,8 si un groupe du bas du corps est principal, × 0,65 sinon). Force 100 = très
+  avancée dans son sexe, seuils du dessin communs. Facteurs donnés de mémoire (tableaux Strength
+  Level), non vérifiés sur source.
+- Dessin femme : même grille et mêmes paliers, plus cheveux longs, brassière à l'accent, hanches
+  (short + 1 pixel). `grille(paliers, sexe)`.
+- Vérifié : 90 tests Vitest (1 Force femme, tests de grille passés sur les deux sexes, 1 « silhouette
+  différente »), `tsc`, `npm run build`, planche des paliers des deux sexes rendue en PNG et relue,
+  parcours Edge headless 390 px (Réglages → Femme → `reglages.json` avec `"sexe": "femme"`, onglet
+  Perso = dessin femme). Publié en 0.1.31, partage vérifié au curl (version.json 0.1.31, empreinte
+  de l'APK identique). Pas vu sur le S23.
+- Limite : le choix est dans les réglages seulement ; l'onboarding des potes (point 8) le reprendra.
+
+**App pour les potes (2026-10-15, 0.1.32)** — point 8 des retours. Voir le README, « Données » :
+- **Écran de bienvenue** (`Bienvenue.tsx`) quand ni `reglages.json` ni journal n'existent :
+  prénom, poids de corps, homme / femme, programme ; la nav est masquée jusqu'à « Commencer ».
+  Le prénom devient le titre de l'onglet Perso, modifiable dans les réglages.
+- **Envoi Nextcloud réservé à Tom** : `envoi: false` écrit par la bienvenue ; absent = actif
+  (l'installation de Tom a déjà ses réglages, aucune migration). Filtre dans `App.tsx`.
+- **Export manuel** : Réglages → « Exporter les données » → partage Android d'un
+  `exzifit-AAAA-MM-JJ.json` (format du paquet Nextcloud, données vivantes sans `sauvegardes/`).
+  Plugin Kotlin `PartagePlugin` sur le FileProvider existant ; pas de dépendance.
+- CLAUDE.md : périmètre v1 = Tom et quelques potes.
+- Vérifié : `cargo test` (9, dont l'export : copies et `.tmp` exclus), 90 tests Vitest, `tsc`,
+  `npm run build`, parcours Edge headless 390 px (stockage vide → bienvenue → Léa, 62.5, Femme,
+  PPL → `reglages.json` avec `envoi: false`, `poids.json` écrit, titre Perso « Léa », export
+  téléchargé, relance sans bienvenue ; réglages sans `envoi` → pas de bienvenue, ligne Nextcloud).
+  Publié en 0.1.32, partage vérifié au curl (version.json 0.1.32, empreinte de l'APK identique).
+  Pas vu sur le S23 : partage Android et installation neuve à essayer.
+- Limites : pas d'import (un pote qui change de téléphone ne peut pas encore restaurer) ; le
+  lien de dépôt reste extractible de l'APK (déjà le cas) ; un pote qui installe garde le Bloc Force
+  de Tom comme programme par défaut proposé.
+
 ## Prochaine étape
 
 1. **Essai à la salle par Tom** (0.1.7) : saisir les 1RM et le poids de corps à l'accueil
@@ -312,3 +375,70 @@ dessin dans [docs/stats.md](docs/stats.md), « Personnage » :
   J4 `leg-curl-assis` 3 × 10–12 obligatoire à la place du leg extension optionnel (pas de roumain
   après le soulevé lourd). Exo `leg-curl-assis` ajouté. 67 tests, tsc, build verts ; publié.
   Pas vu sur le S23. Les autres programmes (A, C, D) restent à coder si Tom les choisit.
+
+**Saisie et fin d'exo (2026-10-15, 0.1.25)** — retours de salle :
+- Champs charge / reps (`Champ` dans Seance.tsx) : le toucher sélectionne la valeur, la frappe la
+  remplace ; vidé puis quitté = valeur d'avant.
+- Exo en option : badge à côté du nom en saisie, « en option · si tu as encore du jus » sous
+  « Suivant : … ». Message de fin d'exo (`encouragement`, programme.ts) : record de 1RM estimé,
+  sinon kg ou reps au-dessus de la dernière fois, sinon une phrase sans chiffre choisie par la
+  séance ; jamais de reproche ni de série de jours.
+- Vérifié : 70 tests Vitest (3 nouveaux), `tsc`, `npm run build`, parcours Edge headless 390 px
+  (J1, pushdown 32,5 → tapé 32, 3 séries → « Record : 1RM estimé 44 kg (avant 42) » + Suivant
+  incliné en option). Publié en 0.1.25. Pas vu sur le S23.
+- **Version** : le partage annonçait déjà 0.1.24 alors que le dépôt était à 0.1.20 ; 0.1.21–0.1.24
+  ne sont pas dans git (publiées depuis l'autre PC ?). La 0.1.25 est construite depuis le dépôt.
+
+**Salles et réglages de machine (2026-10-15, 0.1.26)** — retours de salle (Smith 11 kg, presse 76 kg,
+poulie simple / double incompréhensible). Choix de Tom : réglages **par salle**, poids à vide
+**appliqué au passé**, noter **les disques seuls**. Voir [docs/modele-donnees.md](docs/modele-donnees.md), « Salles » :
+- `src/donnees/salles.ts` : `salles.json`, `exerciceEn` (exo monté : `aVide`, `poulie`),
+  `normaliser` (séances réécrites en mémoire dans les unités d'une salle, ou en charge réelle pour
+  stats et résumé). programme.ts : `totalDe` / `chargeDe` = kg ÷ moufle + chariot (+ corps), arrondi
+  au pas en disques ; 1RM, %, recalage, retour, échauffement, tonnage passent par là.
+- Séance : champ `salle` ; journal = ce qui se lit (disques, pile). Anciennes séances : première
+  salle, `poulie: 2` = charge réelle (déjà ÷ 2). Aucun fichier réécrit ; séance en cours d'avant
+  les salles convertie à la reprise.
+- Écrans : salle choisie sur l'accueil (si plusieurs), ajoutée / renommée dans Réglages ; ligne
+  repliée « Ma salle · 50 kg à vide ▾ » sous le nom de l'exo (Normale / Moufle sur une poulie) ;
+  disques par côté sur les machines à disques. Bascule « Poulie simple / double » retirée.
+- Exos neufs : Smith overhead press, Dumbbell shoulder press, Smith bench press, Smith squat,
+  Leg press (Smith / presse / hack squat en `disques`).
+- Vérifié : 79 tests Vitest (9 nouveaux, `salles.test.ts`), `tsc`, `npm run build`, parcours Edge
+  headless 390 px (pushdown ancien en moufle 30 → 60 affiché, 62,5 × 10 → record 44 (avant 42),
+  tonnage 313 ; hack squat 50 à vide → échauffement 10 / 35 / 60, disques 25 + 20 + 2,5 ; salle
+  ajoutée « Basic-Fit », choisie sur l'accueil, notée dans `en-cours.json`). Publié en 0.1.26.
+  Pas vu sur le S23.
+- Limites : `REFERENCES_FORCE["hack-squat"]` (3 × poids de corps) fixé sans chariot : la Force
+  monte d'un coup quand le poids à vide est noté — à revoir avec le point 5 (coefficient de Force).
+  Un 1RM du bloc saisi en disques seuls avant le réglage reste sous l'estimé (sans effet : le max
+  des deux sert). Les séances d'avant les salles prennent toutes la première salle.
+
+**Échauffement conseillé (2026-10-15, 0.1.27)** — carte « Échauffement · ≈ n min » dépliée sur
+l'accueil, sous l'aperçu du jour (aucun geste en plus) : `preparation` (programme.ts) = cardio léger
+5 min + mobilité dynamique choisie par les muscles principaux des exos du jour (9 mouvements,
+≈ 1 min chacun), puis renvoi aux séries d'approche déjà calculées à la saisie. Vérifié : 80 tests
+Vitest (1 nouveau), `tsc`, build, capture Edge headless 390 px (J1 : bras / épaules, 8 min ;
+J2 : squat, jambes, good morning, mollets, 9 min). Publié en 0.1.27. Pas vu sur le S23.
+
+**Décompte du repos hors de l'app (2026-10-15, 0.1.28)** — `ReposPlugin.kt` : à chaque repos, une
+notification « Repos » en cours (id 2, canal muet « Repos en cours ») avec chronomètre système en
+décompte (`setUsesChronometer` + `setChronometerCountDown`), visible dans le volet et sur l'écran
+verrouillé, effacée d'elle-même à la fin (`setTimeoutAfter`) ; un tap rouvre l'app. Rien ne tourne
+côté app : pas de service au premier plan. La vibration reste la notification programmée (id 1).
+Retirée à la fin de séance. Rust : `repos.rs` (Android seulement), appelé par `minuteur.ts`.
+Vérifié : 80 tests Vitest, `tsc` + build, `cargo test`, APK release compilé (Kotlin compris) et
+publié en 0.1.28. Pas vu sur le S23 : à juger (décompte qui défile écran verrouillé, disparition
+à la fin, pas de son en double). Piste si besoin : « Live Update » d'Android 16 (puce dans la barre
+d'état), demande une permission en plus.
+
+**Coefficient de Force par exo (2026-10-15, 0.1.29)** — `Exercice.force` passe de `true` à
+`{ ref, poids }` (`exercices.ts`, table `REFERENCES_FORCE` de stats.ts supprimée) ; Force = moyenne
+des scores exo **pondérée** : 1 pour les cinq gros mouvements (valeurs inchangées), 0,5 pour les
+polyarticulaires secondaires, 0,25 pour l'isolation ; dips / australiennes sans lest et farmer's
+walk n'entrent pas. Haltères comptés par haltère. Table dans [docs/stats.md](docs/stats.md), « Force ».
+- Vérifié : 80 tests Vitest (1 nouveau : moyenne pondérée ; celui « chaque exo a une référence »
+  retiré, le type l'assure), `tsc`.
+- Limites : références des machines et poulies posées sans données (indicatives, d'où le
+  coefficient faible) ; la Force de Tom va bouger dès la mise à jour (les accessoires entrent dans
+  la moyenne). Hack squat : la référence 3 s'applique maintenant à la charge réelle (chariot compris).

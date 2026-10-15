@@ -1,0 +1,67 @@
+{
+  "format": 1,
+  "programmes": [
+    {
+      "id": "push-pull-legs",
+      "nom": "Push / Pull / Legs",
+      "semaines": [
+        { "nom": "S1", "label": "70 %", "schemas": { "p": { "series": 4, "reps": 8, "pct": [0.70] } } },
+        { "nom": "S2", "label": "72,5 %", "schemas": { "p": { "series": 4, "reps": 8, "pct": [0.725] } } },
+        { "nom": "S3", "label": "75 %", "schemas": { "p": { "series": 4, "reps": 7, "pct": [0.75] } } },
+        { "nom": "S4", "label": "77,5 %", "schemas": { "p": { "series": 4, "reps": 6, "pct": [0.775] } } },
+        { "nom": "S5", "label": "Décharge", "schemas": { "p": { "series": 3, "reps": 6, "pct": [0.65] } } }
+      ],
+      "jours": [
+        { "id": "J1", "nom": "Push A", "objectif": "hypertrophie", "lourd": true,
+          "note": "Les deux poussées lourdes quand tu es frais, puis épaules latérales et triceps.",
+          "exercices": [
+            { "exo": "developpe-couche", "role": "principal", "prescription": { "type": "pct1rm", "schema": "p" }, "repos": 150 },
+            { "exo": "developpe-incline-halteres", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 120 },
+            { "exo": "elevations-laterales-poulie", "prescription": { "type": "fourchette", "series": 4, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 60 },
+            { "superset": ["dips", "extension-corde-nuque"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 1 }, "repos": 90 }
+          ] },
+        { "id": "J2", "nom": "Pull A", "objectif": "hypertrophie", "lourd": true,
+          "note": "Largeur (tractions) puis épaisseur (rowing), bras étirés à la fin.",
+          "exercices": [
+            { "exo": "tractions-lestees", "role": "principal", "prescription": { "type": "pct1rm", "schema": "p" }, "repos": 150 },
+            { "exo": "rowing-haltere", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 120 },
+            { "superset": ["ecarte-inverse-poulie", "curl-incline-halteres"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 90 },
+            { "exo": "curl-marteau", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J3", "nom": "Legs A", "objectif": "hypertrophie", "lourd": true,
+          "note": "Quadriceps lourds, ischios étirés : la séance de jambes la plus exigeante.",
+          "exercices": [
+            { "exo": "hack-squat", "role": "principal", "prescription": { "type": "pct1rm", "schema": "p" }, "repos": 150 },
+            { "exo": "souleve-roumain", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
+            { "superset": ["leg-extension", "leg-curl-assis"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 90 },
+            { "exo": "mollets-debout", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J4", "nom": "Push B", "objectif": "hypertrophie", "lourd": false,
+          "note": "Pas de bench : les épaules mènent, les pectoraux travaillent étirés à la poulie.",
+          "exercices": [
+            { "exo": "developpe-militaire-halteres", "role": "principal", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
+            { "exo": "ecarte-poulie", "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 75 },
+            { "exo": "elevations-laterales-poulie", "prescription": { "type": "fourchette", "series": 4, "repsMin": 15, "repsMax": 20, "rir": 1 }, "repos": 60 },
+            { "exo": "extension-triceps-poulie-haute", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J5", "nom": "Pull B", "objectif": "hypertrophie", "lourd": false,
+          "note": "L'inverse du Pull A : épaisseur d'abord, largeur ensuite, angle différent.",
+          "exercices": [
+            { "exo": "rowing-barre", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 8, "repsMax": 10, "rir": 2 }, "repos": 120 },
+            { "exo": "tirage-vertical-neutre", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "superset": ["face-pull", "curl-poulie-basse"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 75 }
+          ] },
+        { "id": "J6", "nom": "Legs B", "objectif": "hypertrophie", "lourd": false,
+          "note": "Plus de reps, unilatéral et mollets : du volume sans écraser le dos.",
+          "exercices": [
+            { "exo": "presse-cuisses", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 10, "repsMax": 15, "rir": 2 }, "repos": 120 },
+            { "exo": "fentes-bulgares", "note": "par jambe", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "exo": "leg-curl-allonge", "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 12, "rir": 1 }, "repos": 75 },
+            { "superset": ["mollets-assis", "crunch-poulie-haute"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 60 }
+          ] }
+      ],
+      "regles": [],
+      "notes": ["1 à 2 reps en réserve sur les gros mouvements ; l'isolation se finit à 0–1."]
+    }
+  ]
+}

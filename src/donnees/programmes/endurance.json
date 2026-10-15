@@ -1,0 +1,51 @@
+{
+  "format": 1,
+  "programmes": [
+    {
+      "id": "endurance",
+      "nom": "Capacité de travail",
+      "semaines": [
+        { "nom": "S1", "label": "Continu",
+          "schemas": {
+            "ancre": { "series": 3, "reps": 5, "pct": [0.75, 0.80] },
+            "ancre-dl": { "series": 3, "reps": 5, "pct": [0.75] } } }
+      ],
+      "jours": [
+        { "id": "J1", "nom": "Ancre bench", "objectif": "endurance", "lourd": false,
+          "note": "Ancre au bench, puis un superset haut, jambes, épaules et bras.",
+          "exercices": [
+            { "exo": "developpe-couche", "role": "principal", "prescription": { "type": "pct1rm", "schema": "ancre" }, "repos": 180 },
+            { "superset": ["rowing-haltere", "dips"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["presse-cuisses", "leg-curl-assis"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["elevations-laterales-poulie", "curl-marteau"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 45 }
+          ] },
+        { "id": "J2", "nom": "Ancre hack", "objectif": "endurance", "lourd": false,
+          "note": "Ancre au hack squat, jambes en unilatéral.",
+          "exercices": [
+            { "exo": "hack-squat", "role": "principal", "prescription": { "type": "pct1rm", "schema": "ancre" }, "repos": 180 },
+            { "superset": ["tirage-vertical-neutre", "developpe-militaire-halteres"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["fentes-bulgares", "hip-thrust"], "note": "fentes : par jambe", "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 2 }, "repos": 60 },
+            { "superset": ["curl-poulie-basse", "extension-triceps-poulie-haute"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 45 }
+          ] },
+        { "id": "J3", "nom": "Ancre traction", "objectif": "endurance", "lourd": false,
+          "note": "Ancre aux tractions, la poussée passe en incliné.",
+          "exercices": [
+            { "exo": "tractions-lestees", "role": "principal", "prescription": { "type": "pct1rm", "schema": "ancre" }, "repos": 180 },
+            { "superset": ["developpe-incline-halteres", "tractions-australiennes"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["leg-extension", "leg-curl-allonge"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["face-pull", "curl-incline-halteres"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 45 }
+          ] },
+        { "id": "J4", "nom": "Ancre soulevé", "objectif": "endurance", "lourd": false,
+          "note": "Ancre au soulevé, pas de jambes ensuite : elles ont déjà travaillé.",
+          "exercices": [
+            { "exo": "souleve-de-terre", "role": "principal", "prescription": { "type": "pct1rm", "schema": "ancre-dl" }, "repos": 180 },
+            { "superset": ["ecarte-poulie", "pullover-poulie"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 60 },
+            { "superset": ["elevations-laterales-poulie", "extension-corde-nuque"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 15, "repsMax": 20, "rir": 2 }, "repos": 45 },
+            { "exo": "farmer-walk", "prescription": { "type": "distance", "series": 4, "metres": 30 }, "repos": 60 }
+          ] }
+      ],
+      "regles": [],
+      "notes": ["Ancre à 1–2 reps en réserve ; supersets à 2–3, repos court."]
+    }
+  ]
+}

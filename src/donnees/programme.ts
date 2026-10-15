@@ -1,6 +1,9 @@
-import { exercice, type Exercice } from "./exercices";
+import { exercice, type Exercice, type Muscle } from "./exercices";
 import { historique, type Seance, type Serie } from "./journal";
 import blocForce from "./programmes/bloc-force.json";
+import endurance from "./programmes/endurance.json";
+import pushPullLegs from "./programmes/push-pull-legs.json";
+import supersetExpress from "./programmes/superset-express.json";
 
 /** Types du programme (docs/modele-donnees.md, « Programme »). */
 export type Prescription =
@@ -50,10 +53,25 @@ export interface Programme {
 }
 
 /**
- * Programme en cours, dans le code tant qu'il n'y a pas d'éditeur (le modèle prévoit
+ * Programmes proposés, dans le code tant qu'il n'y a pas d'éditeur (le modèle prévoit
  * `programmes.json` le jour où Tom en écrit un depuis l'app).
  */
-export const PROGRAMME = (blocForce as unknown as { programmes: Programme[] }).programmes[0];
+export const PROGRAMMES: Programme[] = [blocForce, pushPullLegs, endurance, supersetExpress]
+  .flatMap((f) => (f as unknown as { programmes: Programme[] }).programmes);
+
+/** Programme des séances d'avant le choix du programme (0.1.29 et avant), et choix par défaut. */
+export const PROGRAMME_DEFAUT = "bloc-force";
+
+/** Programme par son id ; un id inconnu (programme retiré) retombe sur le défaut. */
+export const programme = (id: string | undefined): Programme =>
+  PROGRAMMES.find((p) => p.id === id) ?? PROGRAMMES.find((p) => p.id === PROGRAMME_DEFAUT)!;
+
+/** Programme d'une séance de programme ; `undefined` pour une séance libre. */
+export const programmeDe = (s: Seance): Programme | undefined =>
+  s.jour === undefined ? undefined : programme(s.programme ?? PROGRAMME_DEFAUT);
+
+/** Jour d'une séance dans son programme. */
+export const jourDeSeance = (s: Seance): Jour | undefined => programmeDe(s)?.jours.find((j) => j.id === s.jour);
 
 export const membres = (p: Poste): string[] => p.superset ?? [p.exo as string];
 
@@ -110,12 +128,14 @@ export function semaineDe(p: Programme, seances: Seance[], bloc: string, jour: n
 
 /**
  * Fin de bloc : la dernière séance du bloc est en dernière semaine et le jour choisi relance la
- * rotation. Le jour choisi ouvre alors un nouveau bloc (`rmNouveauBloc`).
+ * rotation. Le jour choisi ouvre alors un nouveau bloc (`rmNouveauBloc`). Jamais pour un programme
+ * d'une seule semaine.
  */
 export function blocFini(p: Programme, seances: Seance[], bloc: string, jour: number): boolean {
   const duBloc = seances.filter((s) => s.bloc === bloc && s.jour);
   const derniere = duBloc[duBloc.length - 1];
-  if (!derniere) return false;
+  // Une seule semaine : elle se répète, le bloc ne finit jamais.
+  if (!derniere || p.semaines.length === 1) return false;
   return (derniere.semaine ?? 0) >= p.semaines.length - 1 && jour <= p.jours.findIndex((j) => j.id === derniere.jour);
 }
 
@@ -170,14 +190,23 @@ export interface Contexte {
 
 const pct = (v: number) => `${Math.round(v * 1000) / 10}`.replace(".", ",");
 
-/** Total (corps + lest sur un lesté) → charge à afficher, arrondie au pas ; `null` sans pesée sur un lesté. */
+/**
+ * Total → charge à afficher (lest, disques, pile), arrondie au pas ; `null` sans pesée sur un lesté.
+ * Inverse de `totalDe`.
+ */
 function chargeDe(e: Exercice, total: number, poidsCorps?: number): number | null {
   if (e.charge === "poids-corps-leste") return poidsCorps === undefined ? null : Math.max(0, arrondir(total - poidsCorps, e.pas));
-  return Math.max(e.charge === "barre" ? 20 : 0, arrondir(total, e.pas));
+  return Math.max(e.charge === "barre" ? 20 : 0, arrondir((total - (e.aVide ?? 0)) * (e.poulie ?? 1), e.pas));
 }
 
 /** Corps ajouté à la charge pour Epley : le poids de corps sur un lesté, 0 sinon. */
 const corpsDe = (e: Exercice, poidsCorps?: number) => (e.charge === "poids-corps-leste" ? poidsCorps : 0);
+
+/**
+ * Charge notée → total soulevé pour les calculs : ÷ moufle, + chariot de la machine, + corps sur un
+ * lesté (`corps` = `corpsDe`, déjà vérifié).
+ */
+const totalDe = (e: Exercice, kg: number, corps: number) => kg / (e.poulie ?? 1) + (e.aVide ?? 0) + corps;
 
 /**
  * Meilleur 1RM estimé d'une liste de séries (corps + lest sur un lesté), Epley avec la réserve ;
@@ -187,7 +216,7 @@ const corpsDe = (e: Exercice, poidsCorps?: number) => (e.charge === "poids-corps
 function meilleurE1rm(e: Exercice, series: Serie[], poidsCorps?: number): number | undefined {
   const corps = corpsDe(e, poidsCorps);
   if (corps === undefined) return undefined;
-  const v = series.filter((s) => s.reps >= 1 && s.reps <= 12).map((s) => e1rmSerie(s.kg + corps, s.reps, s.rir ?? 0));
+  const v = series.filter((s) => s.reps >= 1 && s.reps <= 12).map((s) => e1rmSerie(totalDe(e, s.kg, corps), s.reps, s.rir ?? 0));
   return v.length ? Math.max(...v) : undefined;
 }
 
@@ -223,7 +252,7 @@ export function resultatTest(e: Exercice, series: Serie[], poidsCorps?: number):
   if (corps === undefined) return undefined;
   const reussies = series.filter((s) => s.test && s.reps >= 1);
   const mesures = reussies.filter((s) => s.rir === 0);
-  const v = (mesures.length ? mesures : reussies).map((s) => e1rmSerie(s.kg + corps, s.reps, s.rir ?? 0));
+  const v = (mesures.length ? mesures : reussies).map((s) => e1rmSerie(totalDe(e, s.kg, corps), s.reps, s.rir ?? 0));
   return v.length ? Math.max(...v) : undefined;
 }
 
@@ -277,7 +306,7 @@ export function recalage(
 ): number | null {
   const corps = corpsDe(e, poidsCorps);
   if (der.rir === undefined || corps === undefined) return null;
-  const total = der.kg + corps;
+  const total = totalDe(e, der.kg, corps);
   let suivant = epley(total, der.reps, der.rir) / (1 + (reps + rir) / 30);
   if (calibrage && der.rir >= 4) {
     const palier = e.charge === "poids-corps-leste" ? total * 1.1 : Math.max(total * 1.2, total + 8 * e.pas);
@@ -315,7 +344,7 @@ export function cible(e: Exercice, pr: Prescription, c: Contexte): Cible {
       if (!derniere) return { series: pr.series, reps: pr.reps, kg: null, texte };
       const corps = leste ? c.poidsCorps : 0;
       if (corps === undefined) return { series: pr.series, reps: pr.reps, kg: null, texte };
-      const e1rm = Math.max(...derniere.map((s) => epley(s.kg + corps, s.reps, s.rir ?? 0)));
+      const e1rm = Math.max(...derniere.map((s) => epley(totalDe(e, s.kg, corps), s.reps, s.rir ?? 0)));
       return { series: pr.series, reps: pr.reps, kg: charge(e1rm / (1 + (pr.reps + 10 - pr.rpe) / 30)), texte };
     }
     case "distance":
@@ -324,22 +353,48 @@ export function cible(e: Exercice, pr: Prescription, c: Contexte): Cible {
 }
 
 /**
- * Charge des séries en plus après une série ratée : −10 % du total (corps + lest sur un lesté),
- * arrondi au pas de l'exo. Sans poids de corps, un lesté allège le lest seul.
+ * Charge des séries en plus après une série ratée : −10 % du total (corps + lest sur un lesté,
+ * chariot compris sur une machine), arrondi au pas de l'exo. Sans poids de corps, un lesté allège
+ * le lest seul.
  */
 export function retour(e: Exercice, kg: number, poidsCorps?: number): number {
-  if (e.charge === "poids-corps-leste" && poidsCorps !== undefined) {
-    return Math.max(0, arrondir((poidsCorps + kg) * 0.9 - poidsCorps, e.pas));
-  }
-  return Math.max(e.charge === "barre" ? 20 : 0, arrondir(kg * 0.9, e.pas));
+  const corps = corpsDe(e, poidsCorps);
+  if (corps === undefined) return Math.max(0, arrondir(kg * 0.9, e.pas));
+  return chargeDe(e, totalDe(e, kg, corps) * 0.9, poidsCorps) as number;
+}
+
+/** Mobilité dynamique d'avant séance, chaque mouvement proposé si un exo du jour travaille un de ses muscles. */
+const MOBILITE: { texte: string; muscles: Muscle[] }[] = [
+  { texte: "Cercles de bras · 10 dans chaque sens", muscles: ["pectoraux", "epaules", "triceps", "biceps", "dos"] },
+  { texte: "Dislocations d'épaules au bâton ou à l'élastique · 10", muscles: ["pectoraux", "epaules"] },
+  { texte: "Band pull-apart · 15", muscles: ["pectoraux", "epaules", "dos"] },
+  { texte: "Suspension à la barre · 20 s", muscles: ["dos", "biceps"] },
+  { texte: "Squat au poids du corps · 10", muscles: ["quadriceps", "fessiers"] },
+  { texte: "Balancements de jambe · 10 par côté", muscles: ["quadriceps", "ischios", "fessiers"] },
+  { texte: "Good morning à vide · 10", muscles: ["ischios"] },
+  { texte: "Montées sur pointes · 15", muscles: ["mollets"] },
+  { texte: "Cercles de poignets · 10", muscles: ["avant-bras"] },
+];
+
+/**
+ * Échauffement général d'une séance : cardio léger, puis la mobilité des muscles principaux du
+ * jour ; les séries d'approche du premier exo viennent ensuite (`echauffement`). Durée ≈ 5 min de
+ * cardio + 1 min par mouvement.
+ */
+export function preparation(exos: Exercice[]): { minutes: number; etapes: string[] } {
+  const muscles = new Set(exos.flatMap((e) => e.muscles.principaux));
+  const mobilite = MOBILITE.filter((m) => m.muscles.some((x) => muscles.has(x))).map((m) => m.texte);
+  return { minutes: 5 + mobilite.length, etapes: ["Cardio léger (vélo, rameur) · 5 min, en pouvant parler", ...mobilite] };
 }
 
 /** Échauffement d'un mouvement principal, du plus léger au plus lourd ; vide sous la barre. */
 export function echauffement(e: Exercice, kg: number): string[] {
   if (e.charge === "poids-corps-leste") return kg > 0 ? ["PDC ×5", `+${nombre(arrondir(kg / 2, e.pas))} ×3`] : [];
   const vide = e.charge === "barre" ? "Barre ×10" : "À vide ×10";
+  // Les % portent sur le total (chariot compris), puis reviennent en disques.
+  const total = totalDe(e, kg, 0);
   const paliers = ([[0.4, 5], [0.6, 3], [0.75, 2]] as const)
-    .map(([p, reps]) => [arrondir(kg * p, e.pas), reps] as const)
+    .map(([p, reps]) => [chargeDe(e, total * p) as number, reps] as const)
     .filter(([v], i, l) => v > (e.charge === "barre" ? 20 : 0) && (i === 0 || v > l[i - 1][0]));
   return [vide, ...paliers.map(([v, reps]) => `${nombre(v)} ×${reps}`)];
 }
@@ -384,7 +439,7 @@ export function bilan(s: Seance, passees: Seance[], poidsCorps?: number): Bilan 
     if (!travail.length) continue;
     series += travail.length;
     const corps = corpsDe(e, poidsCorps) ?? 0;
-    if (e.charge !== "distance") volume += travail.reduce((t, v) => t + (v.kg + corps) * v.reps, 0);
+    if (e.charge !== "distance") volume += travail.reduce((t, v) => t + totalDe(e, v.kg, corps) * v.reps, 0);
     // Exo testé : le résultat du test (mesure) prime sur les estimations des autres séries.
     const apres = resultatTest(e, travail, poidsCorps) ?? meilleurE1rm(e, travail, poidsCorps);
     const avant = meilleurE1rm(e, passees.flatMap((p) => p.exercices.filter((y) => y.exo === e.id).flatMap((y) => y.series))
@@ -393,4 +448,41 @@ export function bilan(s: Seance, passees: Seance[], poidsCorps?: number): Bilan 
   }
   const minutes = s.fin ? Math.round((Date.parse(s.fin) - Date.parse(s.debut)) / 60_000) : 0;
   return { minutes, series, volume: Math.round(volume), exos };
+}
+
+/** Phrases sans chiffre, quand la séance ne bat pas la précédente : jamais de reproche. */
+const PHRASES = [
+  "Exo bouclé. Bois un coup, on enchaîne.",
+  "Propre. Même technique sur le suivant.",
+  "Fait. Ce sont les séries comme celle-là qui font le bloc.",
+  "Bien tenu. Respire, le suivant attend.",
+  "Coché. Une ligne de plus dans le journal.",
+  "Solide. Garde ce rythme.",
+];
+
+/**
+ * Message de fin d'exo, tiré des données : record de 1RM estimé, charge ou reps au-dessus de la
+ * dernière fois ; sinon une phrase choisie par `graine` (stable d'un rendu à l'autre).
+ */
+export function encouragement(e: Exercice, series: Serie[], passees: Seance[], graine: string, poidsCorps?: number): string {
+  const travail = series.filter((s) => s.type === "travail");
+  const avant = passees.flatMap((p) => p.exercices.filter((x) => x.exo === e.id).flatMap((x) => x.series)).filter((s) => s.type === "travail");
+  const apresRm = meilleurE1rm(e, travail, poidsCorps);
+  const avantRm = meilleurE1rm(e, avant, poidsCorps);
+  if (apresRm !== undefined && avantRm !== undefined && apresRm > avantRm) {
+    return `Record : 1RM estimé ${nombre(Math.round(apresRm))} kg (avant ${nombre(Math.round(avantRm))}).`;
+  }
+  const derniere = [...passees].reverse().find((p) => p.exercices.some((x) => x.exo === e.id));
+  const dernieres = derniere ? derniere.exercices.filter((x) => x.exo === e.id).flatMap((x) => x.series).filter((s) => s.type === "travail") : [];
+  if (travail.length && dernieres.length && e.charge !== "distance") {
+    const haut = (l: Serie[]) => Math.max(...l.map((s) => s.kg));
+    const ecart = haut(travail) - haut(dernieres);
+    if (ecart > 0) return `+${nombre(ecart)} kg par rapport à la dernière fois.`;
+    const reps = (l: Serie[]) => l.reduce((t, s) => t + s.reps, 0);
+    const plus = reps(travail) - reps(dernieres);
+    if (ecart === 0 && plus > 0) return `${plus} rep${plus > 1 ? "s" : ""} de plus que la dernière fois.`;
+  }
+  let h = 0;
+  for (const c of graine) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PHRASES[h % PHRASES.length];
 }

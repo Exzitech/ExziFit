@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useBoutonRetour } from "../boutonRetour";
 import { exercice } from "../donnees/exercices";
 import { corrigerListe, corrigerSeance, facteurPoulie, lireSeances, type Seance, type Serie } from "../donnees/journal";
-import { PROGRAMME } from "../donnees/programme";
+import { jourDeSeance } from "../donnees/programme";
 
 /** Série en cours de correction : champs texte, pour taper « 102,5 » sans être interrompu. */
 interface Brouillon { serie: Serie; kg: string; reps: string; rir: string }
@@ -11,7 +11,7 @@ const date = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 const heure = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 const titre = (s: Seance) => {
-  const j = PROGRAMME.jours.find((x) => x.id === s.jour);
+  const j = jourDeSeance(s);
   return j ? `${j.id} · ${j.nom}` : "Séance libre";
 };
 

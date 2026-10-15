@@ -25,9 +25,16 @@ export interface Seance {
   debut: string;
   fin?: string;
   bloc?: string;
+  /** Programme du jour `jour` ; absent (avant 0.1.30) = le Bloc Force. */
+  programme?: string;
   semaine?: number;
   jour?: string;
-  /** Poulie double (moufle) dans la salle du jour : la pile affiche 2 × la charge notée. */
+  /** Salle (salles.json) : ses réglages de machine s'appliquent aux charges notées. */
+  salle?: string;
+  /**
+   * Avant les salles (jusqu'à 0.1.25) : poulie double, la charge notée était la charge réelle et la
+   * pile affichait 2 × la charge notée. Plus écrit depuis.
+   */
   poulie?: 2;
   exercices: ExoFait[];
 }

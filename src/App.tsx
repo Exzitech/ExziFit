@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
 import { jourLocal } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
+import EcranBienvenue from "./ecrans/Bienvenue";
 import EcranJournal from "./ecrans/Journal";
 import EcranPersonnage from "./ecrans/Personnage";
 import EcranReglages from "./ecrans/Reglages";
@@ -14,7 +15,8 @@ type Ecran = "seance" | "journal" | "personnage" | "reglages";
 
 export default function App() {
   const [ecran, setEcran] = useState<Ecran>("seance");
-  const [reglages, setReglages] = useState<Reglages | null>(null);
+  // `undefined` : en lecture ; `null` : premier lancement (écran de bienvenue).
+  const [reglages, setReglages] = useState<Reglages | null | undefined>(undefined);
   const [erreurs, setErreurs] = useState<string[]>([]);
   // Pendant une séance, le bas de l'écran est à la saisie (pouce) : pas de barre de navigation.
   const [enSeance, setEnSeance] = useState(false);
@@ -25,18 +27,21 @@ export default function App() {
   useBoutonRetour(ecran !== "seance" ? () => setEcran("seance") : null, signaler("Bouton retour"));
 
   useEffect(() => {
-    lireReglages()
+    const lecture = lireReglages();
+    lecture
       .then((r) => {
-        appliquerTheme(r.theme);
+        if (r) appliquerTheme(r.theme);
         setReglages(r);
       })
       .catch(signaler("Réglages"));
     // Une copie datée par jour, au lancement, avant toute écriture de séance ; puis envoi sur
-    // Nextcloud en arrière-plan (la dernière copie existante, même si celle du jour a échoué).
+    // Nextcloud en arrière-plan (la dernière copie existante, même si celle du jour a échoué),
+    // pour l'installation de Tom seulement. Réglages illisibles : déjà signalé juste au-dessus, pas d'envoi.
     stockage
       .sauvegardeDuJour(jourLocal(new Date()))
       .catch(signaler("Sauvegarde du jour"))
-      .then(() => stockage.envoyerSauvegarde())
+      .then(() => lecture.catch(() => null))
+      .then((r) => (r && r.envoi !== false ? stockage.envoyerSauvegarde() : null))
       .catch(signaler("Envoi de la sauvegarde"));
   }, []);
 
@@ -55,14 +60,18 @@ export default function App() {
       )}
       {surAndroid && <MiseAJour />}
       <main>
-        {ecran === "seance" && <EcranSeance onErreur={signaler("Séance")} onEnSeance={setEnSeance} />}
+        {reglages === null && <EcranBienvenue onFini={changerReglages} onErreur={signaler("Bienvenue")} />}
+        {ecran === "seance" && reglages && (
+          <EcranSeance programmeChoisi={reglages.programme} sexe={reglages.sexe ?? "homme"} onProgramme={(programme) => changerReglages({ ...reglages, programme })}
+                       onErreur={signaler("Séance")} onEnSeance={setEnSeance} />
+        )}
         {ecran === "journal" && <EcranJournal onErreur={signaler("Journal")} />}
-        {ecran === "personnage" && <EcranPersonnage onErreur={signaler("Personnage")} />}
+        {ecran === "personnage" && reglages && <EcranPersonnage programmeChoisi={reglages.programme} prenom={reglages.prenom} sexe={reglages.sexe ?? "homme"} onErreur={signaler("Personnage")} />}
         {ecran === "reglages" && reglages && (
-          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Minuteur")} />
+          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Réglages")} />
         )}
       </main>
-      {!enSeance && <nav>
+      {!enSeance && reglages && <nav>
         <button aria-current={ecran === "seance" ? "page" : undefined} onClick={() => setEcran("seance")}>
           Séance
         </button>

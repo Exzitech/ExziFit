@@ -1,6 +1,7 @@
 import {
   cancel, createChannel, Importance, isPermissionGranted, requestPermission, Schedule, sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { dansTauri } from "./stockage";
 
@@ -22,8 +23,9 @@ async function preparer(): Promise<void> {
 
 /**
  * Lance un repos et renvoie l'instant de fin (ms). La notification programmée (alarme exacte,
- * voir le manifeste Android) est ce qui vibre écran verrouillé ; le compte affiché n'est qu'un repère.
- * Un nouveau repos remplace le précédent (même identifiant de notification).
+ * voir le manifeste Android) est ce qui vibre écran verrouillé ; le compte affiché n'est qu'un repère,
+ * dans l'app et dans le volet (décompte muet de ReposPlugin.kt, qui s'efface à la fin).
+ * Un nouveau repos remplace le précédent (mêmes identifiants de notification).
  */
 export async function lancerRepos(secondes: number): Promise<number> {
   const fin = Date.now() + secondes * 1000;
@@ -33,12 +35,15 @@ export async function lancerRepos(secondes: number): Promise<number> {
     id: ID_NOTIF, channelId: CANAL, title: "Repos terminé", body: "Série suivante",
     schedule: Schedule.at(new Date(fin), false, true),
   });
+  await invoke("repos_afficher", { fin });
   return fin;
 }
 
 /** Annule le repos programmé (fin de séance) : rien ne doit vibrer après. */
 export async function annulerRepos(): Promise<void> {
-  if (surAndroid) await cancel([ID_NOTIF]);
+  if (!surAndroid) return;
+  await cancel([ID_NOTIF]);
+  await invoke("repos_retirer");
 }
 
 /** Secondes restantes jusqu'à `fin` (ms), rafraîchies à l'écran ; 0 sans repos en cours. */

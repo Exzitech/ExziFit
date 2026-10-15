@@ -15,6 +15,8 @@ export interface Stockage {
   /** Jour de la dernière copie envoyée sur Nextcloud. */
   sauvegardeEnvoyee(): Promise<string | null>;
   dossier(): Promise<string>;
+  /** Toutes les données en un fichier JSON (format du paquet envoyé), proposé au partage ; renvoie son nom ou chemin. */
+  exporter(jour: string): Promise<string>;
 }
 
 export const dansTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -28,6 +30,7 @@ const tauri: Stockage = {
   envoyerSauvegarde: () => invoke("sauvegarde_envoyer"),
   sauvegardeEnvoyee: () => invoke("sauvegarde_envoyee"),
   dossier: () => invoke("dossier_donnees"),
+  exporter: (jour) => invoke("exporter", { jour }),
 };
 
 // `npm run dev` dans le navigateur du PC : même interface sur localStorage, pour travailler
@@ -48,6 +51,17 @@ const navigateur: Stockage = {
   envoyerSauvegarde: async () => null,
   sauvegardeEnvoyee: async () => null,
   dossier: async () => "localStorage du navigateur (développement)",
+  exporter: async (jour) => {
+    const fichiers = Object.fromEntries(
+      Object.keys(localStorage).filter((k) => k.startsWith(PREFIXE)).sort().map((k) => [k.slice(PREFIXE.length), localStorage.getItem(k)]),
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ format: 1, jour, fichiers }, null, 2)], { type: "application/json" }));
+    a.download = `exzifit-${jour}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return a.download;
+  },
 };
 
 export const stockage: Stockage = dansTauri ? tauri : navigateur;

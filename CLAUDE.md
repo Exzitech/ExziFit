@@ -1,7 +1,9 @@
 # CLAUDE.md — ExziFit
 
 App de musculation avec une couche RPG. **Pour Tom d'abord**, des amis ensuite,
-peut-être des clients un jour — dans cet ordre, et la v1 ne sert que le premier.
+peut-être des clients un jour — dans cet ordre. La v1 sert Tom, et quelques potes depuis le
+2026-10-15 (même APK, écran de bienvenue, données locales, export manuel ; pas d'envoi Nextcloud
+pour eux : le dossier de dépôt est celui de Tom).
 Journal du chantier : [PROGRESS.md](PROGRESS.md).
 
 ## Pourquoi cette app existe

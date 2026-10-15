@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { exercice } from "./exercices";
 import type { Seance, Serie } from "./journal";
 import {
-  avertissements, bilan, blocFini, cible, disques, echauffement, etatTest, exosPct1rm, ouvertureTest, PROGRAMME,
-  prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe,
+  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, ouvertureTest, programme,
+  programmeDe, PROGRAMMES, prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe,
 } from "./programme";
 
+const PROGRAMME = programme("bloc-force");
 const S1 = PROGRAMME.semaines[0];
 const S3 = PROGRAMME.semaines[2];
 const S4 = PROGRAMME.semaines[3];
@@ -186,6 +187,12 @@ describe("fin de bloc et test", () => {
     expect(blocFini(PROGRAMME, [jour("2026-11-10T18:00:00+02:00", "J5", 2)], "b", 0)).toBe(false);
   });
 
+  it("programme d'une seule semaine : jamais fini, la semaine se répète", () => {
+    const p = programme("endurance");
+    expect(blocFini(p, [jour("2026-11-10T18:00:00+02:00", "J4")], "b", 0)).toBe(false);
+    expect(semaineDe(p, [jour("2026-11-10T18:00:00+02:00", "J4")], "b", 0)).toBe(0);
+  });
+
   it("test : 1RM au bench, 3RM ailleurs, une fois par bloc, fini à 0 RIR ou sous les reps", () => {
     const vide: Seance = { debut: "", exercices: [] };
     expect(etatTest(S1, [], "b", vide, bench.id)).toBeNull();
@@ -236,5 +243,62 @@ describe("bilan de séance", () => {
     // Test : 157,5 × 1 à 0 RIR mesuré sous les 159 estimés avant → pas de record, malgré l'estimé à 1 RIR.
     const teste = { ...s, exercices: [{ exo: "developpe-couche", series: [{ ...t(152.5, 1, 1), test: true as const }, { ...t(157.5, 1, 0), test: true as const }] }] };
     expect(bilan(teste, [faite("2026-10-01", "developpe-couche", [t(140, 3, 1)])]).exos[0].record).toBeUndefined();
+  });
+});
+
+describe("encouragement de fin d'exo", () => {
+  const bench = exercice("developpe-couche");
+  const passees = [faite("2026-10-01", "developpe-couche", [t(130, 5, 1), t(130, 5, 0)])];
+
+  it("record de 1RM estimé d'abord", () => {
+    expect(encouragement(bench, [t(135, 5, 1)], passees, "x")).toMatch(/^Record : 1RM estimé 162 kg \(avant 156\)/);
+  });
+
+  it("charge ou reps au-dessus de la dernière fois, sans record", () => {
+    expect(encouragement(bench, [t(132.5, 3, 0)], passees, "x")).toBe("+2,5 kg par rapport à la dernière fois.");
+    expect(encouragement(bench, [t(130, 5, 0), t(130, 5, 0), t(130, 2, 0)], passees, "x")).toBe("2 reps de plus que la dernière fois.");
+  });
+
+  it("sinon une phrase sans chiffre, la même pour la même graine", () => {
+    const a = encouragement(bench, [t(120, 5, 0)], passees, "seance-1");
+    expect(a).not.toMatch(/\d/);
+    expect(encouragement(bench, [t(120, 5, 0)], passees, "seance-1")).toBe(a);
+    // Première fois : rien à comparer.
+    expect(encouragement(bench, [t(100, 5, 1)], [], "y")).not.toMatch(/\d/);
+  });
+});
+
+describe("échauffement général", () => {
+  const jourDe = (id: string) => PROGRAMME.jours.find((j) => j.id === id)!.exercices.flatMap((p) => p.superset ?? [p.exo as string]).map(exercice);
+
+  it("cardio d'abord, puis la mobilité des seuls muscles du jour", () => {
+    const bench = preparation(jourDe("J1"));
+    expect(bench.etapes[0]).toMatch(/^Cardio/);
+    expect(bench.etapes.join()).toMatch(/Dislocations d'épaules/);
+    expect(bench.etapes.join()).not.toMatch(/Squat|pointes/);
+    const jambes = preparation(jourDe("J2"));
+    expect(jambes.etapes.join()).toMatch(/Squat au poids du corps.*Good morning.*pointes/);
+    expect(jambes.etapes.join()).not.toMatch(/Dislocations/);
+    expect(jambes.minutes).toBe(5 + jambes.etapes.length - 1);
+  });
+});
+
+describe("programmes", () => {
+  it("chaque programme ne cite que des exos connus et des schémas présents chaque semaine", () => {
+    for (const p of PROGRAMMES) {
+      expect(new Set(p.jours.map((j) => j.id)).size, p.id).toBe(p.jours.length);
+      for (const j of p.jours) for (const x of j.exercices) {
+        for (const id of [...(x.superset ?? [x.exo as string]), ...(x.alternatives ?? [])]) expect(() => exercice(id), `${p.id} ${j.id}`).not.toThrow();
+        const pr = x.prescription;
+        if (pr.type === "pct1rm") for (const s of p.semaines) expect(s.schemas[pr.schema], `${p.id} ${j.id} ${s.nom}`).toBeDefined();
+      }
+    }
+  });
+
+  it("séance sans programme noté = Bloc Force ; séance libre = aucun ; id inconnu = défaut", () => {
+    expect(programmeDe({ debut: "", jour: "J1", exercices: [] })?.id).toBe("bloc-force");
+    expect(programmeDe({ debut: "", jour: "J1", programme: "endurance", exercices: [] })?.id).toBe("endurance");
+    expect(programmeDe({ debut: "", exercices: [] })).toBeUndefined();
+    expect(programme("retire").id).toBe("bloc-force");
   });
 });

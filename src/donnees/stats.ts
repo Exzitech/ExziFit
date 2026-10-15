@@ -6,6 +6,19 @@ import { e1rmSerie, type Programme } from "./programme";
 
 export interface Pesee { date: string; kg: number }
 
+export type Sexe = "homme" | "femme";
+
+const BAS_DU_CORPS: Muscle[] = ["quadriceps", "ischios", "fessiers", "mollets"];
+
+/**
+ * Référence féminine = référence masculine × facteur (docs/stats.md, « Force ») : 0,8 si l'exo
+ * travaille surtout le bas du corps, 0,65 sinon. Force 100 = très avancé(e) dans son sexe.
+ */
+export function facteurSexe(sexe: Sexe, principaux: Muscle[]): number {
+  if (sexe === "homme") return 1;
+  return principaux.some((m) => BAS_DU_CORPS.includes(m)) ? 0.8 : 0.65;
+}
+
 export interface Stats {
   /** `undefined` sans pesée ou sans aucun exo de force fait. */
   force?: number;
@@ -29,15 +42,6 @@ export const MUSCLES: Muscle[] = [
   "ischios", "fessiers", "mollets", "abdos", "avant-bras",
 ];
 
-/** e1RM ÷ poids de corps qui vaut 100 (niveau « très avancé » naturel). */
-export const REFERENCES_FORCE: Record<string, number> = {
-  "developpe-couche": 1.75,
-  "developpe-militaire-barre": 1.1,
-  "souleve-de-terre": 2.75,
-  "tractions-lestees": 1.75,
-  "hack-squat": 3.0,
-};
-
 const JOUR = 86_400_000;
 
 /** Série de travail à RIR ≤ 3 ; un RIR absent compte (données anciennes). */
@@ -56,7 +60,7 @@ function poidsA(pesees: Pesee[], t: number): number | undefined {
 /** Séances faites, triées, jusqu'à `maintenant` inclus. */
 const jusqua = (seances: Seance[], t: number) => seances.filter((s) => Date.parse(s.debut) <= t);
 
-function force(seances: Seance[], pesees: Pesee[], t: number): number | undefined {
+function force(seances: Seance[], pesees: Pesee[], sexe: Sexe, t: number): number | undefined {
   const tries = [...pesees].sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
   const poids = poidsA(tries, t);
   if (poids === undefined) return undefined;
@@ -76,12 +80,14 @@ function force(seances: Seance[], pesees: Pesee[], t: number): number | undefine
   }
   if (!retenu.size) return undefined;
   let total = 0;
+  let coefs = 0;
   for (const [id, rm] of retenu) {
-    const ref = REFERENCES_FORCE[id];
-    if (ref === undefined) throw new Error(`pas de référence de Force pour ${id}`);
-    total += (100 * rm) / poids / ref;
+    const e = exercice(id);
+    const { ref, poids: coef } = e.force!;
+    total += (coef * 100 * rm) / poids / (ref * facteurSexe(sexe, e.muscles.principaux));
+    coefs += coef;
   }
-  return total / retenu.size;
+  return total / coefs;
 }
 
 /** Séries dures par semaine sur 28 jours (principal 1, secondaire 0,5), score plafonné à 10 séries. */
@@ -155,12 +161,12 @@ function progression(p: Progres[]): number | undefined {
   return comparables.length ? (100 * comparables.filter(monte).length) / comparables.length : undefined;
 }
 
-export function stats(seances: Seance[], pesees: Pesee[], seuil: number, maintenant: Date): Stats {
+export function stats(seances: Seance[], pesees: Pesee[], sexe: Sexe, seuil: number, maintenant: Date): Stats {
   const t = maintenant.getTime();
   const faites = jusqua(seances, t);
   const g = groupes(faites, t);
   return {
-    force: force(faites, pesees, t),
+    force: force(faites, pesees, sexe, t),
     groupes: g,
     endurance: MUSCLES.reduce((s, m) => s + g[m], 0) / MUSCLES.length,
     constance: constance(faites, t, seuil),

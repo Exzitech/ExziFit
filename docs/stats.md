@@ -29,24 +29,34 @@ rien ne se crédite, et la même date redonne toujours le même résultat.
 
 Lecture : « quelle charge je soulève, rapportée à mon poids ».
 
-1. Pour chaque exo `force: true` déjà fait au moins une fois :
+1. Pour chaque exo qui a une part de Force (`force` dans `exercices.ts`) déjà fait au moins une fois :
    `e1RM retenu = max sur toutes ses séries dures de e1RM(série) × usure(âge de la série)`.
 2. `usure(âge)` = 1 jusqu'à 21 jours, puis −1 % par semaine (exponentiel), jamais sous 0,7.
    Raison : la force se maintient environ 3 semaines sans entraînement puis baisse lentement ;
    un retour à la salle remet immédiatement la vraie valeur (la nouvelle série l'emporte).
 3. `score exo = 100 × (e1RM retenu / poids de corps) / référence exo`.
-4. **Force = moyenne des scores exo.** Un exo jamais fait n'entre pas dans la moyenne (un
-   programme sans hack squat n'est pas pénalisé).
+4. **Force = moyenne des scores exo pondérée par leur coefficient** (demande de Tom, 2026-10-15 :
+   chaque exo compte plus ou moins, au lieu de cinq gros mouvements seulement). Un exo jamais fait
+   n'entre pas dans la moyenne (un programme sans hack squat n'est pas pénalisé).
 
-Références (× poids de corps, = 100, niveau « très avancé » naturel) :
+Charges réelles (poids à vide de la machine et moufle de la salle appliqués), **par haltère** pour
+les haltères, corps + lest pour les lestés. Références = niveau « très avancé » naturel (× poids
+de corps) ; celles des machines et poulies sont indicatives (elles dépendent de la machine), d'où
+leur faible coefficient. Les isolations à plus de 10 reps n'entrent pas (règle des ≤ 10 reps).
 
-| Exo | Référence |
+| Coefficient | Exos (référence) |
 |---|---|
-| Développé couché | 1,75 |
-| Développé militaire barre | 1,1 |
-| Soulevé de terre | 2,75 |
-| Tractions lestées (corps + lest) | 1,75 |
-| Hack squat | 3,0 (dépend de la machine, valeur indicative) |
+| 1 — gros mouvements | Développé couché 1,75 · Militaire barre 1,1 · Soulevé de terre 2,75 · Tractions lestées 1,75 · Hack squat 3 |
+| 0,5 — polyarticulaires secondaires | Couché Smith 1,75 · Militaire Smith 1,1 · Militaire haltères 0,45 · Incliné haltères 0,55 · Squat Smith 2,25 · Presse 4 · Soulevé roumain 2 · Tirage vertical prise neutre 1 · Rowing barre 1,5 · Rowing haltère 0,8 · Dips lestés 2 · Fentes bulgares 0,6 · Hip thrust 3 |
+| 0,25 — isolation | Leg curl allongé 1 · assis 1,1 · Leg extension 1,25 · Mollets debout 2,5 · Mollets assis 1,5 · Élévations latérales 0,15 · Écarté poulie 0,2 · Pullover poulie 0,4 · Écarté inversé 0,15 · Face pull 0,5 · Curl poulie 0,6 · Curl marteau 0,35 · Curl incliné haltères 0,2 · Extension poulie haute 0,75 · Extension corde nuque 0,6 · Crunch poulie 1 |
+| aucun | Dips et tractions australiennes sans lest, farmer's walk |
+
+**Femme** (réglage `sexe`, 2026-10-15) : référence × **0,8** si l'exo a un groupe du bas du corps
+(quadriceps, ischios, fessiers, mollets) parmi ses principaux, × **0,65** sinon. Force 100 reste
+« très avancée » dans son sexe, et les seuils du personnage restent communs. Rapports tirés de
+mémoire des tableaux de niveaux usuels (Strength Level : femme ≈ 0,6–0,65 de l'homme au couché et
+au militaire, ≈ 0,75–0,8 au squat et au soulevé), pas vérifiés sur source ; à revoir si une amie
+s'en sert.
 
 Sans pesée : Force non calculée (affichée « pesée manquante »), plutôt qu'un poids inventé.
 
@@ -82,7 +92,7 @@ aucune notion de « série en cours » ni de compteur qui repart à zéro.
 ## Progression
 
 Lecture : « est-ce que mes charges montent ». Ajoutée le 2026-10-13 (demande de Tom : une fois la
-dose des groupes atteinte, plus rien ne bougeait, et la Force ne voit que 5 mouvements).
+dose des groupes atteinte, plus rien ne bougeait, et la Force ne voyait que 5 mouvements).
 
 - **Par exo** : meilleur 1RM estimé des **14 derniers jours** comparé à celui d'il y a **28 à
   42 jours**, sur les séries dures de 15 reps au plus. On compare un exo à lui-même, donc pas de
@@ -119,6 +129,9 @@ pesée) compte pour 0. Il redescend dès que le score repasse sous le seuil.
 Seuils de Force serrés au milieu de l'échelle (100 = très avancé), là où se trouve un pratiquant
 intermédiaire, pour qu'un vrai progrès se voie en quelques mois. Constance 75 = 6 semaines tenues
 sur 8. Seuils posés sans données réelles, à revoir après quelques semaines d'usage.
+
+**Femme** : même grille et mêmes traits, plus cheveux longs jusqu'aux épaules, brassière à
+l'accent sur le haut du torse et short élargi d'un pixel (hanches).
 
 L'onglet Perso montre aussi le personnage calculé 8 semaines plus tôt (mêmes formules, à cette
 date) quand sa silhouette diffère, et pour chaque stat le seuil du prochain palier et celui sous

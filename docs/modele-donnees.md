@@ -2,9 +2,10 @@
 
 Validé par Tom le 2026-10-13. **Implémenté** : exercices de base, journal, séance en cours,
 `blocs.json`, `poids.json`, prescriptions et rotation, avertissements des règles `ecart`,
-semaine de test et fin de bloc. Le programme est lu depuis le code
-(`src/donnees/programmes/bloc-force.json`), pas encore depuis `programmes.json`. Reste :
-éditeur de programmes, exercices perso.
+semaine de test et fin de bloc, choix du programme (0.1.30). Les programmes sont lus depuis le
+code (`src/donnees/programmes/*.json` : Bloc Force, Push / Pull / Legs, Capacité de travail,
+Haut / bas express), pas encore depuis `programmes.json`. Reste : éditeur de programmes,
+exercices perso.
 Validée sur papier par la transcription
 du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programmes/bloc-force.json).
 
@@ -33,7 +34,8 @@ du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programm
 | `blocs.json` | historique des blocs lancés, avec leurs 1RM figés | au début / à la fin d'un bloc |
 | `exercices.json` | exercices **perso** uniquement | à la création d'un exercice |
 | `poids.json` | pesées | à chaque pesée |
-| `reglages.json` | thème, disques disponibles, barre | dans les réglages |
+| `salles.json` | salles et réglages de leurs machines (voir « Salles ») | à l'ajout ou au renommage d'une salle (Réglages), au réglage d'une machine (saisie) |
+| `reglages.json` | thème, programme choisi (`programme`, absent = Bloc Force), `sexe` (`"homme"` / `"femme"`, absent = homme : références de Force et dessin), `prenom` (optionnel, titre de l'onglet Perso), `envoi` (`false` = pas d'envoi Nextcloud ; absent = actif, installation de Tom), disques disponibles, barre | dans les réglages ; au changement de programme (accueil) ; créé par l'écran de bienvenue (installation neuve) |
 | `sauvegardes/` | copies datées de tout le dossier | au lancement, une fois par jour |
 
 Les exercices de base sont **dans le code** (identifiants stables : `developpe-couche`,
@@ -41,6 +43,24 @@ Les exercices de base sont **dans le code** (identifiants stables : `developpe-c
 
 Volume attendu : ~5 000 séries par an, ~50 Ko par mois de journal. Tout recharger au lancement
 reste de l'ordre de la milliseconde pendant des années ; aucun index ni base de données.
+
+## Salles
+
+```json
+{ "format": 1, "salles": [
+  { "id": "salle-1", "nom": "Ma salle", "machines": {
+      "presse-cuisses": { "aVide": 76 },
+      "extension-triceps-poulie-haute": { "poulie": 2 } } } ] }
+```
+
+- Le journal note **ce qui se lit sur la machine** (disques seuls, chiffre de la pile) et la salle
+  de la séance. Les calculs prennent la charge réelle : `kg ÷ poulie + aVide` (+ corps sur un lesté).
+- Les réglages sont lus au moment du calcul, jamais recopiés dans le journal : corriger un poids
+  à vide (76 → 70) corrige aussi les séances passées dans cette salle.
+- `aVide` ne compte que sur un exo `disques: true`, `poulie` sur un exo `charge: "poulie"`.
+- Une séance sans `salle` (avant le 2026-10-15) compte dans la première salle de la liste.
+- Sans fichier : une salle « Ma salle » sans réglage. Une salle ne se supprime pas (les séances
+  qui la citent perdraient leurs réglages).
 
 ## Exercice
 
@@ -51,14 +71,17 @@ reste de l'ordre de la milliseconde pendant des années ; aucun index ni base de
   "charge": "poids-corps-leste",
   "pas": 2.5,
   "muscles": { "principaux": ["dos"], "secondaires": ["biceps"] },
-  "force": true
+  "force": { "ref": 1.75, "poids": 1 }
 }
 ```
 
 - `charge` : `barre` (barre + disques, affiche les disques par côté), `halteres`, `machine`,
   `poulie`, `poids-corps-leste` (1RM = corps + lest), `poids-corps`, `distance` (farmer's walk).
 - `pas` : arrondi des charges proposées pour cet exercice.
-- `force: true` : compte dans la stat Force (gros mouvements).
+- `force` : part dans la stat Force ([stats.md](stats.md)) : `ref` = e1RM ÷ poids de corps qui vaut
+  100, `poids` = coefficient dans la moyenne. Absent : l'exo ne compte pas.
+- `disques: true` : machine chargée de disques (Smith, presse, hack squat) ; `kg` = disques seuls,
+  affichés par côté. Le poids à vide de la machine vient de la salle.
 - Groupes musculaires (liste fermée, pour la stat par groupe) : `pectoraux`, `dos`, `epaules`,
   `biceps`, `triceps`, `quadriceps`, `ischios`, `fessiers`, `mollets`, `abdos`, `avant-bras`.
 
@@ -148,7 +171,11 @@ reculer les suivantes (décidé le 2026-10-13, remplace « figé au début du bl
 **Fin de bloc** : quand la dernière séance du bloc est en dernière semaine et que le jour choisi
 relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le suivant en S1, avec
 `rm` = résultat du test du bloc, sinon 1RM effectif, arrondi au demi-kilo. Pas de migration :
-`fin` existait déjà, toujours `null` jusqu'ici.
+`fin` existait déjà, toujours `null` jusqu'ici. Un programme d'une seule semaine (répétée)
+n'a pas de fin de bloc.
+
+**Changer de programme** (accueil, 0.1.30) : écrit `programme` dans `reglages.json`, rien d'autre.
+Chaque programme garde son bloc ouvert ; y revenir reprend sa rotation là où elle en était.
 
 ## Séance faite (journal)
 
@@ -159,7 +186,7 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
     {
       "debut": "2026-10-14T18:02:11+02:00",
       "fin": "2026-10-14T19:15:40+02:00",
-      "bloc": "2026-10-14-bloc-force", "semaine": 0, "jour": "J1",
+      "bloc": "2026-10-14-bloc-force", "programme": "bloc-force", "semaine": 0, "jour": "J1",
       "exercices": [
         {
           "exo": "developpe-couche",
@@ -176,9 +203,14 @@ relance la rotation, Démarrer écrit `fin` (jour local) sur le bloc et ouvre le
 }
 ```
 
-- `poulie` (optionnel, `2`) : salle à poulie double (moufle). Sur les exos `charge: "poulie"`,
-  `kg` est la **charge effective** (pile ÷ 2) : les calculs comparent les salles sans conversion,
-  seul l'écran multiplie. Absent = poulie simple. Ajouté le 2026-10-13, pas de migration.
+- `programme` (optionnel) : programme du `jour` (les jours s'appellent J1, J2… dans chaque
+  programme). Ajouté le 2026-10-15 (0.1.30) ; absent sur une séance de programme = `bloc-force`,
+  pas de migration. Absent sur une séance libre (pas de `jour`).
+- `salle` (optionnel) : identifiant dans `salles.json` ; ses réglages de machine s'appliquent aux
+  `kg` notés. Ajouté le 2026-10-15 (0.1.26) ; absent = première salle, pas de migration.
+- `poulie` (ancien, `2`, de 0.1.15 à 0.1.25, plus écrit) : salle à poulie double ; sur ces seules
+  séances, `kg` des exos à la poulie est la **charge réelle** (pile ÷ 2). Les séances qui ont une
+  `salle` notent le chiffre de la pile. Une séance en cours d'avant les salles est convertie à la reprise.
 - `test` (optionnel, `true`) : tentative du test de fin de bloc. Champ ajouté le 2026-10-13,
   absent des anciennes séances : pas de migration.
 - `prevu` : ce que l'app avait proposé. Sert à mesurer le point 3 de la v1 (« assez bonne

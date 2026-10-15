@@ -1,0 +1,46 @@
+{
+  "format": 1,
+  "programmes": [
+    {
+      "id": "superset-express",
+      "nom": "Haut / bas express",
+      "semaines": [
+        { "nom": "S1", "label": "Continu", "schemas": {} }
+      ],
+      "jours": [
+        { "id": "J1", "nom": "Haut A", "objectif": "superset", "lourd": true,
+          "note": "Poussée lourde seule, puis paires poussée / tirage et biceps / triceps.",
+          "exercices": [
+            { "exo": "developpe-couche", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 6, "repsMax": 8, "rir": 2 }, "repos": 150 },
+            { "superset": ["developpe-incline-halteres", "rowing-haltere"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "superset": ["elevations-laterales-poulie", "ecarte-inverse-poulie"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 60 },
+            { "superset": ["curl-incline-halteres", "extension-corde-nuque"], "prescription": { "type": "fourchette", "series": 4, "repsMin": 10, "repsMax": 12, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J2", "nom": "Bas A", "objectif": "superset", "lourd": true,
+          "note": "Hack lourd seul, puis quadriceps / ischios et ischios / mollets.",
+          "exercices": [
+            { "exo": "hack-squat", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 6, "repsMax": 10, "rir": 2 }, "repos": 150 },
+            { "superset": ["leg-extension", "leg-curl-assis"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 60 },
+            { "superset": ["souleve-roumain", "mollets-debout"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 90 }
+          ] },
+        { "id": "J3", "nom": "Haut B", "objectif": "superset", "lourd": false,
+          "note": "Tirage lourd seul, puis les paires inverses du Haut A.",
+          "exercices": [
+            { "exo": "tractions-lestees", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 6, "repsMax": 8, "rir": 2 }, "repos": 150 },
+            { "superset": ["developpe-militaire-halteres", "tirage-vertical-neutre"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 90 },
+            { "superset": ["ecarte-poulie", "pullover-poulie"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 15, "rir": 1 }, "repos": 60 },
+            { "superset": ["curl-poulie-basse", "extension-triceps-poulie-haute"], "prescription": { "type": "fourchette", "series": 4, "repsMin": 10, "repsMax": 15, "rir": 1 }, "repos": 60 }
+          ] },
+        { "id": "J4", "nom": "Bas B", "objectif": "superset", "lourd": false,
+          "note": "Presse, unilatéral et fessiers : le volume des jambes en 40 min.",
+          "exercices": [
+            { "exo": "presse-cuisses", "role": "principal", "prescription": { "type": "fourchette", "series": 4, "repsMin": 10, "repsMax": 15, "rir": 2 }, "repos": 120 },
+            { "superset": ["fentes-bulgares", "leg-curl-allonge"], "note": "fentes : par jambe", "prescription": { "type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 12, "rir": 2 }, "repos": 75 },
+            { "superset": ["hip-thrust", "crunch-poulie-haute"], "prescription": { "type": "fourchette", "series": 3, "repsMin": 10, "repsMax": 15, "rir": 2 }, "repos": 60 }
+          ] }
+      ],
+      "regles": [],
+      "notes": ["Principal seul avec repos complet, le reste en paires antagonistes. 1 à 2 reps en réserve."]
+    }
+  ]
+}

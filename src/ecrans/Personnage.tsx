@@ -4,8 +4,9 @@ import { lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bl
 import { exercice, type Muscle } from "../donnees/exercices";
 import { jourLocal } from "../donnees/fichier";
 import { lireSeances } from "../donnees/journal";
-import { PROGRAMME } from "../donnees/programme";
-import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Stats } from "../donnees/stats";
+import { programme } from "../donnees/programme";
+import { lireSalles, normaliser } from "../donnees/salles";
+import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Sexe, type Stats } from "../donnees/stats";
 
 const NOMS: Record<Muscle, string> = {
   pectoraux: "Pectoraux", dos: "Dos", epaules: "Épaules", biceps: "Biceps", triceps: "Triceps",
@@ -13,9 +14,11 @@ const NOMS: Record<Muscle, string> = {
   abdos: "Abdos", "avant-bras": "Avant-bras",
 };
 
-/** Seuil de Constance : celui du programme du bloc ouvert, sinon celui sans programme. */
-export const seuilActuel = (blocs: Bloc[]) =>
-  seuilConstance(blocs.some((b) => b.programme === PROGRAMME.id && b.fin === null) ? PROGRAMME : undefined);
+/** Seuil de Constance : celui du programme choisi s'il a un bloc ouvert, sinon celui sans programme. */
+export function seuilActuel(blocs: Bloc[], choisi: string | undefined) {
+  const p = programme(choisi);
+  return seuilConstance(blocs.some((b) => b.programme === p.id && b.fin === null) ? p : undefined);
+}
 
 /** Barre de 10 cases ; au-delà de 100 elle est simplement pleine. */
 export function Barre({ valeur }: { valeur: number }) {
@@ -63,12 +66,12 @@ export function Ecarts({ avant, apres }: { avant: Stats; apres: Stats }) {
 }
 
 /** Personnage dessiné depuis les paliers ; `taille` = côté d'un pixel en px. */
-export function Avatar({ p, taille, nom }: { p: Paliers; taille: number; nom: string }) {
+export function Avatar({ p, sexe, taille, nom }: { p: Paliers; sexe: Sexe; taille: number; nom: string }) {
   const etat = p.constance === 0 ? "terne" : p.constance === SEUILS.constance.length ? "halo" : undefined;
   return (
     <svg className={`avatar ${etat ?? ""}`} role="img" aria-label={nom} width={LARGEUR * taille} height={HAUTEUR * taille}
          viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`} shapeRendering="crispEdges">
-      {bandes(grille(p)).map((b) => <rect key={`${b.x},${b.y}`} x={b.x} y={b.y} width={b.l} height={1} className={`px${b.c}`} />)}
+      {bandes(grille(p, sexe)).map((b) => <rect key={`${b.x},${b.y}`} x={b.x} y={b.y} width={b.l} height={1} className={`px${b.c}`} />)}
     </svg>
   );
 }
@@ -98,19 +101,26 @@ function ecart(x: Progres): string {
   return monte(x) ? `▲ +${pct} %` : x.actuel <= x.avant * 0.99 ? `▼ −${pct} %` : "=";
 }
 
-export default function EcranPersonnage({ onErreur }: { onErreur: (e: unknown) => void }) {
+export default function EcranPersonnage(
+  { programmeChoisi, prenom, sexe, onErreur }: {
+    programmeChoisi: string | undefined; prenom: string | undefined; sexe: Sexe; onErreur: (e: unknown) => void;
+  },
+) {
   const [s, setS] = useState<Stats | null>(null);
   const [avant, setAvant] = useState<Stats | null>(null);
   const [p, setP] = useState<Progres[]>([]);
   const [pesees, setPesees] = useState<Pesee[]>([]);
 
   const charger = () =>
-    Promise.all([lireSeances(), lirePesees(), lireBlocs()])
-      .then(([seances, pe, blocs]) => {
+    Promise.all([lireSeances(), lirePesees(), lireBlocs(), lireSalles()])
+      .then(([brutes, pe, blocs, salles]) => {
+        // Charge réelle (chariot compris, moufle retirée) : les salles se comparent entre elles.
+        const seances = normaliser(brutes, salles);
         const maintenant = new Date();
         setPesees(pe);
-        setS(stats(seances, pe, seuilActuel(blocs), maintenant));
-        setAvant(stats(seances, pe, seuilActuel(blocs), new Date(maintenant.getTime() - 56 * 86_400_000)));
+        const seuil = seuilActuel(blocs, programmeChoisi);
+        setS(stats(seances, pe, sexe, seuil, maintenant));
+        setAvant(stats(seances, pe, sexe, seuil, new Date(maintenant.getTime() - 56 * 86_400_000)));
         setP(progres(seances, pe, maintenant));
       })
       .catch(onErreur);
@@ -130,17 +140,17 @@ export default function EcranPersonnage({ onErreur }: { onErreur: (e: unknown) =
   const change = pAvant && TRAITS.some(([t]) => pAvant[t] !== pa[t]);
   return (
     <>
-      <h1>Personnage</h1>
+      <h1>{prenom ?? "Personnage"}</h1>
       <div className="carte">
         <div className="avatars">
           {change && pAvant && (
             <figure>
-              <Avatar p={pAvant} taille={4} nom="Personnage il y a 8 semaines" />
+              <Avatar p={pAvant} sexe={sexe} taille={4} nom="Personnage il y a 8 semaines" />
               <figcaption className="doux">Il y a 8 sem.</figcaption>
             </figure>
           )}
           <figure>
-            <Avatar p={pa} taille={6} nom="Personnage aujourd'hui" />
+            <Avatar p={pa} sexe={sexe} taille={6} nom="Personnage aujourd'hui" />
             <figcaption>{change ? "Aujourd'hui" : "Même silhouette qu'il y a 8 sem."}</figcaption>
           </figure>
         </div>

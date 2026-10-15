@@ -3,15 +3,18 @@ import { ecrireBlocs, lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "
 import { EXERCICES, exercice, libelleCharge, type Exercice } from "../donnees/exercices";
 import { horodatage, jourLocal } from "../donnees/fichier";
 import {
-  ajusterKg, archiverSeance, ecrireEnCours, facteurPoulie, historique, lireEnCours, lireSeances, poulieRetenue,
-  proposition, supprimerEnCours, type Seance, type Serie,
+  ajusterKg, archiverSeance, ecrireEnCours, historique, lireEnCours, lireSeances, proposition, supprimerEnCours,
+  type Seance, type Serie,
 } from "../donnees/journal";
 import {
-  avertissements, bilan, blocFini, cible, disques, echauffement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
-  PROGRAMME, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc, semaineDe, type Bilan, type Cible,
-  type Poste, type Semaine,
+  ecrireSalles, exerciceEn, lireSalles, montage, normaliser, salleDe, salleRetenue, type Montage, type Salle,
+} from "../donnees/salles";
+import {
+  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
+  jourDeSeance, preparation, programme, programmeDe, PROGRAMMES, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc,
+  semaineDe, type Bilan, type Cible, type Poste, type Programme, type Semaine,
 } from "../donnees/programme";
-import { stats, type Pesee, type Stats } from "../donnees/stats";
+import { stats, type Pesee, type Sexe, type Stats } from "../donnees/stats";
 import { useBoutonRetour } from "../boutonRetour";
 import { Ecarts, seuilActuel } from "./Personnage";
 import { annulerRepos, lancerRepos, useReste } from "../minuteur";
@@ -29,15 +32,14 @@ interface Ligne { membres: string[]; poste?: Poste }
 
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-/** `f` : facteur de poulie (charge affichée = charge notée × f). */
-const serie = (s: Serie, f = 1) => `${nombre(s.kg * f)}×${s.reps}${s.rir === undefined ? "" : ` R${s.rir}`}`;
-const duree = (s: number) => (s % 60 ? `${Math.floor(s / 60)} min ${s % 60}` : `${s / 60} min`);
+const serie = (s: Serie) => `${nombre(s.kg)}×${s.reps}${s.rir === undefined ? "" : ` R${s.rir}`}`;
+const duree = (s: number) => (s < 60 ? `${s} s` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60}` : `${s / 60} min`);
 const charge = (e: Exercice, kg: number) =>
   e.charge === "poids-corps-leste" ? (kg ? `+${nombre(kg)} kg` : "PDC") : `${nombre(kg)} kg`;
 
 /** « 5 × 5 · 127,5 kg · 80 % », « 3 × 8–10 · 60 kg ». */
-function texteCible(e: Exercice, p: Poste, c: Cible, f = 1): string {
-  const kg = c.kg === null ? (p.prescription.type === "pct1rm" ? " · charge à calibrer" : "") : ` · ${charge(e, c.kg * f)}`;
+function texteCible(e: Exercice, p: Poste, c: Cible): string {
+  const kg = c.kg === null ? (p.prescription.type === "pct1rm" ? " · charge à calibrer" : "") : ` · ${charge(e, c.kg)}`;
   switch (p.prescription.type) {
     case "pct1rm": return `${c.series} × ${c.reps}${kg} · ${c.texte}`;
     case "fourchette": return `${c.series} × ${c.texte.replace(" reps", "")}${kg}`;
@@ -51,7 +53,7 @@ const nomLigne = (ids: string[]) => ids.map((id) => exercice(id).nom).join(" + "
 // ——— Calculs sur une séance : fonctions pures, appelables avant qu'un setState soit appliqué.
 
 function lignes(s: Seance): Ligne[] {
-  const jour = PROGRAMME.jours.find((j) => j.id === s.jour);
+  const jour = jourDeSeance(s);
   const prog: Ligne[] = jour?.exercices.map((p) => ({ membres: membres(p), poste: p })) ?? [];
   const dansProg = new Set(prog.flatMap((l) => l.membres));
   return [...prog, ...s.exercices.filter((x) => !x.remplace && !dansProg.has(x.exo)).map((x) => ({ membres: [x.exo] }))];
@@ -71,13 +73,24 @@ function reel(s: Seance, id: string): string {
 const duJourTout = (s: Seance, id: string) => s.exercices.filter((x) => x.exo === id).flatMap((x) => x.series);
 const faites = (s: Seance, id: string) => duJourTout(s, id).filter((x) => x.type === "travail");
 
-const semaineDeSeance = (s: Seance): Semaine => PROGRAMME.semaines[s.semaine ?? 0];
+/** Semaine d'une séance de programme (appelée seulement pour les lignes d'un jour). */
+const semaineDeSeance = (s: Seance): Semaine => programmeDe(s)!.semaines[s.semaine ?? 0];
 
-function cibleDe(p: Seance[], s: Seance, l: Ligne, id: string, b: Bloc | undefined, poids: number | undefined) {
+/**
+ * Contexte des calculs : séances passées réécrites dans les unités de la salle du jour (ce qui se
+ * lit sur ses machines), exercices montés dans cette salle (chariot, moufle).
+ */
+interface Ctx { p: Seance[]; b: Bloc | undefined; poids: number | undefined; x: (id: string) => Exercice }
+
+function contexte(passees: Seance[], salles: Salle[], salle: Salle, b: Bloc | undefined, poids: number | undefined): Ctx {
+  return { p: normaliser(passees, salles, salle), b, poids, x: (id) => exerciceEn(salle, id) };
+}
+
+function cibleDe(c: Ctx, s: Seance, l: Ligne, id: string) {
   if (!l.poste) return null;
-  const e = exercice(id);
-  const rm = rmEffectif(e, p, b?.id, b?.rm[id], poids);
-  return cible(e, l.poste.prescription, { semaine: semaineDeSeance(s), rm, poidsCorps: poids, passees: p });
+  const e = c.x(id);
+  const rm = rmEffectif(e, c.p, c.b?.id, c.b?.rm[id], c.poids);
+  return cible(e, l.poste.prescription, { semaine: semaineDeSeance(s), rm, poidsCorps: c.poids, passees: c.p });
 }
 
 /**
@@ -90,9 +103,9 @@ function enCalibrage(s: Seance, l: Ligne, id: string, c: Cible | null): boolean 
 }
 
 /** Test de fin de bloc en cours sur un principal (séries prévues faites, test pas fini), sinon `null`. */
-function testEnCours(p: Seance[], s: Seance, l: Ligne, id: string, b: Bloc | undefined, poids: number | undefined) {
-  if (l.poste?.role !== "principal" || !s.jour || !complete(p, s, l, b, poids)) return null;
-  const t = etatTest(semaineDeSeance(s), p, s.bloc, s, id);
+function testEnCours(c: Ctx, s: Seance, l: Ligne, id: string) {
+  if (l.poste?.role !== "principal" || !s.jour || !complete(c, s, l)) return null;
+  const t = etatTest(semaineDeSeance(s), c.p, s.bloc, s, id);
   return t && !t.fini ? t : null;
 }
 
@@ -104,11 +117,11 @@ function courant(s: Seance, l: Ligne): string {
   return ids.reduce((a, b) => (faites(s, b).length < faites(s, a).length ? b : a));
 }
 
-function complete(p: Seance[], s: Seance, l: Ligne, b: Bloc | undefined, poids: number | undefined): boolean {
+function complete(c: Ctx, s: Seance, l: Ligne): boolean {
   return l.membres.every((m) => {
     const id = reel(s, m);
-    const c = cibleDe(p, s, l, id, b, poids);
-    return c !== null && faites(s, id).length >= c.series;
+    const ci = cibleDe(c, s, l, id);
+    return ci !== null && faites(s, id).length >= ci.series;
   });
 }
 
@@ -119,21 +132,20 @@ function complete(p: Seance[], s: Seance, l: Ligne, b: Bloc | undefined, poids: 
  * dernière ratée (reps sous la cible) : charge de retour pour les séries en plus. Les reps
  * reviennent toujours à la cible du programme.
  */
-function prerempli(p: Seance[], s: Seance, l: Ligne, id: string, b: Bloc | undefined, poids: number | undefined):
-  { kg: number; reps: number; raison?: string } {
-  const e = exercice(id);
-  const f = facteurPoulie(s, e);
-  const c = cibleDe(p, s, l, id, b, poids);
+function prerempli(ctx: Ctx, s: Seance, l: Ligne, id: string): { kg: number; reps: number; raison?: string } {
+  const { p, b, poids } = ctx;
+  const e = ctx.x(id);
+  const c = cibleDe(ctx, s, l, id);
   const tout = duJourTout(s, id);
   const avant = tout[tout.length - 1];
-  const test = testEnCours(p, s, l, id, b, poids);
+  const test = testEnCours(ctx, s, l, id);
   if (test) {
     // Test : ouverture à 95 % du max estimé, puis chaque tentative recale la suivante à 0 RIR.
     const derTest = tout.filter((x) => x.test).pop();
     const rm = rmEffectif(e, p, b?.id, b?.rm[id], poids);
     const kg = derTest ? recalage(e, derTest, test.reps, 0, poids, false) : rm === undefined ? null : ouvertureTest(e, rm, test.reps, poids);
     if (kg !== null) {
-      const raison = derTest ? `${serie(derTest, f)} → tentative suivante (visé : ${test.reps} à 0 RIR)` : "Ouverture à 95 % du max estimé.";
+      const raison = derTest ? `${serie(derTest)} → tentative suivante (visé : ${test.reps} à 0 RIR)` : "Ouverture à 95 % du max estimé.";
       return { kg, reps: test.reps, raison };
     }
     return { kg: avant?.kg ?? 0, reps: test.reps, raison: "Pas de max estimé : charge à choisir." };
@@ -143,7 +155,7 @@ function prerempli(p: Seance[], s: Seance, l: Ligne, id: string, b: Bloc | undef
     const kg = recalage(e, avant, c.reps, vise, poids, enCalibrage(s, l, id, c));
     if (kg !== null) {
       const sens = kg > avant.kg ? "on monte" : kg < avant.kg ? "on baisse" : "même charge";
-      return { kg, reps: c.reps, raison: `${serie(avant, f)} → ${sens} (visé : ${c.reps} reps à ${vise} RIR)` };
+      return { kg, reps: c.reps, raison: `${serie(avant)} → ${sens} (visé : ${c.reps} reps à ${vise} RIR)` };
     }
   }
   const duJour = faites(s, id);
@@ -156,22 +168,28 @@ function prerempli(p: Seance[], s: Seance, l: Ligne, id: string, b: Bloc | undef
 }
 
 /** Première ligne non finie après `depuis` (en bouclant), `null` si tout est fait. */
-function premiereAFaire(p: Seance[], s: Seance, b: Bloc | undefined, poids: number | undefined, depuis: number) {
+function premiereAFaire(c: Ctx, s: Seance, depuis: number) {
   const ls = lignes(s);
   for (let k = 1; k <= ls.length; k++) {
     const i = (depuis + k + ls.length) % ls.length;
-    if (!complete(p, s, ls[i], b, poids)) return i;
+    if (!complete(c, s, ls[i])) return i;
   }
   return null;
 }
 
 
-export default function EcranSeance(
-  { onErreur, onEnSeance }: { onErreur: (e: unknown) => void; onEnSeance: (oui: boolean) => void },
-) {
+export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErreur, onEnSeance }: {
+  /** Programme de `reglages.json` : celui de l'accueil. Une séance en cours garde le sien. */
+  programmeChoisi: string | undefined; onProgramme: (id: string) => void;
+  sexe: Sexe;
+  onErreur: (e: unknown) => void; onEnSeance: (oui: boolean) => void;
+}) {
   const [passees, setPassees] = useState<Seance[] | null>(null);
   const [blocs, setBlocs] = useState<Bloc[]>([]);
   const [pesees, setPesees] = useState<Pesee[]>([]);
+  const [salles, setSalles] = useState<Salle[]>([]);
+  /** Salle choisie sur l'accueil ; `null` = celle de la dernière séance. */
+  const [salleChoisie, setSalleChoisie] = useState<string | null>(null);
   /** Poids de corps = dernière pesée notée. */
   const pdc = pesees[pesees.length - 1]?.kg;
   const [seance, setSeance] = useState<Seance | null>(null);
@@ -190,23 +208,34 @@ export default function EcranSeance(
   const [resume, setResume] = useState<{ seance: Seance; bilan: Bilan; avant: Stats; apres: Stats } | null>(null);
   const reste = useReste(fin);
 
-  const bloc = blocs.filter((b) => b.programme === PROGRAMME.id && b.fin === null).pop();
+  const prog = (seance && programmeDe(seance)) || programme(programmeChoisi);
+  /** Bloc ouvert d'un programme : chaque programme garde le sien, y revenir reprend sa rotation. */
+  const ouvert = (b: Bloc[], id: string) => b.filter((x) => x.programme === id && x.fin === null).pop();
+  const bloc = ouvert(blocs, prog.id);
 
   useEffect(() => {
-    Promise.all([lireSeances(), lireEnCours(), lireBlocs(), lirePesees()])
-      .then(([p, s, b, pe]) => {
+    Promise.all([lireSeances(), lireEnCours(), lireBlocs(), lirePesees(), lireSalles()])
+      .then(([p, enCours, b, pe, sa]) => {
         setPassees(p);
         setBlocs(b);
         setPesees(pe);
+        setSalles(sa);
         const poids = pe[pe.length - 1]?.kg;
-        const actif = b.filter((x) => x.programme === PROGRAMME.id && x.fin === null).pop();
-        if (s) {
+        const actif = ouvert(b, prog.id);
+        if (enCours) {
+          // Séance commencée avant les salles : passée dans les unités de la première salle.
+          let s = enCours;
+          if (s.salle === undefined) {
+            const { poulie: _, ...reste } = normaliser([s], sa, sa[0])[0];
+            s = { ...reste, salle: sa[0].id };
+            ecrireEnCours(s).catch(onErreur);
+          }
           // Séance interrompue : on reprend sur la première ligne pas finie.
           setSeance(s);
-          const i = premiereAFaire(p, s, actif, poids, -1);
-          ouvrir(p, s, actif, poids, i ?? 0);
+          const c = contexte(p, sa, salleDe(sa, s), b.find((x) => x.id === s.bloc) ?? actif, poids);
+          ouvrir(c, s, premiereAFaire(c, s, -1) ?? 0);
         } else if (actif) {
-          proposer(p, actif.id);
+          proposer(prog, p, actif.id);
         }
       })
       .catch(onErreur);
@@ -221,28 +250,41 @@ export default function EcranSeance(
     : resume !== null;
   useBoutonRetour(sousVue ? () => (seance ? setVue("jour") : setResume(null)) : null, onErreur);
 
-  function proposer(p: Seance[], blocId: string) {
-    choisirJour(p, blocId, prochainJour(PROGRAMME, p, blocId, new Date()));
+  function proposer(pr: Programme, p: Seance[], blocId: string) {
+    choisirJour(pr, p, blocId, prochainJour(pr, p, blocId, new Date()));
   }
 
   /** Jour choisi, et sa semaine : la première d'un nouveau bloc quand celui-ci est fini. */
-  function choisirJour(p: Seance[], blocId: string, j: number) {
+  function choisirJour(pr: Programme, p: Seance[], blocId: string, j: number) {
     setJourChoisi(j);
-    setSemaineChoisie(blocFini(PROGRAMME, p, blocId, j) ? 0 : semaineDe(PROGRAMME, p, blocId, j));
+    setSemaineChoisie(blocFini(pr, p, blocId, j) ? 0 : semaineDe(pr, p, blocId, j));
   }
 
-  if (!passees) return <h1>Séance</h1>;
+  /** Autre programme sur l'accueil : son jour proposé, ou son premier jour s'il n'a pas de bloc. */
+  function changerProgramme(id: string) {
+    onProgramme(id);
+    const b = ouvert(blocs, id);
+    if (b && passees) return proposer(programme(id), passees, b.id);
+    setJourChoisi(0);
+    setSemaineChoisie(0);
+  }
+
+  if (!passees || !salles.length) return <h1>Séance</h1>;
+
+  /** Salle du jour : celle de la séance en cours, sinon celle choisie sur l'accueil. */
+  const salle = seance ? salleDe(salles, seance)
+    : salles.find((x) => x.id === salleChoisie) ?? salleRetenue(salles, passees);
+  const ctx = contexte(passees, salles, salle, bloc, pdc);
 
   /** Ouvre la saisie d'une ligne avec charge et reps préremplies. */
-  function ouvrir(p: Seance[], s: Seance, b: Bloc | undefined, poids: number | undefined, i: number) {
+  function ouvrir(c: Ctx, s: Seance, i: number) {
     const l = lignes(s)[i];
     setLigne(i);
     setVue("saisie");
     setFinDemandee(false);
     if (!l) return;
-    const id = courant(s, l);
-    const v = prerempli(p, s, l, id, b, poids);
-    setKg(v.kg * facteurPoulie(s, exercice(id)));
+    const v = prerempli(c, s, l, courant(s, l));
+    setKg(v.kg);
     setReps(v.reps);
   }
 
@@ -253,7 +295,7 @@ export default function EcranSeance(
 
   async function assurerBloc(): Promise<Bloc> {
     if (bloc) return bloc;
-    const b: Bloc = { id: `${jourLocal(new Date())}-${PROGRAMME.id}`, programme: PROGRAMME.id, debut: jourLocal(new Date()), fin: null, rm: {} };
+    const b: Bloc = { id: `${jourLocal(new Date())}-${prog.id}`, programme: prog.id, debut: jourLocal(new Date()), fin: null, rm: {} };
     const tous = [...blocs, b];
     await ecrireBlocs(tous);
     setBlocs(tous);
@@ -270,7 +312,7 @@ export default function EcranSeance(
 
   if (!seance && resume) {
     const { seance: s, bilan: b, avant, apres } = resume;
-    const j = PROGRAMME.jours.find((x) => x.id === s.jour);
+    const j = jourDeSeance(s);
     return (
       <>
         <h1>Séance terminée</h1>
@@ -283,7 +325,7 @@ export default function EcranSeance(
         ))}
         <div className="carte">
           {b.exos.map((x) => (
-            <p key={x.exo}><b>{exercice(x.exo).nom}</b><br /><span className="doux">{x.series.map((v) => serie(v, facteurPoulie(s, exercice(x.exo)))).join("  ")}</span></p>
+            <p key={x.exo}><b>{exercice(x.exo).nom}</b><br /><span className="doux">{faites(s, x.exo).map(serie).join("  ")}</span></p>
           ))}
         </div>
         <Ecarts avant={avant} apres={apres} />
@@ -295,19 +337,19 @@ export default function EcranSeance(
   }
 
   if (!seance) {
-    const finiBloc = bloc !== undefined && blocFini(PROGRAMME, passees, bloc.id, jourChoisi);
+    const finiBloc = bloc !== undefined && blocFini(prog, passees, bloc.id, jourChoisi);
     /** 1RM du bloc suivant, par exo principal (résultat du test, sinon 1RM effectif). */
     const rmSuivants = bloc
-      ? exosPct1rm(PROGRAMME).map((id) => [id, rmNouveauBloc(exercice(id), passees, bloc.id, bloc.rm[id], pdc)] as const)
+      ? exosPct1rm(prog).map((id) => [id, rmNouveauBloc(ctx.x(id), ctx.p, bloc.id, bloc.rm[id], pdc)] as const)
       : [];
     /** Clôt le bloc fini et ouvre le suivant avec les 1RM du test. */
     const nouveauBloc = async (ancien: Bloc): Promise<Bloc> => {
       const aujourdhui = jourLocal(new Date());
-      let id = `${aujourdhui}-${PROGRAMME.id}`;
+      let id = `${aujourdhui}-${prog.id}`;
       while (blocs.some((x) => x.id === id)) id += "-2";
       const rm: Record<string, number> = {};
       for (const [exo, v] of rmSuivants) if (v !== undefined) rm[exo] = v;
-      const b: Bloc = { id, programme: PROGRAMME.id, debut: aujourdhui, fin: null, rm };
+      const b: Bloc = { id, programme: prog.id, debut: aujourdhui, fin: null, rm };
       const tous = [...blocs.map((x) => (x.id === ancien.id ? { ...x, fin: aujourdhui } : x)), b];
       await ecrireBlocs(tous);
       setBlocs(tous);
@@ -317,37 +359,55 @@ export default function EcranSeance(
       try {
         const b = finiBloc ? await nouveauBloc(bloc) : await assurerBloc();
         const s: Seance = {
-          debut: horodatage(new Date()), bloc: b.id, semaine: semaineChoisie,
-          jour: PROGRAMME.jours[jourChoisi].id, ...poulieRetenue(passees), exercices: [],
+          debut: horodatage(new Date()), bloc: b.id, programme: prog.id, semaine: semaineChoisie,
+          jour: prog.jours[jourChoisi].id, salle: salle.id, exercices: [],
         };
         enregistrer(s);
-        ouvrir(passees, s, b, pdc, 0);
+        ouvrir(contexte(passees, salles, salle, b, pdc), s, 0);
       } catch (e) {
         onErreur(e);
       }
     };
     const libre = () => {
-      enregistrer({ debut: horodatage(new Date()), ...poulieRetenue(passees), exercices: [] });
+      enregistrer({ debut: horodatage(new Date()), salle: salle.id, exercices: [] });
       setVue("exos");
     };
-    const jour = PROGRAMME.jours[jourChoisi];
-    const sem = PROGRAMME.semaines[semaineChoisie];
-    const apercu: Seance = { debut: "", semaine: semaineChoisie, jour: jour.id, ...poulieRetenue(passees), exercices: [] };
+    const jour = prog.jours[jourChoisi];
+    const sem = prog.semaines[semaineChoisie];
+    const apercu: Seance = { debut: "", programme: prog.id, semaine: semaineChoisie, jour: jour.id, salle: salle.id, exercices: [] };
 
     return (
       <>
-        <h1>{PROGRAMME.nom}</h1>
-        <div className="seg" style={{ gridTemplateColumns: `repeat(${PROGRAMME.semaines.length}, 1fr)` }}>
-          {PROGRAMME.semaines.map((s, i) => (
+        <h1>{prog.nom}</h1>
+        <details className="carte rm">
+          <summary>Changer de programme</summary>
+          <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            {PROGRAMMES.map((x) => (
+              <button key={x.id} aria-pressed={x.id === prog.id} onClick={() => changerProgramme(x.id)}>
+                {x.nom}<small>{x.jours.length} jours{x.semaines.length > 1 ? ` · ${x.semaines.length} semaines` : ""}</small>
+              </button>
+            ))}
+          </div>
+          <p className="doux petit">Chaque programme garde son bloc : y revenir reprend au jour où il en était.</p>
+        </details>
+        {salles.length > 1 && (
+          <div className="seg" style={{ gridTemplateColumns: `repeat(${salles.length}, 1fr)` }}>
+            {salles.map((x) => (
+              <button key={x.id} aria-pressed={x.id === salle.id} onClick={() => setSalleChoisie(x.id)}>{x.nom}</button>
+            ))}
+          </div>
+        )}
+        {prog.semaines.length > 1 && <div className="seg" style={{ gridTemplateColumns: `repeat(${prog.semaines.length}, 1fr)` }}>
+          {prog.semaines.map((s, i) => (
             <button key={s.nom} aria-pressed={i === semaineChoisie} onClick={() => setSemaineChoisie(i)}>
               {s.nom}<small>{s.label}</small>
             </button>
           ))}
-        </div>
-        <div className="seg" style={{ gridTemplateColumns: `repeat(${PROGRAMME.jours.length}, 1fr)` }}>
-          {PROGRAMME.jours.map((j, i) => (
+        </div>}
+        <div className="seg" style={{ gridTemplateColumns: `repeat(${prog.jours.length}, 1fr)` }}>
+          {prog.jours.map((j, i) => (
             <button key={j.id} aria-pressed={i === jourChoisi}
-                    onClick={() => (bloc ? choisirJour(passees, bloc.id, i) : setJourChoisi(i))}>
+                    onClick={() => (bloc ? choisirJour(prog, passees, bloc.id, i) : setJourChoisi(i))}>
               {j.id}
             </button>
           ))}
@@ -356,22 +416,33 @@ export default function EcranSeance(
         <div className="carte">
           <h2 className="titre-carte">{jour.id} · {jour.nom}{jour.optionnel ? " (optionnel)" : ""}</h2>
           {jour.note && <p className="doux petit">{jour.note}</p>}
-          {avertissements(PROGRAMME, jour, passees, new Date()).map((a) => <p key={a} className="alerte petit">{a}</p>)}
+          {avertissements(prog, jour, passees, new Date()).map((a) => <p key={a} className="alerte petit">{a}</p>)}
           <ol className="apercu">
             {jour.exercices.map((p, i) => {
               const l: Ligne = { membres: membres(p), poste: p };
               const id = membres(p)[0];
-              const c = cibleDe(passees, apercu, l, id, bloc, pdc);
+              const c = cibleDe(ctx, apercu, l, id);
               return (
                 <li key={i}>
                   <b>{nomLigne(l.membres)}</b>{p.optionnel && <span className="badge">option</span>}
-                  <span className="doux">{c && texteCible(exercice(id), p, c, facteurPoulie(apercu, exercice(id)))} · repos {duree(p.repos)}</span>
+                  <span className="doux">{c && texteCible(ctx.x(id), p, c)} · repos {duree(p.repos)}</span>
                 </li>
               );
             })}
           </ol>
-          <p className="doux petit">{sem.nom} · {sem.label}</p>
+          {prog.semaines.length > 1 && <p className="doux petit">{sem.nom} · {sem.label}</p>}
         </div>
+
+        {(() => {
+          const prep = preparation(jour.exercices.flatMap(membres).map(ctx.x));
+          return (
+            <details className="carte rm" open>
+              <summary>Échauffement · ≈ {prep.minutes} min</summary>
+              <ol className="apercu">{prep.etapes.map((t) => <li key={t}>{t}</li>)}</ol>
+              <p className="doux petit">Puis les séries d'approche, affichées à la saisie du premier exercice.</p>
+            </details>
+          );
+        })()}
 
         {finiBloc ? (
           <div className="carte espace-haut">
@@ -382,9 +453,9 @@ export default function EcranSeance(
             ))}
           </div>
         ) : (
-          <Formulaire1RM bloc={bloc} pdc={pdc} assurerBloc={assurerBloc} changerBloc={changerBloc}
+          <Formulaire1RM exos={exosPct1rm(prog)} bloc={bloc} pdc={pdc} assurerBloc={assurerBloc} changerBloc={changerBloc}
                          onPdc={(kg) => setPesees((l) => [...l.filter((x) => x.date !== jourLocal(new Date())), { date: jourLocal(new Date()), kg }])} onErreur={onErreur}
-                         estime={(id) => rmEffectif(exercice(id), passees, bloc?.id, undefined, pdc)} />
+                         x={ctx.x} estime={(id) => rmEffectif(ctx.x(id), ctx.p, bloc?.id, undefined, pdc)} />
         )}
 
         <button className="lien" onClick={libre}>Séance libre (sans programme)</button>
@@ -405,7 +476,7 @@ export default function EcranSeance(
   // ——— Séance en cours.
 
   const ls = lignes(seance);
-  const jour = PROGRAMME.jours.find((j) => j.id === seance.jour);
+  const jour = jourDeSeance(seance);
 
   const terminer = async () => {
     if (!finDemandee) return setFinDemandee(true);
@@ -418,17 +489,19 @@ export default function EcranSeance(
       const p = vide ? passees : [...passees, faite];
       if (!vide) {
         const maintenant = new Date();
-        const seuil = seuilActuel(blocs);
+        const seuil = seuilActuel(blocs, prog.id);
+        // Résumé et stats en charge réelle (chariot compris, moufle retirée), toutes salles confondues.
+        const [neutre, avantN] = [normaliser([faite], salles)[0], normaliser(passees, salles)];
         setResume({
-          seance: faite, bilan: bilan(faite, passees, pdc),
-          avant: stats(passees, pesees, seuil, maintenant), apres: stats(p, pesees, seuil, maintenant),
+          seance: faite, bilan: bilan(neutre, avantN, pdc),
+          avant: stats(avantN, pesees, sexe, seuil, maintenant), apres: stats([...avantN, neutre], pesees, sexe, seuil, maintenant),
         });
       }
       setPassees(p);
       setSeance(null);
       setAttente(null);
       setFin(0);
-      if (bloc) proposer(p, bloc.id);
+      if (bloc) proposer(prog, p, bloc.id);
       await annulerRepos();
     } catch (e) {
       onErreur(e);
@@ -445,7 +518,7 @@ export default function EcranSeance(
     if (!deja) enregistrer(s);
     const i = remplace ? ligne : lignes(s).findIndex((l) => l.membres.includes(id));
     setAttente(null);
-    ouvrir(passees, s, bloc, pdc, i);
+    ouvrir(ctx, s, i);
   };
 
   if (vue === "exos" || vue === "remplacer") {
@@ -472,19 +545,19 @@ export default function EcranSeance(
     return (
       <>
         <h1>{jour ? `${jour.id} · ${jour.nom}` : "Séance libre"}</h1>
-        {jour && <p className="doux petit">{semaineDeSeance(seance).nom} · {semaineDeSeance(seance).label}</p>}
+        {jour && prog.semaines.length > 1 && <p className="doux petit">{semaineDeSeance(seance).nom} · {semaineDeSeance(seance).label}</p>}
         <div className="liste">
           {ls.map((l, i) => {
             const id = courant(seance, l);
-            const c = cibleDe(passees, seance, l, id, bloc, pdc);
+            const c = cibleDe(ctx, seance, l, id);
             const fait = l.membres.map((m) => faites(seance, reel(seance, m)).length);
-            const ok = complete(passees, seance, l, bloc, pdc);
+            const ok = complete(ctx, seance, l);
             return (
-              <button key={i} className={ok ? "ligne faite" : "ligne"} onClick={() => { setAttente(null); ouvrir(passees, seance, bloc, pdc, i); }}>
+              <button key={i} className={ok ? "ligne faite" : "ligne"} onClick={() => { setAttente(null); ouvrir(ctx, seance, i); }}>
                 <span>
                   <b>{nomLigne(l.membres.map((m) => reel(seance, m)))}</b>
                   {l.poste?.optionnel && <span className="badge">option</span>}
-                  {l.poste && c && <small>{texteCible(exercice(id), l.poste, c, facteurPoulie(seance, exercice(id)))}</small>}
+                  {l.poste && c && <small>{texteCible(ctx.x(id), l.poste, c)}</small>}
                 </span>
                 <span className="avance">{ok ? "✓" : `${Math.min(...fait)}/${c?.series ?? "–"}`}</span>
               </button>
@@ -503,18 +576,17 @@ export default function EcranSeance(
 
   const l = ls[ligne];
   const id = courant(seance, l);
-  const e = exercice(id);
-  const f = facteurPoulie(seance, e);
-  const c = cibleDe(passees, seance, l, id, bloc, pdc);
+  const e = ctx.x(id);
+  const c = cibleDe(ctx, seance, l, id);
   const duJour = faites(seance, id);
   const tout = duJourTout(seance, id);
-  const finie = complete(passees, seance, l, bloc, pdc);
+  const finie = complete(ctx, seance, l);
   const autres = l.membres.map((m) => reel(seance, m)).filter((x) => x !== id);
-  const suivante = premiereAFaire(passees, seance, bloc, pdc, ligne);
+  const suivante = premiereAFaire(ctx, seance, ligne);
   const leste = e.charge === "poids-corps-leste";
   const montee = enCalibrage(seance, l, id, c);
-  const raison = prerempli(passees, seance, l, id, bloc, pdc).raison;
-  const test = testEnCours(passees, seance, l, id, bloc, pdc);
+  const raison = prerempli(ctx, seance, l, id).raison;
+  const test = testEnCours(ctx, seance, l, id);
   const enAttente = attente ? duJourTout(seance, attente).slice(-1)[0] : undefined;
 
   const valider = () => {
@@ -522,10 +594,10 @@ export default function EcranSeance(
     // `prevu` = la prescription quand il y en a une : c'est elle qui mesure le point 3 de la v1.
     // Série en plus : ce que l'app a prérempli (charge de retour après une série ratée).
     // Recalage par le RIR : la série prévue est la charge recalée, pas la prescription brute.
-    const pre = prerempli(passees, seance, l, id, bloc, pdc);
+    const pre = prerempli(ctx, seance, l, id);
     const prevu = finie || pre.raison ? { kg: pre.kg, reps: pre.reps }
-      : c && c.kg !== null ? { kg: c.kg, reps: c.reps } : proposition(passees, seance, e);
-    const s: Serie = { type: "travail", kg: kg / f, reps, prevu, a: horodatage(new Date()), ...(test ? { test: true as const } : {}) };
+      : c && c.kg !== null ? { kg: c.kg, reps: c.reps } : proposition(ctx.p, seance, e);
+    const s: Serie = { type: "travail", kg, reps, prevu, a: horodatage(new Date()), ...(test ? { test: true as const } : {}) };
     const existe = seance.exercices.some((x) => x.exo === id);
     const nouvelle: Seance = {
       ...seance,
@@ -557,7 +629,7 @@ export default function EcranSeance(
 
   const noterRir = (rir: number) => {
     // Montée guidée : un palier à 4+ RIR est un échauffement (ne compte ni dans les séries ni dans le volume).
-    const enMontee = attente !== null && enCalibrage(seance, l, attente, cibleDe(passees, seance, l, attente, bloc, pdc));
+    const enMontee = attente !== null && enCalibrage(seance, l, attente, cibleDe(ctx, seance, l, attente));
     const palier = enMontee && rir >= 4;
     const type = enMontee ? { type: palier ? "echauffement" as const : "travail" as const } : {};
     const nouvelle = corrigerDerniere((s) => ({ ...s, rir, ...type }));
@@ -566,52 +638,49 @@ export default function EcranSeance(
     // Fin de la montée : la série fiable compte, elle mérite le repos complet du poste.
     if (enMontee && !palier) lancerRepos(l.poste?.repos ?? REPOS_S).then(setFin, onErreur);
     // Rouvre aussi une ligne finie : la charge recalée (ou de retour) se préremplit.
-    ouvrir(passees, nouvelle, bloc, pdc, ligne);
+    ouvrir(ctx, nouvelle, ligne);
   };
 
-  /** Poulie simple ou double (moufle) : vaut pour toute la séance ; la charge affichée suit. */
-  const changerPoulie = (nf: 1 | 2) => {
-    if (nf === f) return;
-    const maj: Seance = { ...seance };
-    if (nf === 2) maj.poulie = 2;
-    else delete maj.poulie;
-    enregistrer(maj);
-    setKg((kg / f) * nf);
+  /** Réglage de la machine dans la salle du jour ; vaut aussi pour les séances passées dans cette salle. */
+  const changerMontage = (m: Montage) => {
+    const machines = { ...salle.machines };
+    if (m.aVide || m.poulie) machines[id] = m;
+    else delete machines[id];
+    const tous = salles.map((x) => (x.id === salle.id ? { ...x, machines } : x));
+    ecrireSalles(tous).then(() => setSalles(tous), onErreur);
   };
 
-  const plaques = e.charge === "barre" ? disques(kg) : null;
-  const passe = historique(passees, id, 2);
+  // Disques par côté : sur une barre de 20 kg, ou sur une machine (disques seuls).
+  const plaques = e.charge === "barre" ? disques(kg) : e.disques ? disques(kg, 0) : null;
+  const passe = historique(ctx.p, id, 2);
 
   return (
     <div className="saisie">
       <div className="haut">
-        <button className="lien" onClick={() => setVue("jour")}>‹ {jour ? jour.id : "Séance"} · {ls.filter((x) => complete(passees, seance, x, bloc, pdc)).length}/{ls.length}</button>
+        <button className="lien" onClick={() => setVue("jour")}>‹ {jour ? jour.id : "Séance"} · {ls.filter((x) => complete(ctx, seance, x)).length}/{ls.length}</button>
         <button className="lien" onClick={() => setVue("remplacer")}>Remplacer</button>
       </div>
 
-      <h1>{e.nom}</h1>
+      <h1>{e.nom}{l.poste?.optionnel && <span className="badge">option</span>}</h1>
       {l.poste && c && (
         <p className="cible">
           {test
             ? `Test de ${nomTest(test.reps)} · tentative ${tout.filter((x) => x.test).length + 1}`
             : duJour.length < c.series
-              ? `Série ${duJour.length + 1}/${c.series} · ${texteCible(e, l.poste, c, f)}`
-              : `Série ${duJour.filter((x) => !x.test).length + 1} (en plus) · ${texteCible(e, l.poste, c, f)}`}
+              ? `Série ${duJour.length + 1}/${c.series} · ${texteCible(e, l.poste, c)}`
+              : `Série ${duJour.filter((x) => !x.test).length + 1} (en plus) · ${texteCible(e, l.poste, c)}`}
           {" "}· repos {duree(l.poste.repos)}
         </p>
       )}
-      {e.charge === "poulie" && (
-        <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
-          <button aria-pressed={f === 1} onClick={() => changerPoulie(1)}>Poulie simple</button>
-          <button aria-pressed={f === 2} onClick={() => changerPoulie(2)}>Poulie double<small>pile × 2</small></button>
-        </div>
+      {(e.disques || e.charge === "poulie") && (
+        <ReglageMachine e={e} salle={salle} m={montage(salle, e)} onChange={changerMontage} />
       )}
       {autres.length > 0 && <p className="doux petit">Superset avec {nomLigne(autres)}</p>}
       {l.poste?.note && <p className="doux petit">{l.poste.note}</p>}
       {l.poste?.prescription.type === "pct1rm" && c?.kg === null && (
         <p className="doux petit">
           {leste && pdc === undefined
-            ? "Poids de corps manquant (accueil, « 1RM du bloc »)."
+            ? "Poids de corps manquant (à noter sur l'accueil)."
             : montee
               ? "Calibrage : l'app monte la charge à chaque série selon ton RIR. Les paliers à 4+ comptent en échauffement."
               : "Calibré : la charge suit ton RIR série après série."}
@@ -633,11 +702,11 @@ export default function EcranSeance(
           {tout.map((s, i) => (
             // Toucher la dernière série rouvre son RIR et ses reps (tap raté). Palier de montée en estompé.
             <button key={i} className={s.type === "travail" ? "puce" : "puce doux"} disabled={i !== tout.length - 1}
-                    onClick={() => setAttente(id)}>{serie(s, f)}</button>
+                    onClick={() => setAttente(id)}>{serie(s)}</button>
           ))}
         </p>
       )}
-      {passe.map((h) => <p key={h.debut} className="doux petit">{date(h.debut)} : {h.series.map((v) => serie(v, f)).join("  ")}</p>)}
+      {passe.map((h) => <p key={h.debut} className="doux petit">{date(h.debut)} : {h.series.map(serie).join("  ")}</p>)}
       {passe.length === 0 && <p className="doux petit">Jamais fait.</p>}
 
       <div className="bas">
@@ -663,16 +732,18 @@ export default function EcranSeance(
             <Reglage kg={kg} reps={reps} e={e} setKg={setKg} setReps={setReps} />
             <button className="principal valider espace-bas" onClick={valider}>Tentative · {nombre(kg)} × {reps}</button>
             {suivante !== null
-              ? <button onClick={() => ouvrir(passees, seance, bloc, pdc, suivante)}>Passer le test</button>
+              ? <button onClick={() => ouvrir(ctx, seance, suivante)}>Passer le test</button>
               : boutonTerminer()}
           </>
         ) : finie ? (
           <>
+            <p className="encourage">{encouragement(e, duJour, ctx.p, seance.debut + id, pdc)}</p>
             <Reglage kg={kg} reps={reps} e={e} setKg={setKg} setReps={setReps} distance={l.poste?.prescription.type === "distance"} />
             <button className="espace-bas" onClick={valider}>Série en plus · {nombre(kg)} × {reps}</button>
             {suivante !== null
-              ? <button className="principal valider" onClick={() => ouvrir(passees, seance, bloc, pdc, suivante)}>
+              ? <button className="principal valider" onClick={() => ouvrir(ctx, seance, suivante)}>
                   Suivant : {nomLigne(ls[suivante].membres.map((m) => reel(seance, m)))}
+                  {ls[suivante].poste?.optionnel && <small>en option · si tu as encore du jus</small>}
                 </button>
               : boutonTerminer("principal valider")}
           </>
@@ -695,7 +766,7 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
       <div className="reglage">
         <button onClick={() => setKg(ajusterKg(kg, e.pas, -1))} aria-label="moins de charge">−</button>
         <label>
-          <input type="number" inputMode="decimal" value={kg} onChange={(ev) => setKg(Math.max(0, Number(ev.target.value)))} />
+          <Champ valeur={kg} mode="decimal" onChange={(n) => setKg(Math.max(0, n))} />
           <span>{libelleCharge(e)}</span>
         </label>
         <button onClick={() => setKg(ajusterKg(kg, e.pas, 1))} aria-label="plus de charge">+</button>
@@ -703,8 +774,7 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
       <div className="reglage">
         <button onClick={() => setReps(Math.max(1, reps - 1))} aria-label="une rep de moins">−</button>
         <label>
-          <input type="number" inputMode="numeric" value={reps}
-                 onChange={(ev) => setReps(Math.max(1, Math.round(Number(ev.target.value))))} />
+          <Champ valeur={reps} mode="numeric" onChange={(n) => setReps(Math.max(1, Math.round(n)))} />
           <span>{distance ? "m" : "reps"}</span>
         </label>
         <button onClick={() => setReps(reps + 1)} aria-label="une rep de plus">+</button>
@@ -713,14 +783,70 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
   );
 }
 
+/**
+ * Réglage de la machine dans la salle du jour, replié sur une ligne : poids à vide (Smith, presse,
+ * hack squat) ou poulie à moufle. On note toujours ce qui se lit sur la machine.
+ */
+function ReglageMachine({ e, salle, m, onChange }: { e: Exercice; salle: Salle; m: Montage; onChange: (m: Montage) => void }) {
+  const [ouvert, setOuvert] = useState(false);
+  const resume = e.disques
+    ? (m.aVide ? `${nombre(m.aVide)} kg à vide` : "poids à vide non noté")
+    : (m.poulie ? "poulie à moufle (pile × 2)" : "poulie normale");
+  return (
+    <div className="machine">
+      <button className="lien" onClick={() => setOuvert(!ouvert)}>{salle.nom} · {resume} {ouvert ? "▴" : "▾"}</button>
+      {ouvert && (e.disques ? (
+        <div className="carte rm">
+          <label className="petit">
+            Poids à vide (chariot, barre de la Smith)
+            <Champ valeur={m.aVide ?? 0} mode="decimal" onChange={(n) => onChange(n > 0 ? { aVide: n } : {})} />
+          </label>
+          <p className="doux petit">Note les disques seuls : l'app ajoute ce poids pour le 1RM, les % et les stats.</p>
+        </div>
+      ) : (
+        <div className="carte rm">
+          <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <button aria-pressed={!m.poulie} onClick={() => onChange({})}>Normale</button>
+            <button aria-pressed={m.poulie === 2} onClick={() => onChange({ poulie: 2 })}>Moufle<small>pile × 2</small></button>
+          </div>
+          <p className="doux petit">
+            Note toujours le chiffre de la pile. Moufle : la pile affiche le double de ce que tu tires
+            (26 kg ailleurs = 52 kg ici) ; l'app divise par deux pour comparer tes salles.
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Champ numérique : le toucher sélectionne la valeur, ce qu'on tape la remplace (avant, le « 0 »
+ * restait devant). Vide pendant la frappe sans rien envoyer ; à la sortie, revient à la valeur.
+ */
+function Champ({ valeur, mode, onChange }: { valeur: number; mode: "decimal" | "numeric"; onChange: (n: number) => void }) {
+  const [texte, setTexte] = useState<string | null>(null);
+  return (
+    <input type="number" inputMode={mode} value={texte ?? String(valeur)}
+           onFocus={(ev) => { setTexte(String(valeur)); ev.currentTarget.select(); }}
+           onChange={(ev) => {
+             setTexte(ev.target.value);
+             const n = Number(ev.target.value.replace(",", "."));
+             if (ev.target.value.trim() && Number.isFinite(n)) onChange(n);
+           }}
+           onBlur={() => setTexte(null)} />
+  );
+}
+
 /** 1RM figés du bloc (saisis une fois) et poids de corps (lesté). */
-function Formulaire1RM({ bloc, pdc, assurerBloc, changerBloc, onPdc, onErreur, estime }: {
-  bloc: Bloc | undefined; pdc: number | undefined; assurerBloc: () => Promise<Bloc>;
+function Formulaire1RM({ exos, bloc, pdc, assurerBloc, changerBloc, onPdc, onErreur, estime, x }: {
+  /** Exos en % du 1RM du programme (`exosPct1rm`) ; aucun : seul le poids de corps se saisit. */
+  exos: string[]; bloc: Bloc | undefined; pdc: number | undefined; assurerBloc: () => Promise<Bloc>;
   changerBloc: (b: Bloc) => Promise<void>; onPdc: (kg: number) => void; onErreur: (e: unknown) => void;
   /** 1RM estimé depuis l'historique, utilisé quand le bloc n'en a pas. */
   estime: (id: string) => number | undefined;
+  /** Exercice monté dans la salle du jour (chariot). */
+  x: (id: string) => Exercice;
 }) {
-  const exos = exosPct1rm(PROGRAMME);
   const manque = exos.filter((id) => bloc?.rm[id] === undefined && estime(id) === undefined).length;
 
   const lire = (v: string) => {
@@ -747,10 +873,10 @@ function Formulaire1RM({ bloc, pdc, assurerBloc, changerBloc, onPdc, onErreur, e
 
   return (
     <details className="carte rm">
-      <summary>1RM du bloc{manque ? ` · ${manque} à saisir ou calibrer` : ""}{pdc === undefined ? " · pesée manquante" : ""}</summary>
+      <summary>{exos.length ? "1RM du bloc" : "Poids de corps"}{manque ? ` · ${manque} à saisir ou calibrer` : ""}{pdc === undefined ? " · pesée manquante" : ""}</summary>
       {exos.map((id) => (
         <label key={id}>
-          {exercice(id).nom}{exercice(id).charge === "poids-corps-leste" ? " (corps + lest)" : ""}
+          {x(id).nom}{x(id).charge === "poids-corps-leste" ? " (corps + lest)" : x(id).aVide ? ` (disques + ${nombre(x(id).aVide as number)} à vide)` : ""}
           <input type="number" inputMode="decimal" defaultValue={bloc?.rm[id] ?? ""} placeholder={estime(id) === undefined ? "calibrer" : `≈ ${nombre(Math.round(estime(id) as number))}`}
                  onBlur={(ev) => rm(id, ev.target.value)} />
         </label>
@@ -759,10 +885,10 @@ function Formulaire1RM({ bloc, pdc, assurerBloc, changerBloc, onPdc, onErreur, e
         Poids de corps
         <input type="number" inputMode="decimal" defaultValue={pdc ?? ""} onBlur={(ev) => poids(ev.target.value)} />
       </label>
-      <p className="doux petit">
+      {exos.length > 0 && <p className="doux petit">
         Vide = estimé depuis ta dernière séance (≈), sinon montée guidée en séance. Le 1RM des % ne baisse
         jamais : la dernière séance du bloc le relève si elle a fait mieux (Epley avec la réserve).
-      </p>
+      </p>}
     </details>
   );
 }

@@ -1,4 +1,4 @@
-import type { Stats } from "./stats";
+import type { Sexe, Stats } from "./stats";
 
 /**
  * Personnage en pixel art (docs/stats.md, « Personnage ») : chaque trait lit un palier d'une stat
@@ -48,8 +48,12 @@ export const HAUTEUR = 27;
 /** Bande horizontale d'une même couleur : un rectangle SVG au lieu d'un par pixel. */
 export interface Bande { x: number; y: number; l: number; c: Px }
 
-/** Grille du personnage, symétrique, `HAUTEUR` lignes de `LARGEUR` pixels. */
-export function grille({ force: f, endurance: e, constance: c }: Paliers): Px[][] {
+/**
+ * Grille du personnage, symétrique, `HAUTEUR` lignes de `LARGEUR` pixels. Femme : mêmes paliers,
+ * mêmes traits, plus cheveux longs, brassière et hanches plus larges.
+ */
+export function grille({ force: f, endurance: e, constance: c }: Paliers, sexe: Sexe): Px[][] {
+  const femme = sexe === "femme";
   const g: Px[][] = Array.from({ length: HAUTEUR }, () => Array<Px>(LARGEUR).fill(Px.Vide));
   // Coordonnées sur une demi-largeur de 11 (x de 0 à 10, axe entre 10 et 11), décalées d'un pixel
   // pour laisser la place aux bras du dernier palier de Force.
@@ -65,6 +69,8 @@ export function grille({ force: f, endurance: e, constance: c }: Paliers): Px[][
   const o = c === 0 ? 1 : 0;
   bloc(2, o, o, Px.Cheveux);
   bloc(3, 1 + o, 2 + o, Px.Cheveux);
+  // Cheveux longs : de chaque côté du visage jusqu'aux épaules, recouverts ensuite par le torse.
+  if (femme) for (let y = 1 + o; y <= 9 + o; y++) pose(7, y, Px.Cheveux);
   bloc(3, 3 + o, 6 + o, Px.Peau);
   bloc(2, 7 + o, 7 + o, Px.Peau);
   pose(9, 4 + o, Px.Yeux);
@@ -82,6 +88,7 @@ export function grille({ force: f, endurance: e, constance: c }: Paliers): Px[][
   // Abdos : ligne centrale, puis une barre de chaque côté.
   if (e >= 2) for (let y = 14; y <= 16; y++) pose(10, y, Px.Ombre);
   if (e >= 3) for (const x of [8, 9]) pose(x, 15, Px.Ombre);
+  if (femme) bloc(epaules, haut + 1, haut + 2, Px.Short);
 
   // Bras collés à l'épaule ; décollés d'un pixel au palier 0 ou si la taille dépasse les épaules,
   // sinon ils se fondent dans le torse. Haut du bras plus épais à Force 2, biceps à Force 3.
@@ -93,7 +100,7 @@ export function grille({ force: f, endurance: e, constance: c }: Paliers): Px[][
     for (let i = 0; i < l; i++) pose(10 - bras - i, y, Px.Peau);
   }
 
-  bloc(Math.max(taille, 4), 17, 19, Px.Short);
+  bloc(Math.max(taille, 4) + (femme ? 1 : 0), 17, 19, Px.Short);
   const jambe = f >= 3 ? 3 : 2;
   for (let y = 20; y <= 24; y++) for (let x = 10 - jambe; x <= 9; x++) pose(x, y, Px.Peau);
   for (let y = 25; y <= 26; y++) for (let x = 9 - jambe; x <= 9; x++) pose(x, y, Px.Chaussures);

@@ -23,13 +23,13 @@ describe("paliers", () => {
   });
 });
 
-describe("grille", () => {
+for (const sexe of ["homme", "femme"] as const) describe(`grille (${sexe})`, () => {
   const tous: Paliers[] = [];
   for (let f = 0; f <= 4; f++) for (let e = 0; e <= 3; e++) for (let c = 0; c <= 2; c++) tous.push({ force: f, endurance: e, constance: c });
 
   it("toujours symétrique et dans le cadre", () => {
     for (const p of tous) {
-      const g = grille(p);
+      const g = grille(p, sexe);
       expect(g).toHaveLength(HAUTEUR);
       for (const l of g) {
         expect(l).toHaveLength(LARGEUR);
@@ -40,27 +40,32 @@ describe("grille", () => {
 
   it("chaque palier de Force change la silhouette, en plus large ou plus épais", () => {
     for (let f = 0; f < 4; f++) {
-      const a = grille({ force: f, endurance: 1, constance: 1 });
-      const b = grille({ force: f + 1, endurance: 1, constance: 1 });
+      const a = grille({ force: f, endurance: 1, constance: 1 }, sexe);
+      const b = grille({ force: f + 1, endurance: 1, constance: 1 }, sexe);
       expect(largeurMax(b) >= largeurMax(a) && peau(b) > peau(a)).toBe(true);
     }
   });
 
   it("chaque palier d'Endurance change le torse", () => {
     for (let e = 0; e < 3; e++) {
-      expect(grille({ force: 2, endurance: e, constance: 1 })).not.toEqual(grille({ force: 2, endurance: e + 1, constance: 1 }));
+      expect(grille({ force: 2, endurance: e, constance: 1 }, sexe)).not.toEqual(grille({ force: 2, endurance: e + 1, constance: 1 }, sexe));
     }
   });
 
   it("Constance 0 : la tête descend d'un pixel", () => {
-    expect(grille({ force: 1, endurance: 1, constance: 0 })[0].some((v) => v !== Px.Vide)).toBe(false);
-    expect(grille({ force: 1, endurance: 1, constance: 1 })[0].some((v) => v !== Px.Vide)).toBe(true);
+    expect(grille({ force: 1, endurance: 1, constance: 0 }, sexe)[0].some((v) => v !== Px.Vide)).toBe(false);
+    expect(grille({ force: 1, endurance: 1, constance: 1 }, sexe)[0].some((v) => v !== Px.Vide)).toBe(true);
   });
 
   it("les bandes redonnent la grille", () => {
-    const g = grille({ force: 3, endurance: 2, constance: 2 });
+    const g = grille({ force: 3, endurance: 2, constance: 2 }, sexe);
     const r: Px[][] = Array.from({ length: HAUTEUR }, () => Array<Px>(LARGEUR).fill(Px.Vide));
     for (const b of bandes(g)) for (let i = 0; i < b.l; i++) r[b.y][b.x + i] = b.c;
     expect(r).toEqual(g);
   });
+});
+
+it("femme : même cadre, silhouette différente de l'homme", () => {
+  const p = { force: 2, endurance: 1, constance: 1 };
+  expect(grille(p, "femme")).not.toEqual(grille(p, "homme"));
 });

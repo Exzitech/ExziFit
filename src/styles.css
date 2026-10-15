@@ -84,6 +84,8 @@ nav button[aria-current="page"] { color: var(--accent); box-shadow: inset 0 var(
 .reglage span { color: var(--texte-doux); font: 600 13px var(--police-titre); }
 .reglage output { font: 700 42px var(--police); padding: 12px 0; }
 button.valider { min-height: 88px; font-size: 22px; margin-top: 4px; }
+button.valider small { display: block; font: 600 13px var(--police); opacity: .8; margin-top: 2px; text-transform: none; letter-spacing: 0; }
+.encourage { text-align: center; font-weight: 600; margin: 0 0 10px; }
 .rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .rir button { min-height: 76px; font: 700 26px var(--police-titre); padding: 0; background: var(--fond); }
 .rir button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--sur-accent); }
@@ -130,6 +132,9 @@ details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: poi
 .rm label { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0; }
 .rm input { width: 7ch; min-height: 48px; font: 600 19px var(--police); text-align: right;
                    background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; padding: 0 8px; }
+.rm input:not([type=number]) { width: 16ch; text-align: left; }
+.machine { margin: 0 0 8px; }
+.machine .carte { margin-top: 6px; }
 /* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
 .saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px); }
 .saisie .bas { margin-top: auto; }

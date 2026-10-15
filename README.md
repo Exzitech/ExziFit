@@ -39,11 +39,15 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   (`en-cours.json`, réécrit à chaque série) et journal mensuel (séance ajoutée à la fin), plus
   le calcul de la charge préremplie. `corrigerSeance` : correction ou suppression d'une séance
   terminée (identifiée par `debut`), l'ancienne version copiée d'abord dans `corbeille.json`.
+- `src/ecrans/Bienvenue.tsx` : premier lancement d'une installation neuve (ni `reglages.json` ni
+  journal) : prénom, poids de corps, homme / femme, programme ; écrit `reglages.json` avec
+  `envoi: false` (pas d'envoi Nextcloud, voir « Données »).
 - `src/ecrans/Journal.tsx` : onglet « Journal », séances terminées (la plus récente en haut) ;
   une séance ouverte = charge (affichée × 2 sur poulie double), reps et RIR modifiables par série,
   ✕ pour retirer une série, suppression de la séance en deux taps.
-- `src/donnees/programme.ts` : programme en cours (le Bloc Force, transcrit dans
-  `src/donnees/programmes/bloc-force.json`, dans le code tant qu'il n'y a pas d'éditeur), jour
+- `src/donnees/programme.ts` : programmes proposés (`src/donnees/programmes/*.json`, dans le
+  code tant qu'il n'y a pas d'éditeur : Bloc Force, Push / Pull / Legs, Capacité de travail,
+  Haut / bas express), choisi sur l'accueil (« Changer de programme », `reglages.json`), jour
   et semaine proposés (rotation, jour optionnel sauté après 5 jours lourds d'affilée), charge
   prescrite (% du 1RM du bloc relevé par la dernière séance, double progression, RPE), recalage
   série par série par le RIR (`recalage`), échauffement et disques par côté, avertissements des
@@ -60,23 +64,34 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   Supersets alternés (repos après le dernier exo du tour), Remplacer (alternatives du programme,
   puis même muscle), exo hors programme, séance libre. Terminer demande un second tap ; une
   séance interrompue reprend au lancement. La barre de navigation est masquée pendant une séance.
-  Exos à la poulie : bascule « Poulie simple / double » (moufle, la pile affiche 2 × la charge),
-  valable pour la séance et reprise à la suivante ; le journal note la charge effective.
-  Accueil : avertissement en rouge si une règle `ecart` est touchée (« Hack squat il y a 30 h »),
+  Salles (`src/donnees/salles.ts`, `salles.json`) : choisies sur l'accueil (reprise de la dernière
+  séance), ajoutées et renommées dans Réglages. Sous le nom d'un exo à disques (Smith, presse, hack
+  squat) ou à la poulie, une ligne repliée règle la machine dans la salle du jour : poids à vide, ou
+  poulie à moufle. Le journal note ce qui se lit (disques seuls, chiffre de la pile) ; les calculs
+  prennent la charge réelle, avec les réglages lus au moment du calcul (le passé suit une correction).
+  Champs charge / reps : le toucher sélectionne la valeur, la frappe la remplace. Exo fini : message
+  tiré des données (`encouragement`), exo suivant marqué « en option » s'il l'est.
+  Accueil : carte « Échauffement » dépliée (`preparation` : 5 min de cardio léger, puis la mobilité
+  des muscles principaux du jour), les séries d'approche restant à la saisie du premier exo.
+  Avertissement en rouge si une règle `ecart` est touchée (« Hack squat il y a 30 h »),
   sans rien bloquer. Semaine de test : après les séries prévues du principal, tentatives de 1RM
   (bench) ou 3RM, ouverture à 95 % du max estimé puis recalage à 0 RIR, fini à 0 RIR ou sous les
   reps ; « Passer le test » reste possible. Bloc fini (dernière semaine bouclée) : l'accueil
   propose « Nouveau bloc » avec les 1RM du test (sinon le meilleur estimé). Terminer affiche le
   résumé : durée, séries, tonnage, records de 1RM estimé, stats du personnage qui ont bougé.
 - `src/donnees/stats.ts` : stats du personnage (formules dans `docs/stats.md`), fonctions pures
-  du journal et des pesées. `src/ecrans/Personnage.tsx` : onglet « Perso », Force, Endurance,
+  du journal et des pesées ; références de Force selon le sexe choisi dans les réglages
+  (`sexe` de `reglages.json`, absent = homme). `src/ecrans/Personnage.tsx` : onglet « Perso », Force, Endurance,
   Constance, Progression et groupes en barres de 10 cases, écart de 1RM estimé par exo sur 4 semaines.
 - `src/donnees/avatar.ts` : personnage en pixel art (24 × 27), grille calculée depuis les paliers
   de Force, Endurance et Constance (seuils dans `docs/stats.md`, « Personnage »), dessiné en SVG
-  dans l'onglet Perso à côté de celui d'il y a 8 semaines.
+  dans l'onglet Perso à côté de celui d'il y a 8 semaines ; variante femme (cheveux longs,
+  brassière, hanches), mêmes paliers.
 - `src/minuteur.ts` : repos = notification programmée en alarme exacte (permissions
   `USE_EXACT_ALARM` / `SCHEDULE_EXACT_ALARM` dans
-  `src-tauri/gen/android/app/src/main/AndroidManifest.xml`), jamais un compteur JS.
+  `src-tauri/gen/android/app/src/main/AndroidManifest.xml`), jamais un compteur JS. Pendant le
+  repos, décompte muet dans le volet et sur l'écran verrouillé (`ReposPlugin.kt`, chronomètre
+  système, effacé à la fin ; commandes `repos_afficher` / `repos_retirer` dans `src-tauri/src/repos.rs`).
 - `src/theme.css` : toutes les couleurs, un bloc par thème (règle 60/30/10) ; liste des thèmes
   dans `src/themes.ts`. Couleurs des disques fixes.
 - `src/styles.css` : style « Fiche de perso » (Chakra Petch, libellés en capitales espacées, angles
@@ -131,7 +146,20 @@ pour que `npm run publier` dépose l'APK. Chaîne Android (SDK, NDK, Rust) : la 
 Dossier de données de l'app (`app_data_dir`, affiché dans Réglages). Voir
 [docs/modele-donnees.md](docs/modele-donnees.md). Ne jamais tester sur le fichier vivant.
 
+### Export manuel
+
+Réglages → « Exporter les données » : toutes les données actuelles en un fichier
+`exzifit-AAAA-MM-JJ.json` (même format que les envois Nextcloud ci-dessous), écrit dans le cache
+de l'app puis proposé au **partage Android** (`src-tauri/src/partage.rs`, `PartagePlugin.kt`, via
+le FileProvider de l'installeur). Sur le PC, le fichier reste dans le cache (chemin affiché) ; dans
+le navigateur (`npm run dev`), il est téléchargé. Pas d'import pour l'instant.
+
 ### Sauvegarde sur Nextcloud
+
+**Installation de Tom seulement** : `reglages.json` sans `envoi` (installation antérieure à l'écran
+de bienvenue). Une installation neuve (les potes) écrit `envoi: false` : le lien de dépôt est
+celui de Tom, leurs copies y arriveraient. Le filtre est côté app (`App.tsx`), pas dans la commande
+Rust.
 
 Après la copie locale du jour, l'app envoie en arrière-plan la copie la plus récente
 (`src-tauri/src/envoi.rs`) dans le dossier Nextcloud `ExziFit-backups`, partagé par lien ;
