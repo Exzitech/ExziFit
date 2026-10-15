@@ -6,6 +6,7 @@ import { lancerRepos, useReste } from "../minuteur";
 import { jourLocal } from "../donnees/fichier";
 import { dansTauri, stockage } from "../stockage";
 import { THEMES } from "../themes";
+import Restaurer from "./Restaurer";
 
 interface Props {
   reglages: Reglages;
@@ -106,6 +107,7 @@ export default function EcranReglages({ reglages, onChange, onErreur }: Props) {
         Exporter les données
       </button>
       {export_ && <p className="doux petit">{export_}</p>}
+      <Restaurer remplace onErreur={onErreur} />
       <p className="doux petit">
         {envoi ? `Dernière copie envoyée sur Nextcloud : ${envoyee}` : "Copie quotidienne sur ce téléphone ; pour la garder ailleurs, exporter."}
       </p>

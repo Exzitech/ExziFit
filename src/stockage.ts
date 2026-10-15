@@ -17,6 +17,8 @@ export interface Stockage {
   dossier(): Promise<string>;
   /** Toutes les données en un fichier JSON (format du paquet envoyé), proposé au partage ; renvoie son nom ou chemin. */
   exporter(jour: string): Promise<string>;
+  /** Remplace toutes les données par un export ; copie d'abord les actuelles, renvoie où (`null` si rien à copier). */
+  importer(texte: string, etiquette: string): Promise<string | null>;
 }
 
 export const dansTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -31,6 +33,7 @@ const tauri: Stockage = {
   sauvegardeEnvoyee: () => invoke("sauvegarde_envoyee"),
   dossier: () => invoke("dossier_donnees"),
   exporter: (jour) => invoke("exporter", { jour }),
+  importer: (texte, etiquette) => invoke("importer", { texte, etiquette }),
 };
 
 // `npm run dev` dans le navigateur du PC : même interface sur localStorage, pour travailler
@@ -61,6 +64,13 @@ const navigateur: Stockage = {
     a.click();
     URL.revokeObjectURL(a.href);
     return a.download;
+  },
+  // Sans copie préalable : données de test. Le contrôle complet du paquet est côté Rust.
+  importer: async (texte) => {
+    const { fichiers } = JSON.parse(texte) as { fichiers: Record<string, string> };
+    Object.keys(localStorage).filter((k) => k.startsWith(PREFIXE)).forEach((k) => localStorage.removeItem(k));
+    for (const [chemin, contenu] of Object.entries(fichiers)) localStorage.setItem(PREFIXE + chemin, contenu);
+    return null;
   },
 };
 

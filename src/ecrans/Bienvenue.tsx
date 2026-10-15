@@ -5,6 +5,7 @@ import { PROGRAMME_DEFAUT, PROGRAMMES } from "../donnees/programme";
 import type { Reglages } from "../donnees/reglages";
 import type { Sexe } from "../donnees/stats";
 import { THEME_DEFAUT } from "../themes";
+import Restaurer from "./Restaurer";
 
 /** Premier lancement d'une installation neuve : de quoi ouvrir la première séance, rien de plus. */
 export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Reglages) => void; onErreur: (e: unknown) => void }) {
@@ -63,6 +64,9 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
       <p className="doux petit">
         Tes données restent sur ce téléphone. Pour les garder ailleurs : Réglages → Exporter les données.
       </p>
+
+      <h2>Nouveau téléphone ?</h2>
+      <Restaurer remplace={false} onErreur={onErreur} />
     </>
   );
 }

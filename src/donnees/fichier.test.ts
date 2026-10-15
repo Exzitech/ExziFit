@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cheminJournal, horodatage, jourLocal, verifierFormat } from "./fichier";
+import { cheminJournal, horodatage, jourLocal, resumerExport, verifierFormat } from "./fichier";
 
 describe("verifierFormat", () => {
   it("accepte le format courant", () => {
@@ -28,5 +28,23 @@ describe("dates locales", () => {
     expect(h).toMatch(/^2026-10-14T18:02:11[+-]\d{2}:\d{2}$/);
     // Le fuseau écrit désigne bien le même instant.
     expect(new Date(h).getTime()).toBe(d.getTime());
+  });
+});
+
+describe("resumerExport", () => {
+  it("compte les séances de tous les mois et lit le prénom", () => {
+    const fichiers = {
+      "journal/2026-09.json": JSON.stringify({ format: 1, seances: [{}, {}] }),
+      "journal/2026-10.json": JSON.stringify({ format: 1, seances: [{}] }),
+      "reglages.json": JSON.stringify({ format: 1, prenom: "Léa" }),
+    };
+    expect(resumerExport(JSON.stringify({ format: 1, jour: "2026-10-15", fichiers }))).toEqual({
+      jour: "2026-10-15", seances: 3, prenom: "Léa",
+    });
+  });
+  it("refuse ce qui n'est pas un export", () => {
+    expect(() => resumerExport("pas du json")).toThrow("JSON illisible");
+    expect(() => resumerExport(JSON.stringify({ format: 1, seances: [] }))).toThrow("pas un export");
+    expect(() => resumerExport(JSON.stringify({ format: 2, fichiers: {} }))).toThrow("pas un export");
   });
 });

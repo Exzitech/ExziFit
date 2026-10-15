@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.32 (app pour les potes), retours de salle traités
+## Statut : 0.1.33 (restaurer un export), retours de salle traités
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -278,9 +278,25 @@ sont codés à côté du Bloc Force, tels que dans [docs/propositions-programmes
   téléchargé, relance sans bienvenue ; réglages sans `envoi` → pas de bienvenue, ligne Nextcloud).
   Publié en 0.1.32, partage vérifié au curl (version.json 0.1.32, empreinte de l'APK identique).
   Pas vu sur le S23 : partage Android et installation neuve à essayer.
-- Limites : pas d'import (un pote qui change de téléphone ne peut pas encore restaurer) ; le
+- Limites : import ajouté en 0.1.33 ; le
   lien de dépôt reste extractible de l'APK (déjà le cas) ; un pote qui installe garde le Bloc Force
   de Tom comme programme par défaut proposé.
+
+**Restaurer un export (2026-10-15, 0.1.33)** — limite de la 0.1.32. Voir le README, « Restaurer un export » :
+- « Restaurer un export » sur la bienvenue (« Nouveau téléphone ? ») et dans Réglages → Données.
+  Sélecteur de fichiers par `<input type="file">` (géré par la WebView de wry 0.55, sans plugin
+  Kotlin ni dépendance), résumé « Export du … (prénom) : n séances », confirmation, rechargement.
+- Rust `importer` : paquet entier contrôlé avant toute écriture (format 1, chemins `valider`, chaque
+  `.json` lisible), copie des données actuelles dans `sauvegardes/avant-import-AAAA-MM-JJ-HHMMSS/`
+  (ni élaguée ni envoyée), puis remplacement (pas de fusion).
+- Vérifié : `cargo test` (10, dont l'import : refus sans écriture, copie, remplacement, aller-retour
+  export → import identique), 92 tests Vitest (`resumerExport`), `tsc`, `npm run build`, parcours
+  Edge headless 390 px (bienvenue → export de Léa posé par CDP → résumé → Restaurer → plus de
+  bienvenue, Perso « Léa » ; Réglages : fichier invalide → message, bon fichier → avertissement
+  « Remplace… », Annuler). Publié en 0.1.33, partage vérifié au curl (version.json 0.1.33,
+  empreinte de l'APK identique). Pas vu sur le S23 : sélecteur Android à essayer.
+- Limites : revenir sur un import = recopier la copie `avant-import-…` à la main (pas d'écran) ;
+  importer l'export de Tom sur un autre téléphone réactive l'envoi Nextcloud (`envoi` absent).
 
 ## Prochaine étape
 
@@ -292,6 +308,9 @@ sont codés à côté du Bloc Force, tels que dans [docs/propositions-programmes
 3. **Personnage (0.1.18)** : avis de Tom sur le dessin et sur les seuils, une fois ses vraies
    stats calculées (seuils posés sans données réelles). Maquettes :
    https://claude.ai/artifact/WaGhMQfmgDLjNcm6bqfryC. Résumé de fin de séance : validé par Tom.
+4. **Programme proposé à la bienvenue** : le Bloc Force de Tom est présélectionné pour un pote
+   (`PROGRAMME_DEFAUT` dans `Bienvenue.tsx`). Choix à faire avec Tom : aucune présélection
+   (« Commencer » grisé tant qu'aucun programme n'est choisi) ou PPL par défaut.
 
 ## Décisions
 

@@ -56,3 +56,22 @@ export function horodatage(d: Date): string {
     `${signe}${deux(Math.floor(abs / 60))}:${deux(abs % 60)}`
   );
 }
+
+/** Ce qu'un export contient, montré avant de remplacer les données. Erreur si ce n'en est pas un. */
+export function resumerExport(texte: string): { jour: string; seances: number; prenom?: string } {
+  let paquet: { format?: unknown; jour?: unknown; fichiers?: Record<string, string> };
+  try {
+    paquet = JSON.parse(texte);
+  } catch {
+    throw new Error("Ce fichier n'est pas un export ExziFit (JSON illisible).");
+  }
+  if (paquet?.format !== FORMAT || typeof paquet.fichiers !== "object" || paquet.fichiers === null) {
+    throw new Error("Ce fichier n'est pas un export ExziFit lisible par cette version.");
+  }
+  const lire = (chemin: string) => JSON.parse(paquet.fichiers![chemin]);
+  const seances = Object.keys(paquet.fichiers)
+    .filter((c) => c.startsWith("journal/"))
+    .reduce((n, c) => n + (lire(c).seances?.length ?? 0), 0);
+  const prenom = "reglages.json" in paquet.fichiers ? lire("reglages.json").prenom : undefined;
+  return { jour: String(paquet.jour ?? "?"), seances, prenom };
+}

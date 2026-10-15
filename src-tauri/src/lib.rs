@@ -21,6 +21,7 @@ pub fn run() {
             fichiers::sauvegarde_envoyee,
             envoi::sauvegarde_envoyer,
             partage::exporter,
+            fichiers::importer,
             maj::maj_verifier,
             #[cfg(target_os = "android")]
             maj::android::maj_installer,

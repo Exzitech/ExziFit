@@ -152,7 +152,17 @@ Réglages → « Exporter les données » : toutes les données actuelles en un 
 `exzifit-AAAA-MM-JJ.json` (même format que les envois Nextcloud ci-dessous), écrit dans le cache
 de l'app puis proposé au **partage Android** (`src-tauri/src/partage.rs`, `PartagePlugin.kt`, via
 le FileProvider de l'installeur). Sur le PC, le fichier reste dans le cache (chemin affiché) ; dans
-le navigateur (`npm run dev`), il est téléchargé. Pas d'import pour l'instant.
+le navigateur (`npm run dev`), il est téléchargé.
+
+### Restaurer un export
+
+« Restaurer un export » sur l'écran de bienvenue (nouveau téléphone) et dans Réglages : sélecteur de
+fichiers Android (`<input type="file">`, géré par la WebView de Tauri), résumé (jour, prénom, nombre
+de séances, `resumerExport`), confirmation. La commande `importer` (`fichiers.rs`) contrôle tout le
+paquet avant d'écrire (format 1, chemins validés, chaque `.json` lisible), copie les données
+actuelles dans `sauvegardes/avant-import-AAAA-MM-JJ-HHMMSS/` (ni élaguée ni envoyée), puis
+**remplace** : un fichier absent de l'export, comme une séance en cours, disparaît. L'app se recharge
+ensuite. Revenir en arrière = recopier à la main le contenu de cette copie dans le dossier de données.
 
 ### Sauvegarde sur Nextcloud
 

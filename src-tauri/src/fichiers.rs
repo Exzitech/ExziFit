@@ -327,6 +327,67 @@ fn lire_tout(d: &Path, prefixe: &str, sortie: &mut BTreeMap<String, String>) -> 
     Ok(())
 }
 
+/// Remplace les données par celles d'un export (`paquet_courant`). Tout le paquet est contrôlé avant la
+/// moindre écriture ; les données actuelles sont d'abord copiées dans `sauvegardes/avant-import-<etiquette>/`,
+/// jamais élaguée ni envoyée (nom hors `est_jour`). Renvoie cette copie, `None` s'il n'y avait rien.
+#[tauri::command]
+pub fn importer(app: tauri::AppHandle, texte: String, etiquette: String) -> Result<Option<String>, String> {
+    Ok(importer_paquet(&racine(&app)?, &texte, &etiquette)?.map(|p| p.display().to_string()))
+}
+
+fn importer_paquet(racine: &Path, texte: &str, etiquette: &str) -> Result<Option<PathBuf>, String> {
+    if etiquette.is_empty() || !etiquette.chars().all(|c| c.is_ascii_digit() || c == '-') {
+        return Err(format!("étiquette invalide : {etiquette:?}"));
+    }
+    #[derive(serde::Deserialize)]
+    struct Export {
+        format: u32,
+        fichiers: BTreeMap<String, String>,
+    }
+    let export: Export = serde_json::from_str(texte).map_err(|e| format!("pas un export ExziFit : {e}"))?;
+    if export.format != 1 {
+        return Err(format!("export au format {}, inconnu de cette version", export.format));
+    }
+    if export.fichiers.is_empty() {
+        return Err("export vide".into());
+    }
+    for (chemin, contenu) in &export.fichiers {
+        valider(chemin)?;
+        if chemin.ends_with(".json") {
+            serde_json::from_str::<serde_json::Value>(contenu).map_err(|e| format!("{chemin} illisible : {e}"))?;
+        }
+    }
+
+    let copie = if contient_donnees(racine)? {
+        let cible = racine.join(SAUVEGARDES).join(format!("avant-import-{etiquette}"));
+        if cible.exists() {
+            return Err(format!("{} existe déjà", cible.display()));
+        }
+        let tmp = cible.with_extension("tmp");
+        if tmp.exists() {
+            fs::remove_dir_all(&tmp).map_err(|e| erreur("suppression de", &tmp, e))?;
+        }
+        copier(racine, &tmp, true)?;
+        fs::rename(&tmp, &cible).map_err(|e| erreur("renommage de", &tmp, e))?;
+        Some(cible)
+    } else {
+        None
+    };
+    // Remplacement, pas fusion : un fichier absent de l'export (séance en cours…) ne doit pas survivre.
+    for e in fs::read_dir(racine).map_err(|e| erreur("lecture de", racine, e))? {
+        let e = e.map_err(|err| erreur("lecture de", racine, err))?;
+        if e.file_name() == SAUVEGARDES {
+            continue;
+        }
+        let p = e.path();
+        if p.is_dir() { fs::remove_dir_all(&p) } else { fs::remove_file(&p) }.map_err(|err| erreur("suppression de", &p, err))?;
+    }
+    for (chemin, contenu) in &export.fichiers {
+        ecrire_atomique(&racine.join(chemin), contenu)?;
+    }
+    Ok(copie)
+}
+
 pub(crate) fn marquer_envoye(racine: &Path, p: &Paquet) -> Result<(), String> {
     let texte = serde_json::to_string(&Envoyee { jour: p.jour.clone(), sha256: p.empreinte.clone() })
         .map_err(|e| e.to_string())?;
@@ -457,5 +518,48 @@ mod tests {
         assert_eq!(chemins, ["journal/2026-10.json", "reglages.json"]);
 
         fs::remove_dir_all(&r).unwrap();
+    }
+
+    #[test]
+    fn import() {
+        let src = std::env::temp_dir().join(format!("exzifit-test-import-src-{}", std::process::id()));
+        let r = std::env::temp_dir().join(format!("exzifit-test-import-{}", std::process::id()));
+        for d in [&src, &r] {
+            let _ = fs::remove_dir_all(d);
+            fs::create_dir_all(d).unwrap();
+        }
+        ecrire_atomique(&src.join("journal/2026-10.json"), "{\"format\":1,\"seances\":[]}").unwrap();
+        ecrire_atomique(&src.join("reglages.json"), "{\"format\":1,\"prenom\":\"Léa\"}").unwrap();
+        let export = paquet_courant(&src, "2026-10-15").unwrap();
+
+        // Paquets refusés : rien n'est écrit, pas même la copie.
+        ecrire_atomique(&r.join("en-cours.json"), "{\"format\":1}").unwrap();
+        ecrire_atomique(&r.join("reglages.json"), "{\"format\":1,\"prenom\":\"Tom\"}").unwrap();
+        for ko in [
+            "pas du json",
+            "{\"format\":2,\"fichiers\":{\"reglages.json\":\"{}\"}}",
+            "{\"format\":1,\"fichiers\":{}}",
+            "{\"format\":1,\"fichiers\":{\"../x.json\":\"{}\"}}",
+            "{\"format\":1,\"fichiers\":{\"sauvegardes/x.json\":\"{}\"}}",
+            "{\"format\":1,\"fichiers\":{\"reglages.json\":\"{\"}}",
+        ] {
+            assert!(importer_paquet(&r, ko, "2026-10-15-120000").is_err(), "{ko}");
+        }
+        assert!(importer_paquet(&r, &export, "../x").is_err());
+        assert!(!r.join(SAUVEGARDES).exists());
+
+        let copie = importer_paquet(&r, &export, "2026-10-15-120000").unwrap().expect("copie faite");
+        assert_eq!(fs::read_to_string(r.join("reglages.json")).unwrap(), "{\"format\":1,\"prenom\":\"Léa\"}");
+        assert!(r.join("journal/2026-10.json").is_file());
+        assert!(!r.join("en-cours.json").exists(), "remplacement, pas fusion");
+        assert_eq!(fs::read_to_string(copie.join("reglages.json")).unwrap(), "{\"format\":1,\"prenom\":\"Tom\"}");
+        assert!(copie.join("en-cours.json").is_file());
+        // Aller-retour exact, et la copie d'avant import n'entre ni dans l'export ni dans l'élagage.
+        assert_eq!(paquet_courant(&r, "2026-10-15").unwrap(), export);
+        assert!(importer_paquet(&r, &export, "2026-10-15-120000").is_err(), "copie déjà présente");
+
+        for d in [&src, &r] {
+            fs::remove_dir_all(d).unwrap();
+        }
     }
 }
