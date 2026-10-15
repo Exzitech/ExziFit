@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Même règle que sauvegarde_android12.xml, pour Android 11 et avant. -->
+<full-backup-content>
+    <include domain="root" path="donnees/" />
+</full-backup-content>

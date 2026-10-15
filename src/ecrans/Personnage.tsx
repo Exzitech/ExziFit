@@ -8,7 +8,7 @@ import { programme } from "../donnees/programme";
 import { lireSalles, normaliser } from "../donnees/salles";
 import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Sexe, type Stats } from "../donnees/stats";
 
-const NOMS: Record<Muscle, string> = {
+export const NOMS: Record<Muscle, string> = {
   pectoraux: "Pectoraux", dos: "Dos", epaules: "Épaules", biceps: "Biceps", triceps: "Triceps",
   quadriceps: "Quadriceps", ischios: "Ischios", fessiers: "Fessiers", mollets: "Mollets",
   abdos: "Abdos", "avant-bras": "Avant-bras",

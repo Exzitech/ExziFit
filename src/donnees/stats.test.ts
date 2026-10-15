@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ExoFait, Seance, Serie } from "./journal";
-import { programme } from "./programme";
-import { MUSCLES, progres, seuilConstance, stats, usure } from "./stats";
+import { membres, programme } from "./programme";
+import { apercu, MUSCLES, progres, seuilConstance, stats, usure } from "./stats";
 
 const t = (kg: number, reps: number, rir?: number): Serie => ({ type: "travail", kg, reps, rir });
 const seance = (debut: string, ...exercices: ExoFait[]): Seance => ({ debut, exercices });
@@ -125,5 +125,31 @@ describe("Progression", () => {
     // 80 × (1 + 9/30) = 104 → 80 × (1 + 11/30) = 109,3.
     expect(progres(s, POIDS, MAINTENANT)).toEqual([{ exo: "dips", actuel: expect.closeTo(109.33, 1), avant: 104 }]);
     expect(progres(s, [], MAINTENANT)).toEqual([]);
+  });
+});
+
+describe("aperçu d'un programme", () => {
+  it("donne les groupes et l'Endurance de 4 semaines réellement faites", () => {
+    const p = programme("superset-express");
+    // Chaque jour non optionnel une fois par semaine, postes obligatoires, séries à 2 RIR.
+    const faites: Seance[] = [];
+    for (let sem = 0; sem < 4; sem++) {
+      p.jours.filter((j) => !j.optionnel).forEach((j, i) => faites.push(seance(jour(1 + sem * 7 + i),
+        ...j.exercices.filter((x) => !x.optionnel).flatMap((x) => membres(x).map((exo) => ({
+          exo, series: Array.from({ length: (x.prescription as { series: number }).series }, () => t(20, 10, 2)),
+        }))))));
+    }
+    const vraies = stats(faites, POIDS, "homme", 2, MAINTENANT);
+    const a = apercu(p);
+    for (const m of MUSCLES) expect(a.groupes[m], m).toBeCloseTo(vraies.groupes[m]);
+    expect(a.endurance).toBeCloseTo(vraies.endurance);
+  });
+
+  it("ne compte ni les jours ni les exos en option, et les séries lourdes sur les seuls exos de Force", () => {
+    const force = apercu(programme("bloc-force"));
+    expect(force.seances).toBe(5);
+    expect(force.groupes.mollets).toBe(0); // mollets debout en option au J2
+    expect(force.lourdes).toBeGreaterThan(0);
+    expect(apercu(programme("superset-express")).lourdes).toBe(0); // rien sous 8 reps
   });
 });

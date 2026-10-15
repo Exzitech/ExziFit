@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { exercice } from "./exercices";
 import type { Seance, Serie } from "./journal";
 import {
-  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, ouvertureTest, programme,
+  avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, membres, ouvertureTest, programme,
   programmeDe, PROGRAMMES, prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe,
 } from "./programme";
 
@@ -86,9 +86,9 @@ it("exos dont le 1RM se saisit : les mouvements principaux", () => {
   expect(exosPct1rm(PROGRAMME)).toEqual(["developpe-couche", "hack-squat", "tractions-lestees", "souleve-de-terre"]);
 });
 
-it("échauffement : barre, puis 40 / 60 / 75 % arrondis", () => {
-  expect(echauffement(exercice("developpe-couche"), 127.5)).toEqual(["Barre ×10", "50 ×5", "77,5 ×3", "95 ×2"]);
-  expect(echauffement(exercice("developpe-couche"), 40)).toEqual(["Barre ×10", "25 ×3", "30 ×2"]);
+it("échauffement : barre ×15, puis 40 / 60 / 75 % arrondis", () => {
+  expect(echauffement(exercice("developpe-couche"), 127.5)).toEqual(["Barre ×15", "50 ×5", "77,5 ×3", "95 ×2"]);
+  expect(echauffement(exercice("developpe-couche"), 40)).toEqual(["Barre ×15", "25 ×3", "30 ×2"]);
   expect(echauffement(exercice("tractions-lestees"), 17.5)).toEqual(["PDC ×5", "+10 ×3"]);
 });
 
@@ -271,15 +271,22 @@ describe("encouragement de fin d'exo", () => {
 describe("échauffement général", () => {
   const jourDe = (id: string) => PROGRAMME.jours.find((j) => j.id === id)!.exercices.flatMap((p) => p.superset ?? [p.exo as string]).map(exercice);
 
-  it("cardio d'abord, puis la mobilité des seuls muscles du jour", () => {
+  it("la mobilité des seuls muscles du jour, sans cardio", () => {
     const bench = preparation(jourDe("J1"));
-    expect(bench.etapes[0]).toMatch(/^Cardio/);
-    expect(bench.etapes.join()).toMatch(/Dislocations d'épaules/);
+    expect(bench.etapes.join()).not.toMatch(/Jumping/);
+    expect(bench.etapes.join()).toMatch(/Pompes/);
     expect(bench.etapes.join()).not.toMatch(/Squat|pointes/);
     const jambes = preparation(jourDe("J2"));
     expect(jambes.etapes.join()).toMatch(/Squat au poids du corps.*Good morning.*pointes/);
-    expect(jambes.etapes.join()).not.toMatch(/Dislocations/);
-    expect(jambes.minutes).toBe(5 + jambes.etapes.length - 1);
+    expect(jambes.etapes.join()).not.toMatch(/Pompes/);
+  });
+
+  it("3 min au plus, sans matériel, pour chaque jour de chaque programme", () => {
+    for (const p of PROGRAMMES) for (const j of p.jours) {
+      const prep = preparation(j.exercices.flatMap(membres).map(exercice));
+      expect(prep.minutes, `${p.id} ${j.id}`).toBeLessThanOrEqual(3);
+      expect(prep.etapes.join(), `${p.id} ${j.id}`).not.toMatch(/vélo|rameur|bâton|élastique|barre|band/i);
+    }
   });
 });
 

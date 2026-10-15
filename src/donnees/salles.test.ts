@@ -58,7 +58,7 @@ describe("calculs avec le chariot", () => {
 
   it("échauffement en % du total, sans palier sous le chariot", () => {
     // Total 176 : 40 % = 70 sous le chariot (retiré), 60 % = 105,6 → 30, 75 % = 132 → 55.
-    expect(echauffement(presse, 100)).toEqual(["À vide ×10", "30 ×3", "55 ×2"]);
+    expect(echauffement(presse, 100)).toEqual(["À vide ×15", "30 ×3", "55 ×2"]);
   });
 
   it("poulie double : la pile affiche le double", () => {

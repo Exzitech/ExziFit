@@ -11,7 +11,11 @@
     <!-- AndroidTV support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
+    <!-- Sauvegarde Android : données restaurées d'elles-mêmes à la réinstallation (README, « Données »). -->
     <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/sauvegarde_android12"
+        android:fullBackupContent="@xml/sauvegarde_android11"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.exzifit"

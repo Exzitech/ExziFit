@@ -363,34 +363,42 @@ export function retour(e: Exercice, kg: number, poidsCorps?: number): number {
   return chargeDe(e, totalDe(e, kg, corps) * 0.9, poidsCorps) as number;
 }
 
-/** Mobilité dynamique d'avant séance, chaque mouvement proposé si un exo du jour travaille un de ses muscles. */
+/**
+ * Mobilité dynamique d'avant séance, au poids du corps (faisable partout, sans matériel), par ordre
+ * d'utilité ; chaque mouvement est proposé si un exo du jour travaille un de ses muscles.
+ */
 const MOBILITE: { texte: string; muscles: Muscle[] }[] = [
   { texte: "Cercles de bras · 10 dans chaque sens", muscles: ["pectoraux", "epaules", "triceps", "biceps", "dos"] },
-  { texte: "Dislocations d'épaules au bâton ou à l'élastique · 10", muscles: ["pectoraux", "epaules"] },
-  { texte: "Band pull-apart · 15", muscles: ["pectoraux", "epaules", "dos"] },
-  { texte: "Suspension à la barre · 20 s", muscles: ["dos", "biceps"] },
   { texte: "Squat au poids du corps · 10", muscles: ["quadriceps", "fessiers"] },
+  { texte: "Pompes lentes · 8", muscles: ["pectoraux", "triceps"] },
+  { texte: "Y-T-W debout, bras tendus · 5 de chaque", muscles: ["dos", "epaules"] },
+  { texte: "Good morning mains sur la nuque · 10", muscles: ["ischios", "fessiers"] },
   { texte: "Balancements de jambe · 10 par côté", muscles: ["quadriceps", "ischios", "fessiers"] },
-  { texte: "Good morning à vide · 10", muscles: ["ischios"] },
   { texte: "Montées sur pointes · 15", muscles: ["mollets"] },
-  { texte: "Cercles de poignets · 10", muscles: ["avant-bras"] },
+  { texte: "Cercles de poignets · 10", muscles: ["avant-bras", "biceps"] },
 ];
 
+/** Plafond de l'échauffement général (demande de Tom) : 5 mouvements de 30 s. */
+const MOUVEMENTS_MAX = 5;
+
 /**
- * Échauffement général d'une séance : cardio léger, puis la mobilité des muscles principaux du
- * jour ; les séries d'approche du premier exo viennent ensuite (`echauffement`). Durée ≈ 5 min de
- * cardio + 1 min par mouvement.
+ * Échauffement général d'une séance, 3 min au plus et sans matériel : la mobilité des muscles
+ * principaux du jour, ≈ 30 s par étape. Pas de cardio : le spécifique (barre à vide ×15 puis les
+ * séries d'approche du premier exo, `echauffement`) prépare mieux au lourd et lève le pouls aussi.
  */
 export function preparation(exos: Exercice[]): { minutes: number; etapes: string[] } {
   const muscles = new Set(exos.flatMap((e) => e.muscles.principaux));
-  const mobilite = MOBILITE.filter((m) => m.muscles.some((x) => muscles.has(x))).map((m) => m.texte);
-  return { minutes: 5 + mobilite.length, etapes: ["Cardio léger (vélo, rameur) · 5 min, en pouvant parler", ...mobilite] };
+  const mobilite = MOBILITE.filter((m) => m.muscles.some((x) => muscles.has(x))).map((m) => m.texte).slice(0, MOUVEMENTS_MAX);
+  return { minutes: Math.ceil(mobilite.length / 2), etapes: mobilite };
 }
 
-/** Échauffement d'un mouvement principal, du plus léger au plus lourd ; vide sous la barre. */
+/**
+ * Échauffement d'un mouvement principal, du plus léger au plus lourd ; vide sous la barre. La barre
+ * à vide ×15 tient lieu d'échauffement général ; les paliers lourds restent courts pour ne pas fatiguer.
+ */
 export function echauffement(e: Exercice, kg: number): string[] {
   if (e.charge === "poids-corps-leste") return kg > 0 ? ["PDC ×5", `+${nombre(arrondir(kg / 2, e.pas))} ×3`] : [];
-  const vide = e.charge === "barre" ? "Barre ×10" : "À vide ×10";
+  const vide = e.charge === "barre" ? "Barre ×15" : "À vide ×15";
   // Les % portent sur le total (chariot compris), puis reviennent en disques.
   const total = totalDe(e, kg, 0);
   const paliers = ([[0.4, 5], [0.6, 3], [0.75, 2]] as const)

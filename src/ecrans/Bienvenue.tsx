@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { noterPoidsCorps } from "../donnees/bloc";
 import { FORMAT, jourLocal } from "../donnees/fichier";
-import { PROGRAMME_DEFAUT, PROGRAMMES } from "../donnees/programme";
+import { PROGRAMMES } from "../donnees/programme";
 import type { Reglages } from "../donnees/reglages";
 import type { Sexe } from "../donnees/stats";
 import { THEME_DEFAUT } from "../themes";
@@ -12,7 +12,7 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
   const [prenom, setPrenom] = useState("");
   const [sexe, setSexe] = useState<Sexe>("homme");
   const [poids, setPoids] = useState("");
-  const [prog, setProg] = useState(PROGRAMME_DEFAUT);
+  const [prog, setProg] = useState<string>(); // pas de présélection : à chacun de choisir
 
   const kg = Number(poids.replace(",", "."));
   const poidsOk = !poids.trim() || (Number.isFinite(kg) && kg > 0);
@@ -60,7 +60,7 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
       </div>
       <p className="doux petit">Tout se change ensuite : programme sur l'accueil, le reste dans les réglages.</p>
 
-      <button className="principal" disabled={!poidsOk} onClick={commencer}>Commencer</button>
+      <button className="principal" disabled={!poidsOk || !prog} onClick={commencer}>Commencer</button>
       <p className="doux petit">
         Tes données restent sur ce téléphone. Pour les garder ailleurs : Réglages → Exporter les données.
       </p>

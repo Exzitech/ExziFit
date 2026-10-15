@@ -1,6 +1,6 @@
 import { exercice, type Muscle } from "./exercices";
 import type { Seance, Serie } from "./journal";
-import { e1rmSerie, type Programme } from "./programme";
+import { e1rmSerie, membres, type Programme } from "./programme";
 
 /** Stats du personnage (docs/stats.md) : fonctions pures du journal et des pesées, rien n'est stocké. */
 
@@ -103,8 +103,58 @@ function groupes(seances: Seance[], t: number): Record<Muscle, number> {
       for (const m of secondaires) n[m] += dures / 2;
     }
   }
-  for (const m of MUSCLES) n[m] = Math.min(n[m] / 4, 10) * 10;
+  for (const m of MUSCLES) n[m] = scoreGroupe(n[m] / 4);
   return n;
+}
+
+/** Score d'un groupe : séries dures par semaine, plafond à 10. */
+const scoreGroupe = (parSemaine: number) => Math.min(parSemaine, 10) * 10;
+
+/** Ce que donnerait un programme suivi en entier (docs/stats.md, « Aperçu d'un programme »). */
+export interface Apercu {
+  /** Séances par semaine : les jours non optionnels, une rotation par semaine. */
+  seances: number;
+  groupes: Record<Muscle, number>;
+  endurance: number;
+  /** Séries de 6 reps au plus sur un exo de Force, par semaine. */
+  lourdes: number;
+}
+
+/**
+ * Groupes et Endurance avec les formules de `stats`, en supposant une rotation par semaine,
+ * postes obligatoires seulement, toutes les séries dures ; moyenne des semaines du programme.
+ * La Force dépend des charges : pas de chiffre, seulement le nombre de séries lourdes.
+ */
+export function apercu(p: Programme): Apercu {
+  const jours = p.jours.filter((j) => !j.optionnel);
+  const n = Object.fromEntries(MUSCLES.map((m) => [m, 0])) as Record<Muscle, number>;
+  let lourdes = 0;
+  for (const sem of p.semaines) {
+    for (const j of jours) {
+      for (const poste of j.exercices) {
+        if (poste.optionnel) continue;
+        const x = poste.prescription;
+        const [series, reps] = x.type === "pct1rm" ? [sem.schemas[x.schema].series, sem.schemas[x.schema].reps]
+          : x.type === "fourchette" ? [x.series, x.repsMax]
+          : x.type === "rpe" ? [x.series, x.reps]
+          : [x.series, Infinity];
+        for (const id of membres(poste)) {
+          const e = exercice(id);
+          for (const m of e.muscles.principaux) n[m] += series;
+          for (const m of e.muscles.secondaires) n[m] += series / 2;
+          if (e.force && reps <= 6) lourdes += series;
+        }
+      }
+    }
+  }
+  const semaines = p.semaines.length;
+  for (const m of MUSCLES) n[m] = scoreGroupe(n[m] / semaines);
+  return {
+    seances: jours.length,
+    groupes: n,
+    endurance: MUSCLES.reduce((s, m) => s + n[m], 0) / MUSCLES.length,
+    lourdes: lourdes / semaines,
+  };
 }
 
 /** Séances par tranche de 7 jours pour qu'elle compte : moitié des jours non optionnels, sans programme 2. */

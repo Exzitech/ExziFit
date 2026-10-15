@@ -11,12 +11,13 @@ import {
 } from "../donnees/salles";
 import {
   avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
-  jourDeSeance, preparation, programme, programmeDe, PROGRAMMES, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc,
+  jourDeSeance, preparation, programme, programmeDe, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc,
   semaineDe, type Bilan, type Cible, type Poste, type Programme, type Semaine,
 } from "../donnees/programme";
-import { stats, type Pesee, type Sexe, type Stats } from "../donnees/stats";
+import { seuilConstance, stats, type Pesee, type Sexe, type Stats } from "../donnees/stats";
 import { useBoutonRetour } from "../boutonRetour";
 import { Ecarts, seuilActuel } from "./Personnage";
+import EcranProgrammes from "./Programmes";
 import { annulerRepos, lancerRepos, useReste } from "../minuteur";
 
 /** Repos d'un exo hors programme. */
@@ -206,6 +207,8 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const [finDemandee, setFinDemandee] = useState(false);
   /** Résumé de la séance qui vient d'être terminée. */
   const [resume, setResume] = useState<{ seance: Seance; bilan: Bilan; avant: Stats; apres: Stats } | null>(null);
+  /** Page de choix du programme, ouverte depuis l'accueil. */
+  const [voirProgrammes, setVoirProgrammes] = useState(false);
   const reste = useReste(fin);
 
   const prog = (seance && programmeDe(seance)) || programme(programmeChoisi);
@@ -249,6 +252,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     ? vue !== "jour" && (vue !== "saisie" || lignes(seance)[ligne] !== undefined)
     : resume !== null;
   useBoutonRetour(sousVue ? () => (seance ? setVue("jour") : setResume(null)) : null, onErreur);
+  useBoutonRetour(voirProgrammes && !seance ? () => setVoirProgrammes(false) : null, onErreur);
 
   function proposer(pr: Programme, p: Seance[], blocId: string) {
     choisirJour(pr, p, blocId, prochainJour(pr, p, blocId, new Date()));
@@ -336,6 +340,14 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     );
   }
 
+  if (!seance && voirProgrammes) {
+    const maintenant = new Date();
+    return (
+      <EcranProgrammes actuel={prog.id} stats={stats(normaliser(passees, salles), pesees, sexe, seuilConstance(prog), maintenant)}
+                       onChoisir={(id) => { changerProgramme(id); setVoirProgrammes(false); }} onRetour={() => setVoirProgrammes(false)} />
+    );
+  }
+
   if (!seance) {
     const finiBloc = bloc !== undefined && blocFini(prog, passees, bloc.id, jourChoisi);
     /** 1RM du bloc suivant, par exo principal (résultat du test, sinon 1RM effectif). */
@@ -379,17 +391,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     return (
       <>
         <h1>{prog.nom}</h1>
-        <details className="carte rm">
-          <summary>Changer de programme</summary>
-          <div className="seg" style={{ gridTemplateColumns: "1fr 1fr" }}>
-            {PROGRAMMES.map((x) => (
-              <button key={x.id} aria-pressed={x.id === prog.id} onClick={() => changerProgramme(x.id)}>
-                {x.nom}<small>{x.jours.length} jours{x.semaines.length > 1 ? ` · ${x.semaines.length} semaines` : ""}</small>
-              </button>
-            ))}
-          </div>
-          <p className="doux petit">Chaque programme garde son bloc : y revenir reprend au jour où il en était.</p>
-        </details>
+        <button className="lien" onClick={() => setVoirProgrammes(true)}>Changer de programme ›</button>
         {salles.length > 1 && (
           <div className="seg" style={{ gridTemplateColumns: `repeat(${salles.length}, 1fr)` }}>
             {salles.map((x) => (
@@ -439,7 +441,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
             <details className="carte rm" open>
               <summary>Échauffement · ≈ {prep.minutes} min</summary>
               <ol className="apercu">{prep.etapes.map((t) => <li key={t}>{t}</li>)}</ol>
-              <p className="doux petit">Puis les séries d'approche, affichées à la saisie du premier exercice.</p>
+              <p className="doux petit">Puis la barre à vide et les séries d'approche, affichées à la saisie du premier exercice.</p>
             </details>
           );
         })()}
@@ -673,7 +675,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         </p>
       )}
       {(e.disques || e.charge === "poulie") && (
-        <ReglageMachine e={e} salle={salle} m={montage(salle, e)} onChange={changerMontage} />
+        <ReglageMachine key={`${salle.id}/${e.id}`} e={e} salle={salle} m={montage(salle, e)} onChange={changerMontage} />
       )}
       {autres.length > 0 && <p className="doux petit">Superset avec {nomLigne(autres)}</p>}
       {l.poste?.note && <p className="doux petit">{l.poste.note}</p>}
@@ -707,7 +709,9 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         </p>
       )}
       {passe.map((h) => <p key={h.debut} className="doux petit">{date(h.debut)} : {h.series.map(serie).join("  ")}</p>)}
-      {passe.length === 0 && <p className="doux petit">Jamais fait.</p>}
+      {passe.length === 0 && (kg === 0 && !["poids-corps", "poids-corps-leste", "distance"].includes(e.charge)
+        ? <p className="alerte petit">Jamais fait : mets ta charge de départ, la prochaine fois elle sera préremplie.</p>
+        : <p className="doux petit">Jamais fait.</p>)}
 
       <div className="bas">
         {fin > 0 && <div className={reste ? "compte" : "compte fini"}>{reste ? `${Math.floor(reste / 60)}:${String(reste % 60).padStart(2, "0")}` : "Go"}</div>}
@@ -785,10 +789,12 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
 
 /**
  * Réglage de la machine dans la salle du jour, replié sur une ligne : poids à vide (Smith, presse,
- * hack squat) ou poulie à moufle. On note toujours ce qui se lit sur la machine.
+ * hack squat) ou poulie à moufle. On note toujours ce qui se lit sur la machine. Machine à disques
+ * sans poids à vide noté dans cette salle : déplié d'office, avec un avertissement.
  */
 function ReglageMachine({ e, salle, m, onChange }: { e: Exercice; salle: Salle; m: Montage; onChange: (m: Montage) => void }) {
-  const [ouvert, setOuvert] = useState(false);
+  const manque = e.disques && !m.aVide;
+  const [ouvert, setOuvert] = useState(manque);
   const resume = e.disques
     ? (m.aVide ? `${nombre(m.aVide)} kg à vide` : "poids à vide non noté")
     : (m.poulie ? "poulie à moufle (pile × 2)" : "poulie normale");
@@ -797,6 +803,12 @@ function ReglageMachine({ e, salle, m, onChange }: { e: Exercice; salle: Salle; 
       <button className="lien" onClick={() => setOuvert(!ouvert)}>{salle.nom} · {resume} {ouvert ? "▴" : "▾"}</button>
       {ouvert && (e.disques ? (
         <div className="carte rm">
+          {manque && (
+            <p className="alerte petit">
+              Poids à vide pas encore noté ici : sans lui, 1RM, % et Force sont sous-estimés.
+              Il est souvent écrit sur le chariot.
+            </p>
+          )}
           <label className="petit">
             Poids à vide (chariot, barre de la Smith)
             <Champ valeur={m.aVide ?? 0} mode="decimal" onChange={(n) => onChange(n > 0 ? { aVide: n } : {})} />

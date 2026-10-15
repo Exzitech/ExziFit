@@ -71,8 +71,8 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   prennent la charge réelle, avec les réglages lus au moment du calcul (le passé suit une correction).
   Champs charge / reps : le toucher sélectionne la valeur, la frappe la remplace. Exo fini : message
   tiré des données (`encouragement`), exo suivant marqué « en option » s'il l'est.
-  Accueil : carte « Échauffement » dépliée (`preparation` : 5 min de cardio léger, puis la mobilité
-  des muscles principaux du jour), les séries d'approche restant à la saisie du premier exo.
+  Accueil : carte « Échauffement » dépliée (`preparation` : la mobilité des muscles principaux du
+  jour, sans cardio), puis la barre à vide ×15 et les séries d'approche à la saisie du premier exo.
   Avertissement en rouge si une règle `ecart` est touchée (« Hack squat il y a 30 h »),
   sans rien bloquer. Semaine de test : après les séries prévues du principal, tentatives de 1RM
   (bench) ou 3RM, ouverture à 95 % du max estimé puis recalage à 0 RIR, fini à 0 RIR ou sous les
@@ -145,6 +145,19 @@ pour que `npm run publier` dépose l'APK. Chaîne Android (SDK, NDK, Rust) : la 
 
 Dossier de données de l'app (`app_data_dir`, affiché dans Réglages). Voir
 [docs/modele-donnees.md](docs/modele-donnees.md). Ne jamais tester sur le fichier vivant.
+
+### Sauvegarde Android (réinstallation)
+
+Comme une app du Play Store : la sauvegarde Android (Google) copie `donnees/` dans le compte Google
+du téléphone et la **restaure d'elle-même à la réinstallation**, avant le premier lancement (pas
+d'écran de bienvenue). Elle sert aussi au transfert vers un nouveau téléphone. Règles :
+`gen/android/app/src/main/res/xml/sauvegarde_android12.xml` (Android 12 et plus) et
+`sauvegarde_android11.xml`, déclarées dans le manifeste ; seul `donnees/` y entre (le dossier de la
+WebView ferait dépasser le plafond de 25 Mo, au-delà duquel toute la sauvegarde échoue).
+Android choisit le moment (environ une fois par 24 h, téléphone en charge, au repos, en Wi-Fi) et
+il faut « Sauvegarde Google » active dans les réglages du téléphone. Forcer une copie, téléphone
+branché : `adb shell bmgr backupnow com.exzitech.exzifit`. Restauration seulement si la même
+signature d'APK est réinstallée. Rien de cela n'est vérifiable dans le navigateur.
 
 ### Export manuel
 

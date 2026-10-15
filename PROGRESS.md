@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.33 (restaurer un export), retours de salle traités
+## Statut : 0.1.37 (échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -298,6 +298,49 @@ sont codés à côté du Bloc Force, tels que dans [docs/propositions-programmes
 - Limites : revenir sur un import = recopier la copie `avant-import-…` à la main (pas d'écran) ;
   importer l'export de Tom sur un autre téléphone réactive l'envoi Nextcloud (`envoi` absent).
 
+**Bienvenue sans présélection (2026-10-15, 0.1.34)** — choix de Tom : un pote ne reçoit plus le
+Bloc Force par défaut, « Commencer » reste grisé tant qu'aucun programme n'est choisi.
+`PROGRAMME_DEFAUT` ne sert plus qu'au repli (réglages sans `programme`, comme chez Tom).
+Vérifié : `tsc`, 92 tests Vitest, `npm run build` ; publié, partage vérifié au curl
+(version.json 0.1.34, empreinte de l'APK identique). Pas vu dans un navigateur ni sur le S23.
+
+**Retours du 2026-10-15 au soir (0.1.35)** — trois demandes de Tom :
+- **Échauffement** trop long : 3 min au plus, sans matériel. `preparation` (programme.ts) =
+  jumping jacks 30 s + au plus 5 mouvements au poids du corps de 30 s, choisis par les muscles
+  du jour (cardio machine, bâton, élastique et barre retirés).
+- **Aperçu des stats** au changement de programme, sur une page à part : `Programmes.tsx`, ouverte
+  par « Changer de programme › » sur l'accueil (remplace la carte repliée), retour Android compris.
+  Groupes et Endurance « aujourd'hui → après 4 semaines de ce programme », séries lourdes / sem.
+  pour la Force (pas de chiffre : elle dépend des charges), seuil de Constance. `apercu` (stats.ts),
+  [docs/stats.md](docs/stats.md), « Aperçu d'un programme ».
+- **Données perdues à la réinstallation** : désinstaller efface le dossier privé, `sauvegardes/`
+  compris. Choix de Tom : « comme n'importe quelle app du Play Store » = sauvegarde Android
+  (Google), restaurée d'elle-même à la réinstallation. Règles explicites limitées à `donnees/`
+  (manifeste + `res/xml/sauvegarde_android12.xml` / `11.xml`) ; README, « Sauvegarde Android ».
+  Les données d'avant la réinstallation restent récupérables par « Restaurer un export » avec le
+  dernier fichier du dossier Nextcloud `ExziFit-backups`.
+- Vérifié : 95 tests Vitest (3 nouveaux : 3 min / sans matériel sur chaque jour de chaque
+  programme ; aperçu = `stats` sur 4 semaines simulées ; options non comptées), `tsc`, build,
+  captures Edge headless 390 px de chaque écran (artifact : https://claude.ai/artifact/Ba8SgVnmfDhRnQjjmx4sGy).
+- Limites : sauvegarde Android **non vérifiée** (téléphone non branché) ; Android choisit le moment
+  (≈ 24 h, en charge, Wi-Fi) et ne restaure que si « Sauvegarde Google » est active ; restauration
+  d'un APK installé hors Play Store non confirmée par la doc trouvée. À tester :
+  `adb shell bmgr backupnow com.exzitech.exzifit`, désinstaller, réinstaller.
+
+**Poids à vide signalé (2026-10-15, 0.1.36)** — retour de Tom : sur la presse, rien ne disait que le
+poids à vide manquait. Machine à disques sans poids à vide noté dans la salle du jour : le réglage
+(`ReglageMachine`, Seance.tsx) s'ouvre d'office avec un avertissement, champ prêt à remplir ; replié
+une fois noté. Exo chargé jamais fait à 0 kg : « Jamais fait : mets ta charge de départ… » en alerte.
+Vérifié : `tsc`, 95 tests, build, Edge headless 390 px (Leg press, Haut / bas express Bas B :
+avertissement, 76 tapé → `salles.json` `presse-cuisses.aVide: 76`, réglage replié en « 76 kg à vide »).
+
+**Échauffement spécifique (2026-10-15, 0.1.37)** — retour de Tom : personne ne fait de jumping jacks à la
+salle. Jumping jacks retirés de `preparation` ; la barre à vide passe de ×10 à ×15 en tête des
+séries d'approche (`echauffement`) et tient lieu d'échauffement général. Sources : l'échauffement
+spécifique a le meilleur appui pour le 1RM, le général avant lui est inconstant (revue de 11 études) ;
+les guides de coaching montent barre ×10–20 puis paliers à reps décroissantes pour ne pas
+fatiguer. ×30 écarté pour cette raison. Vérifié : `tsc`, 95 tests Vitest. Publié en 0.1.37. Pas vu sur le S23.
+
 ## Prochaine étape
 
 1. **Essai à la salle par Tom** (0.1.7) : saisir les 1RM et le poids de corps à l'accueil
@@ -308,9 +351,6 @@ sont codés à côté du Bloc Force, tels que dans [docs/propositions-programmes
 3. **Personnage (0.1.18)** : avis de Tom sur le dessin et sur les seuils, une fois ses vraies
    stats calculées (seuils posés sans données réelles). Maquettes :
    https://claude.ai/artifact/WaGhMQfmgDLjNcm6bqfryC. Résumé de fin de séance : validé par Tom.
-4. **Programme proposé à la bienvenue** : le Bloc Force de Tom est présélectionné pour un pote
-   (`PROGRAMME_DEFAUT` dans `Bienvenue.tsx`). Choix à faire avec Tom : aucune présélection
-   (« Commencer » grisé tant qu'aucun programme n'est choisi) ou PPL par défaut.
 
 ## Décisions
 

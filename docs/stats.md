@@ -89,6 +89,19 @@ Lecture : « est-ce que je viens ».
 Une semaine sous le seuil coûte 12,5 et revient 8 semaines plus tard sans rien faire de spécial ;
 aucune notion de « série en cours » ni de compteur qui repart à zéro.
 
+## Aperçu d'un programme
+
+Page « Programmes » (accueil → « Changer de programme », 0.1.35) : ce que donneraient 4 semaines du
+programme, à côté des stats du jour. `apercu` (stats.ts), mêmes formules que ci-dessus :
+
+- Une rotation par semaine : chaque jour non optionnel une fois, postes obligatoires seulement,
+  toutes les séries comptées dures. Programme à plusieurs semaines : moyenne de ses semaines.
+- **Groupes** et **Endurance** : séries par semaine → même score que plus haut (testé contre
+  `stats` sur 4 semaines simulées).
+- **Force** : pas de chiffre (elle dépend des charges). Affiché : séries de 6 reps au plus par
+  semaine sur les exos qui ont une part de Force.
+- **Constance** : le seuil du programme (séances par semaine pour qu'une tranche compte).
+
 ## Progression
 
 Lecture : « est-ce que mes charges montent ». Ajoutée le 2026-10-13 (demande de Tom : une fois la
