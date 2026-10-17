@@ -25,9 +25,10 @@ val keystoreProperties = Properties().apply {
 
 // Canal (README, « Dev et prod »), le même que lit src-tauri/build.rs. dev (par défaut) :
 // « ExziFit Dev », identifiant .dev, installée à côté de la prod avec ses propres données, mise à
-// jour par Nextcloud. prod : la version Google Play, sans mise à jour hors du Play Store.
+// jour par Nextcloud. potes : l'app des amis, identifiant de la prod, mise à jour par Nextcloud.
+// prod : la version Google Play, sans mise à jour hors du Play Store.
 val canal = System.getenv("EXZIFIT_CANAL") ?: "dev"
-require(canal == "dev" || canal == "prod") { "EXZIFIT_CANAL=$canal : attendu dev ou prod" }
+require(canal == "dev" || canal == "potes" || canal == "prod") { "EXZIFIT_CANAL=$canal : attendu dev, potes ou prod" }
 
 android {
     compileSdk = 36
@@ -79,7 +80,8 @@ android {
             )
         }
     }
-    if (canal == "dev") {
+    // Mise à jour par Nextcloud (installeur et permission) : dev et potes.
+    if (canal != "prod") {
         sourceSets {
             getByName("main").java.srcDir("src/canal-dev/java")
             // Un seul manifeste par jeu de sources : celui du canal passe par les types de build.

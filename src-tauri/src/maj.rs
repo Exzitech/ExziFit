@@ -1,14 +1,15 @@
-//! Mise à jour de l'APK **dev** depuis le dossier Nextcloud partagé par lien public (maj.json).
-//! `npm run publier` y dépose `ExziFit-dev.apk` et `version-dev.json` ; au lancement, l'app compare
+//! Mise à jour de l'APK **dev** et **potes** depuis le dossier Nextcloud partagé par lien public (maj.json).
+//! `npm run publier` y dépose `ExziFit-dev.apk` et `version-dev.json`, `npm run publier-potes`
+//! `ExziFit.apk` et `version.json` ; au lancement, l'app compare
 //! sa version, télécharge l'APK dans son cache, vérifie l'empreinte SHA-256 et ouvre
 //! l'installeur d'Android (InstallateurPlugin.kt), qui exige en plus la même signature.
 //! Repris d'ExziHub (maj_apk.rs, telechargement.rs), sans variantes ni catalogue de plugins.
 
 use serde::{Deserialize, Serialize};
 
-/// `version.json` (et `ExziFit.apk`) reste figé en 0.1.43 pour les installations d'avant la
-/// séparation dev/prod (même identifiant que la prod) : elles passent ensuite par le Play Store.
-const VERSION: &str = "version-dev.json";
+/// `version.json` (et `ExziFit.apk`) : l'app des potes, même identifiant que la prod, jusqu'à
+/// leur passage par le Play Store. `version-dev.json` : ExziFit Dev.
+const VERSION: &str = if cfg!(canal_potes) { "version.json" } else { "version-dev.json" };
 
 /// Lien public du dossier partagé, intégré à la compilation : rien à côté de l'APK.
 fn lien() -> Result<String, String> {
@@ -31,7 +32,7 @@ fn url(fichier: &str) -> Result<String, String> {
     Ok(format!("{}/download?path=%2F&files={fichier}", lien()?))
 }
 
-/// Contenu de version-dev.json, écrit par scripts/publier.cjs.
+/// Contenu de version-dev.json ou version.json, écrit par scripts/publier.cjs.
 #[derive(Deserialize)]
 #[cfg_attr(not(target_os = "android"), allow(dead_code))]
 pub struct Publication {

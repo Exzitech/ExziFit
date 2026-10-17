@@ -106,8 +106,9 @@ de 2027. Donc, dès le premier jour et avant toute fonctionnalité :
   lancement, télécharge, vérifie le SHA-256 et ouvre l'installeur Android. Voir dans ExziHub :
   `hub/src-tauri/src/maj_apk.rs`, `gen/android/.../InstallateurPlugin.kt`, `npm run publier-apk`
   et le README, section « Mise à jour depuis l'app ». Le câble ne sert plus qu'au débogage.
-  **Depuis le 2026-10-17, ce circuit ne sert que l'app dev** (« ExziFit Dev », données à part) ;
-  la prod passe par Google Play, qui interdit toute autre mise à jour. Voir le README, « Dev et prod ».
+  **Depuis le 2026-10-17, ce circuit sert l'app dev** (« ExziFit Dev », données à part) **et l'app
+  des potes** (identifiant prod, tant qu'il n'y a pas de compte Play Console) ; la version Google
+  Play n'en aura pas, Play interdit toute autre mise à jour. Voir le README, « Dev et prod ».
 - Chaîne de build Android, signature et Nextcloud déjà en place et connus de Tom.
 
 **Alternatives écartées** :

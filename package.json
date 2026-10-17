@@ -11,6 +11,7 @@
     "scenarios": "node scripts/qa-scenarios.mjs",
     "tauri": "tauri",
     "publier": "node scripts/publier.cjs",
+    "publier-potes": "node scripts/publier.cjs --potes",
     "publier-play": "node scripts/publier-play.cjs",
     "icone": "vite-node scripts/icone.ts && tauri icon icone/icone.json"
   },

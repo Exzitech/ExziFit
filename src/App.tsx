@@ -13,7 +13,7 @@ import { estLangue, langueDuSysteme, t } from "./i18n";
 import { appliquerLangue } from "./langue";
 import MiseAJour, { surAndroid } from "./MiseAJour";
 import AlarmeExacte from "./AlarmeExacte";
-import { nextcloud } from "./canal";
+import { majNextcloud } from "./canal";
 import { stockage } from "./stockage";
 import { appliquerTheme } from "./themes";
 
@@ -149,7 +149,7 @@ export default function App() {
           </div>
         </div>
       )}
-      {surAndroid && nextcloud && <MiseAJour />}
+      {surAndroid && majNextcloud && <MiseAJour />}
       {surAndroid && <AlarmeExacte />}
       {aRelire && !enSeance && (
         <div className="erreurs">

@@ -10,8 +10,8 @@ par Tom, dans l'ordre.
   à côté **ExziFit Dev** depuis le dossier Nextcloud `ExziFit` (`ExziFit-dev.apk`) : c'est elle qui
   reçoit désormais les mises à jour Nextcloud. Ses données partent de zéro (Réglages › Restaurer un
   export de l'app prod pour essayer sur de vraies données, sans risque pour elles).
-- **Les potes** gardent leur 0.1.43 : `version.json` ne bouge plus, ils ne voient plus de mise à
-  jour. Dès qu'ils sont testeurs (étape 4), le Play Store remplace l'app **sans perdre leurs
+- **Les potes** gardent ExziFit (identifiant prod), mise à jour par Nextcloud (`npm run
+  publier-potes`, canal potes du README) tant qu'il n'y a pas de compte. Dès qu'ils sont testeurs (étape 4), le Play Store remplace l'app **sans perdre leurs
   données**, parce que la clé de signature est la même.
 - Avant la première installation depuis le Play Store : **Réglages › Exporter** sur chaque
   téléphone, par précaution.

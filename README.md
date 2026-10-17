@@ -19,6 +19,7 @@ Tauri 2 + React 18 / TypeScript / Vite 5.
 | `cargo test --manifest-path src-tauri/Cargo.toml` | tests Rust (chemins, sauvegardes) |
 | `npm run build` | vérification des types + build de l'interface |
 | `npm run publier` | APK **dev** release signé (« ExziFit Dev »), déposé sur Nextcloud ; l'app dev le propose au lancement |
+| `npm run publier-potes` | APK de l'app des potes (« ExziFit », identifiant prod), déposé sur Nextcloud depuis `main` propre ; leur app le propose au lancement |
 | `npm run publier-play` | AAB **prod** pour Google Play, depuis `main` propre seulement ; pose le tag `vX.Y.Z` (voir « Dev et prod ») |
 | `npx tauri android build --debug --target aarch64 --apk` | APK de debug, canal dev (clé de debug : ne met pas à jour l'app dev installée) |
 
@@ -215,16 +216,21 @@ les notifications et la reprise après veille.
 
 ## Dev et prod
 
-Deux apps distinctes, compilées depuis le même code. La variable `EXZIFIT_CANAL` (`dev` par
-défaut, `prod`) est lue à trois endroits : `src-tauri/build.rs` (cfg Rust `canal_dev`),
+Deux apps distinctes, compilées depuis le même code en trois canaux. La variable `EXZIFIT_CANAL`
+(`dev` par défaut, `potes`, `prod`) est lue à trois endroits : `src-tauri/build.rs` (cfg Rust
+`canal_dev`, `canal_potes`, `maj_nextcloud`),
 `gen/android/app/build.gradle.kts` (identifiant, nom, manifeste) et `vite.config.ts` (`src/canal.ts`).
 
-| | dev | prod |
-|---|---|---|
-| Identifiant, nom | `com.exzitech.exzifit.dev`, « ExziFit Dev » | `com.exzitech.exzifit`, « ExziFit » |
-| Données | les siennes : essayer en dev ne touche jamais l'historique réel | l'historique réel |
-| Mise à jour | Nextcloud (`npm run publier`, ci-dessous) | Google Play seulement (`npm run publier-play`) |
-| Envoi des sauvegardes, synchro | oui | non (pas de lien de dépôt dans l'app publique) |
+| | dev | potes | prod |
+|---|---|---|---|
+| Identifiant, nom | `com.exzitech.exzifit.dev`, « ExziFit Dev » | `com.exzitech.exzifit`, « ExziFit » | idem potes |
+| Données | les siennes : essayer en dev ne touche jamais l'historique réel | l'historique réel | l'historique réel |
+| Mise à jour | Nextcloud, `version-dev.json` (`npm run publier`) | Nextcloud, `version.json` (`npm run publier-potes`) | Google Play seulement (`npm run publier-play`) |
+| Envoi des sauvegardes, synchro | oui | non | non (pas de lien de dépôt dans l'app publique) |
+
+Le canal potes sert les amis (et le téléphone de Tom, même identifiant) tant qu'il n'y a pas de
+compte Play Console : même app que la prod, plus la mise à jour Nextcloud. Il disparaît quand ils
+passent par le Play Store, qui remplace l'app sans perdre les données (même clé de signature).
 | Branche | `dev` (ou toute branche de travail) | `main`, tag `vX.Y.Z` par version publiée |
 
 Pourquoi le code Nextcloud sort de la prod : Google Play interdit à une app de se mettre à jour
@@ -241,17 +247,18 @@ Console en **test interne**, l'installer depuis le Play Store, puis promouvoir e
 `publier-play` refuse : une autre branche que `main`, un fichier modifié ou non suivi, une
 version pas plus récente que le dernier tag ; il lance `npm test` et `cargo test`, vérifie le
 manifeste final (identifiant prod, aucune permission refusée par Play) et copie l'AAB dans
-`livraisons/` (hors dépôt). Bascule et démarches côté Google : [docs/play-store.md](docs/play-store.md).
+`livraisons/` (hors dépôt). Sans Play Console, à la place : `npm run publier-potes` depuis `main`
+(refuse une autre branche, un fichier modifié, une version pas plus récente que `version.json` ;
+jamais de montée de version automatique). Bascule et démarches côté Google : [docs/play-store.md](docs/play-store.md).
 
-## Mise à jour en ligne (dev)
+## Mise à jour en ligne (dev et potes)
 
 Dossier `C:\Users\tomro\Nextcloud\ExziFit` (chemin dans `publier.local.json`, local),
 partagé par **lien public** Nextcloud ; le lien est dans `src-tauri/maj.json`, intégré à la
 compilation (fichier local, hors dépôt : copier `maj.exemple.json` et y mettre le lien).
 Il contient `ExziFit-dev.apk` (première installation à la main, depuis l'app Nextcloud)
-et `version-dev.json` (version, empreinte SHA-256, taille). `ExziFit.apk` et `version.json`
-restent figés en 0.1.43 : les installations d'avant la séparation (identifiant prod) n'y
-trouveront plus rien et passeront par le Play Store.
+et `version-dev.json` (version, empreinte SHA-256, taille), et pour l'app des potes `ExziFit.apk`
+et `version.json` (`npm run publier-potes`, depuis la 0.1.50 ; figés en 0.1.43 auparavant).
 
 `npm run publier` passe au correctif suivant si la version est déjà publiée
 (`tauri.conf.json`, `Cargo.toml`, `package.json`), compile en release (Rust optimisé pour la

@@ -723,3 +723,19 @@ Pas vu sur le S23 (rendu selon le masque du lanceur Samsung).
   la bienvenue, passait sous les boutons Android (seul écran sans onglets ni bandeau `.bas`, les deux
   seuls à réserver `env(safe-area-inset-bottom)`). La fin de l'écran est dans `.fin-sans-nav`, qui
   réserve cette marge. `tsc`, 145 tests, publié en 0.1.50. Pas vu sur téléphone (0 sur PC).
+
+**Première version prod (2026-10-17, 0.1.50)** — QA de la dev : 145 tests Vitest, `tsc` + build, `cargo test`,
+  3 scénarios dirigés, 2 sessions de l'agent IA (60 étapes données vides, 63 sur 80 données exemple) :
+  0 problème, 6 suspects bénins (« Restaurer un export » ouvre un sélecteur invisible en headless,
+  objectif déjà sélectionné retouché). `dev` commité (`f844b18`), `main` avancé en avance rapide,
+  `npm run publier-play` → `livraisons/ExziFit-0.1.50.aab` (8,0 Mo), tag `v0.1.50` local. Premier
+  essai en échec : le serveur Vite déjà lancé a mis plus de 2 s à répondre après le changement de
+  branche, `lancerDev` (qa-ia.mjs) en a lancé un second sur le port pris. Pas encore envoyé : aucun
+  compte Play Console (docs/play-store.md), rien de poussé sur GitHub.
+
+**Canal potes (2026-10-17, 0.1.50)** — pas de compte Google : les potes restent sur Nextcloud. Troisième
+  canal `EXZIFIT_CANAL=potes` : identifiant et nom de la prod (leur app 0.1.43 se met à jour sur place,
+  données gardées), mise à jour par `version.json` / `ExziFit.apk` (`maj.rs`), sans envoi ni synchro
+  (cfg `maj_nextcloud` séparé de `canal_dev`, `majNextcloud` dans `canal.ts`). `npm run publier-potes`
+  (`publier.cjs --potes`) : depuis `main` propre, jamais de montée de version. Le téléphone de Tom
+  (ExziFit, identifiant prod) reçoit la même mise à jour. Format de données inchangé depuis 0.1.43.

@@ -1,9 +1,9 @@
-// Mise à jour par Nextcloud, envoi des sauvegardes et synchro : canal dev seulement (build.rs).
+// Envoi des sauvegardes et synchro : canal dev seulement ; mise à jour par Nextcloud : dev et potes (build.rs).
 // Google Play interdit toute mise à jour hors du Play Store, et le lien de dépôt serait public.
 #[cfg(canal_dev)]
 mod envoi;
 mod fichiers;
-#[cfg(canal_dev)]
+#[cfg(maj_nextcloud)]
 mod maj;
 mod partage;
 #[cfg(target_os = "android")]
@@ -16,7 +16,7 @@ pub fn run() {
     let builder = tauri::Builder::default().plugin(tauri_plugin_notification::init());
     #[cfg(target_os = "android")]
     let builder = builder.plugin(repos::init()).plugin(partage::android::init());
-    #[cfg(all(target_os = "android", canal_dev))]
+    #[cfg(all(target_os = "android", maj_nextcloud))]
     let builder = builder.plugin(maj::android::init());
     builder
         .invoke_handler(tauri::generate_handler![
@@ -40,9 +40,9 @@ pub fn run() {
             synchro::synchro_lire,
             #[cfg(canal_dev)]
             synchro::synchro_ecrire,
-            #[cfg(canal_dev)]
+            #[cfg(maj_nextcloud)]
             maj::maj_verifier,
-            #[cfg(all(target_os = "android", canal_dev))]
+            #[cfg(all(target_os = "android", maj_nextcloud))]
             maj::android::maj_installer,
             #[cfg(target_os = "android")]
             repos::repos_afficher,

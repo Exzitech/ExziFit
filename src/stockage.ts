@@ -98,7 +98,7 @@ const navigateur: Stockage = {
   synchroEcrire: async () => { throw new Error("synchro indisponible dans le navigateur"); },
 };
 
-// Version Google Play : ni envoi sur Nextcloud ni synchro (commandes absentes côté Rust, lib.rs).
+// Potes et Google Play : ni envoi sur Nextcloud ni synchro (commandes absentes côté Rust, lib.rs).
 const play: Stockage = {
   ...tauri,
   envoyerSauvegarde: navigateur.envoyerSauvegarde,
