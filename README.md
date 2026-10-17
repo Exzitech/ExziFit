@@ -14,6 +14,7 @@ Tauri 2 + React 18 / TypeScript / Vite 5.
 | `npm run tauri dev` | fenêtre de bureau, vrais fichiers (`%APPDATA%\com.exzitech.exzifit\donnees`), sauvegarde et envoi réels (fichier `-dev`) : à utiliser pour tester sans téléphone |
 | `scripts/lancer-bureau.vbs` | même chose sans console (raccourci « ExziFit (dev) » du bureau) ; sortie dans `%TEMP%\exzifit-dev.log`, boîte d'erreur si l'arrêt n'est pas normal |
 | `npm test` | tests TypeScript (Vitest) |
+| `npm run qa` | agent de QA par IA locale sur l'interface web (voir « Agent de QA ») |
 | `cargo test --manifest-path src-tauri/Cargo.toml` | tests Rust (chemins, sauvegardes) |
 | `npm run build` | vérification des types + build de l'interface |
 | `npm run publier` | APK **dev** release signé (« ExziFit Dev »), déposé sur Nextcloud ; l'app dev le propose au lancement |
@@ -24,6 +25,61 @@ Versions : les paquets npm `@tauri-apps/*` et les crates Rust sont figés à la 
 (`~2.11` / `~2.4`). La CLI refuse de compiler sinon ; monter les deux ensemble. Pas de
 `cargo update` à l'aveugle : le `Cargo.lock` (repris du prototype) fixe des `tauri-runtime`
 compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
+
+## Agent de QA (IA locale)
+
+`scripts/qa-ia.mjs` explore l'interface web tout seul et rapporte où elle casse. Playwright
+(Chromium, 390 × 844) pilote `npm run dev`, lancé s'il ne tourne pas et arrêté à la fin ; Qwen 2.5 VL 7B
+(Ollama, `http://localhost:11434`, `qwen2.5vl:7b`) choisit chaque action. Navigateur neuf à chaque
+session : le localStorage est le sien, jamais les vraies données.
+
+```
+npm run qa -- --etapes 30 --donnees vide --graine 42
+```
+
+| Option | Défaut | Effet |
+|---|---|---|
+| `--objectif "..."` | explorer un maximum d'écrans, casser les formulaires | consigne donnée à l'IA |
+| `--etapes N` | 150 | nombre d'actions |
+| `--donnees vide\|exemple` | `exemple` | localStorage vide (écran de bienvenue) ou deux rotations du Bloc Force (`donneesExemple`, format de `docs/modele-donnees.md`) |
+| `--graine N` | horloge | rejoue les mêmes tirages et la même graine pour l'IA |
+| `--vision K` | 10 | l'IA regarde la capture toutes les K étapes (et à chaque anomalie) |
+| `--visible` | non | navigateur affiché |
+
+Boucle : liste compacte des éléments visibles (index, rôle, libellé, valeur, actif) → l'IA répond en JSON
+(`format` contraint) → action → attente que la page ne bouge plus. Réponse invalide : une seconde
+demande, puis une action tirée au hasard. Même état 4 fois de suite, ou 15 étapes sur le même écran :
+action forcée vers un élément pas encore essayé. Un toucher de champ devient une saisie piège (vide,
+négatif, très long, caractères spéciaux). `keep_alive` à 2 min pendant la session, 0 à la fin
+(mémoire vidéo libérée).
+
+Détecté, **problème** : `pageerror`, `console.error`, promesse rejetée non gérée, écran blanc (racine
+React vide), message du bandeau d'erreurs de l'app, NaN / undefined / [object Object] / Infinity
+dans le texte, page figée (plus de réponse en 10 s : nouvel onglet ; encore figée, fin de session).
+**Suspect**, à vérifier à l'œil : bouton sans aucun effet, blocage, texte plus large que sa boîte,
+avis de l'IA sur la capture (texte coupé, chevauchement).
+
+Rapport dans `qa-rapports/<date-heure>/` (hors dépôt) : `rapport.md` (résumé, chaque problème
+dédoublonné avec la suite exacte d'actions depuis le départ, trace, capture), `journal.jsonl` (toutes
+les étapes, avec la raison donnée par l'IA et ses refus), les captures.
+
+Mesuré sur la RTX 3060 Ti (8 Go), le 2026-10-17 : 1,6 à 2,8 s par étape, appel à l'IA ≈ 1,1 s ;
+modèle 5,1 Go en mémoire vidéo, pic de la carte ≈ 7,8 Go sur 8 (bureau compris) : rien d'autre de
+lourd sur la carte pendant une session.
+
+Limites :
+- Un modèle 7B **explore bien mais ne vérifie pas les calculs** : une charge fausse mais plausible
+  passe. Les tests Vitest (`npm test`) restent la référence pour la logique.
+- L'avis sur les captures se trompe souvent (texte « coupé » qui ne l'est pas) : d'où « suspect ».
+- Version web seulement : pas de bouton retour Android (`back` ne fait rien, la navigation est un
+  état React), pas de notification, pas de vrai fichier. Les traces pointent sur le code transformé
+  par Vite (numéros de ligne décalés, nom de fichier juste). Une page figée ne se capture pas.
+- La graine rejoue les tirages et la graine de l'IA ; même modèle et même version d'Ollama, le
+  parcours se répète en pratique (vérifié sur deux sessions), sans garantie.
+
+Suite possible : piloter l'APK de debug sur le téléphone (`adb forward tcp:9222
+localabstract:webview_devtools_remote_<pid>` puis `chromium.connectOverCDP`), pour le bouton retour,
+les notifications et la reprise après veille.
 
 ## Organisation
 

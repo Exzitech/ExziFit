@@ -8,3 +8,5 @@ src-tauri/maj.json
 src-tauri/sauvegarde.json
 # AAB de la prod (npm run publier-play) : envoyés sur la Play Console, pas dans le dépôt.
 livraisons/
+# Rapports de l'agent de QA (npm run qa) : captures et journaux locaux.
+qa-rapports/

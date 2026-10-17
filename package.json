@@ -1,12 +1,13 @@
 {
   "name": "exzifit",
   "private": true,
-  "version": "0.1.43",
+  "version": "0.1.44",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
+    "qa": "node scripts/qa-ia.mjs",
     "tauri": "tauri",
     "publier": "node scripts/publier.cjs",
     "publier-play": "node scripts/publier-play.cjs",
@@ -23,6 +24,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.64.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vitest": "^2.1.9"

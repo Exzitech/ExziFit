@@ -520,10 +520,14 @@ export function echauffement(e: Exercice, kg: number): string[] {
 
 export const DISQUES = [25, 20, 15, 10, 5, 2.5, 1.25];
 
-/** Disques par côté sur une barre de 20 kg ; `null` si la charge ne tombe pas juste. */
+/** Au-delà, aucune barre ni machine ne porte la charge : rien à afficher (sinon un disque par tour). */
+const MAX_PAR_COTE = 500;
+
+/** Disques par côté sur une barre de 20 kg ; `null` si la charge ne tombe pas juste ou dépasse MAX_PAR_COTE. */
 export function disques(kg: number, barre = 20): number[] | null {
   let reste = Math.round(((kg - barre) / 2) * 100) / 100;
-  if (reste < 0) return null;
+  // `!(… <= …)` écarte aussi NaN, qui passerait la boucle sans rien poser.
+  if (reste < 0 || !(reste <= MAX_PAR_COTE)) return null;
   const res: number[] = [];
   for (const d of DISQUES) {
     while (reste >= d - 1e-9) {

@@ -14,6 +14,18 @@ Décidé avec Tom : garder la clé actuelle comme clé de signature Play. À fai
 ExziFit Dev, **tester le minuteur téléphone verrouillé** (nouvelle permission), créer le compte
 Play, branche `dev`, adresse de contact dans [docs/confidentialite.md](docs/confidentialite.md).
 
+**Agent de QA par IA locale (2026-10-17)** — README, « Agent de QA » : `npm run qa`, Playwright +
+Qwen 2.5 VL 7B (Ollama) sur l'interface web. Validé : sessions de 30 étapes, `throw` injecté sur
+« Passer à … » (Programmes) trouvé avec le bon chemin (graine 1, étape 19) puis retiré.
+**Bug trouvé et corrigé (0.1.44)** : une valeur démesurée figeait l'app, et **à chaque relance**
+(valeur enregistrée). Cause prouvée : `disques()` (`programme.ts`) pose un disque par tour, soit
+1,6 million de `<span>` pour 80 000 000 kg (calcul 20 ms, rendu sans fin). Garde : au-delà de
+500 kg par côté, pas de disques affichés (`null`), ce qui débloque aussi les données déjà écrites.
+Vérifié : test de régression, 129 tests, build ; chemin du rapport rejoué dans Chromium (Séance
+libre → Overhead press → 1e9 kg) : figé sans la garde, 0 disque et réponse en 1 ms avec, 100 kg
+→ 25 + 15. Pas de bornes sur les champs (charge, reps, 1RM) : non nécessaires pour le blocage,
+à décider si les valeurs absurdes gênent ailleurs (stats, records).
+
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
 2. ~~**Matériel** : variantes Smith / haltères, salles et réglages de machine~~ (0.1.26).

@@ -97,6 +97,10 @@ it("disques par côté", () => {
   expect(disques(100)).toEqual([25, 15]);
   expect(disques(20)).toEqual([]);
   expect(disques(21)).toBeNull();
+  // Régression : 1RM de 99999999 → 1,6 million de disques affichés, app figée à chaque relance.
+  expect(disques(1020)).toHaveLength(20);
+  expect(disques(80_000_000)).toBeNull();
+  expect(disques(1e9, 0)).toBeNull();
 });
 
 describe("retour", () => {
