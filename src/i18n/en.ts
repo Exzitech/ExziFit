@@ -216,7 +216,7 @@ export const en: Textes = {
     abdos: "Abs", "avant-bras": "Forearms",
   },
   effets: {
-    force: ["broader shoulders", "thicker arms, chest", "biceps, thicker legs", "maximum build"],
+    force: ["broader shoulders", "thicker arms, chest", "biceps, thicker legs", "maximum build", "traps, veins"],
     endurance: ["slimmer waist", "ab line", "defined abs"],
     constance: ["upright posture, healthy glow", "halo"],
   },

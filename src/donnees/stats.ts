@@ -162,14 +162,22 @@ export function apercu(p: Programme): Apercu {
 export const seuilConstance = (p: Programme | undefined) =>
   p ? Math.ceil(p.jours.filter((j) => !j.optionnel).length / 2) : 2;
 
-/** Part des 8 dernières tranches de 7 jours glissants qui atteignent le seuil. */
+/**
+ * Part des tranches de 7 jours glissants qui atteignent le seuil, sur les tranches écoulées depuis
+ * la première séance (au moins 4, au plus 8) : un débutant assidu n'attend pas 8 semaines.
+ */
 function constance(seances: Seance[], t: number, seuil: number): number {
   const parTranche = new Array<number>(8).fill(0);
+  let premiere = t;
   for (const s of seances) {
-    const k = Math.floor((t - Date.parse(s.debut)) / (7 * JOUR));
-    if (k >= 0 && k < 8) parTranche[k]++;
+    const age = t - Date.parse(s.debut);
+    if (age < 0) continue;
+    premiere = Math.min(premiere, Date.parse(s.debut));
+    const k = Math.floor(age / (7 * JOUR));
+    if (k < 8) parTranche[k]++;
   }
-  return (100 * parTranche.filter((c) => c >= seuil).length) / 8;
+  const ecoulees = Math.min(8, Math.max(4, Math.floor((t - premiere) / (7 * JOUR)) + 1));
+  return (100 * parTranche.filter((c) => c >= seuil).length) / ecoulees;
 }
 
 /** Seuil de progrès : en dessous de +1 %, l'exo stagne. */

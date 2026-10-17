@@ -224,7 +224,7 @@ export const fr = {
   },
   /** Ce que chaque palier change sur le personnage (avatar.ts, `SEUILS`), du palier 1 au dernier. */
   effets: {
-    force: ["épaules plus larges", "bras plus épais, pectoraux", "biceps, jambes plus épaisses", "carrure maximale"],
+    force: ["épaules plus larges", "bras plus épais, pectoraux", "biceps, jambes plus épaisses", "carrure maximale", "trapèzes, veines"],
     endurance: ["taille affinée", "ligne d'abdos", "abdos dessinés"],
     constance: ["posture droite, teint vif", "halo"],
   },

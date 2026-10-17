@@ -216,7 +216,7 @@ export const pt: Textes = {
     abdos: "Abdômen", "avant-bras": "Antebraços",
   },
   effets: {
-    force: ["ombros mais largos", "braços mais grossos, peitoral", "bíceps, pernas mais grossas", "físico máximo"],
+    force: ["ombros mais largos", "braços mais grossos, peitoral", "bíceps, pernas mais grossas", "físico máximo", "trapézio, veias"],
     endurance: ["cintura mais fina", "linha do abdômen", "abdômen definido"],
     constance: ["postura ereta, pele corada", "halo"],
   },

@@ -84,9 +84,12 @@ Lecture : « est-ce que je viens ».
   (une rotation compte pour une semaine : Bloc Force, 5 jours → 3) ; sans bloc ouvert, 2.
   Le seuil se lit au moment du calcul et s'applique aux 8 tranches (simple ; un changement de
   programme recalcule donc tout l'historique de la fenêtre).
-- **Constance = 100 × tranches tenues / 8.**
+- **Constance = 100 × tranches tenues / tranches écoulées**, tranches écoulées = semaines depuis la
+  première séance, **au moins 4, au plus 8** (2026-10-17, demande de Tom : avec 8 fixes, un débutant
+  assidu restait avachi 4 semaines et n'avait son halo qu'à la 6e ; 2 semaines tenues sur 2 donnent
+  maintenant 50). Après 8 semaines, c'est la formule d'origine.
 
-Une semaine sous le seuil coûte 12,5 et revient 8 semaines plus tard sans rien faire de spécial ;
+Une semaine sous le seuil coûte 12,5 (au-delà de 8 semaines) et revient 8 semaines plus tard sans rien faire de spécial ;
 aucune notion de « série en cours » ni de compteur qui repart à zéro.
 
 ## Aperçu d'un programme
@@ -135,13 +138,16 @@ pesée) compte pour 0. Il redescend dès que le score repasse sous le seuil.
 
 | Stat | Seuils | Ce qui change |
 |---|---|---|
-| Force | 40 · 55 · 70 · 85 | épaules plus larges ; bras plus épais et pectoraux ; biceps et jambes ; carrure maximale |
+| Force | 40 · 55 · 70 · 85 · 100 | épaules plus larges ; bras plus épais et pectoraux ; biceps et jambes ; carrure maximale ; trapèzes et veine d'avant-bras |
 | Endurance | 25 · 50 · 75 | taille plus fine ; taille fine et ligne d'abdos ; abdos dessinés |
 | Constance | 50 · 75 | sous 50 tête rentrée, cernes, teint terne ; puis posture droite ; à 75 halo à la couleur du thème |
 
 Seuils de Force serrés au milieu de l'échelle (100 = très avancé), là où se trouve un pratiquant
-intermédiaire, pour qu'un vrai progrès se voie en quelques mois. Constance 75 = 6 semaines tenues
-sur 8. Seuils posés sans données réelles, à revoir après quelques semaines d'usage.
+intermédiaire, pour qu'un vrai progrès se voie en quelques mois. Palier 100 (« très avancé »)
+ajouté le 2026-10-17 : Tom était à 94 dès sa 3e séance (90 kg, couché 140 × 5, hack squat 180 × 5),
+donc au dernier palier sans marge ; le corps occupe déjà 22 px sur 24, ce palier ajoute des traits
+au lieu d'élargir. Constance 75 = 6 semaines tenues sur 8 (3 sur 4 au début). Seuils d'Endurance et
+de Constance pas encore jugés sur données réelles (il faut 4 et 8 semaines pour les remplir).
 
 **Femme** : même grille et mêmes traits, plus cheveux longs jusqu'aux épaules, brassière à
 l'accent sur le haut du torse et short élargi d'un pixel (hanches).

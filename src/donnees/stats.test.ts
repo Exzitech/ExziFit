@@ -96,6 +96,13 @@ describe("Constance", () => {
     expect(stats(s, POIDS, "homme", 3, MAINTENANT).constance).toBe(25);
     expect(stats(s, POIDS, "homme", 2, MAINTENANT).constance).toBe(37.5);
   });
+  it("débutant : compte sur les tranches écoulées depuis la 1re séance, au moins 4", () => {
+    const deuxSemaines = [1, 2, 3, 8, 9, 10].map((j) => seance(jour(j)));
+    expect(stats(deuxSemaines, POIDS, "homme", 3, MAINTENANT).constance).toBe(50); // 2 tenues / 4
+    const sixSemaines = [1, 2, 3, 8, 9, 10, 15, 16, 17, 22, 23, 24, 29, 30, 31, 36, 37, 38].map((j) => seance(jour(j)));
+    expect(stats(sixSemaines, POIDS, "homme", 3, MAINTENANT).constance).toBe(100); // 6 / 6
+    expect(stats([seance(jour(36))], POIDS, "homme", 1, MAINTENANT).constance).toBeCloseTo(100 / 6);
+  });
   it("ignore les séances après la date de calcul", () => {
     expect(stats([seance(jour(-1)), seance(jour(-2))], POIDS, "homme", 2, MAINTENANT).constance).toBe(0);
   });

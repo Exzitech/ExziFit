@@ -25,7 +25,7 @@ describe("paliers", () => {
 
 for (const sexe of ["homme", "femme"] as const) describe(`grille (${sexe})`, () => {
   const tous: Paliers[] = [];
-  for (let f = 0; f <= 4; f++) for (let e = 0; e <= 3; e++) for (let c = 0; c <= 2; c++) tous.push({ force: f, endurance: e, constance: c });
+  for (let f = 0; f <= 5; f++) for (let e = 0; e <= 3; e++) for (let c = 0; c <= 2; c++) tous.push({ force: f, endurance: e, constance: c });
 
   it("toujours symétrique et dans le cadre", () => {
     for (const p of tous) {
@@ -39,7 +39,7 @@ for (const sexe of ["homme", "femme"] as const) describe(`grille (${sexe})`, () 
   });
 
   it("chaque palier de Force change la silhouette, en plus large ou plus épais", () => {
-    for (let f = 0; f < 4; f++) {
+    for (let f = 0; f < 5; f++) {
       const a = grille({ force: f, endurance: 1, constance: 1 }, sexe);
       const b = grille({ force: f + 1, endurance: 1, constance: 1 }, sexe);
       expect(largeurMax(b) >= largeurMax(a) && peau(b) > peau(a)).toBe(true);

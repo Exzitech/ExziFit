@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.41 (trois langues : français, anglais, portugais ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.42 (personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -344,15 +344,34 @@ spécifique a le meilleur appui pour le 1RM, le général avant lui est inconsta
 les guides de coaching montent barre ×10–20 puis paliers à reps décroissantes pour ne pas
 fatiguer. ×30 écarté pour cette raison. Vérifié : `tsc`, 95 tests Vitest. Publié en 0.1.37. Pas vu sur le S23.
 
+**Personnage sur données réelles (2026-10-17, 0.1.42)** — point 3 des prochaines étapes. Données lues
+dans `etat.json` (synchro, copie dans le dossier temporaire, lecture seule) : 4 séances du 13 au 15,
+pesées 90 kg. Stats au 17 : Force 94, Endurance 10, Constance 12,5. Deux constats, tranchés par Tom :
+- **Force saturée** : 94 dès la 3e séance, donc dernier palier (85) sans marge, et ~13 semaines
+  d'arrêt pour en perdre un. Ajout d'un **palier à 100** : trapèzes (cou élargi) et veine en biais
+  sur l'avant-bras ; épaules plafonnées au palier 4 (le corps occupe déjà 22 px sur 24). Seuils
+  du bas inchangés (les potes seront vers 30–50).
+- **Constance des débutants** : avec 8 tranches fixes, un nouveau assidu restait avachi 4 semaines.
+  Dénominateur = tranches écoulées depuis la 1re séance, entre 4 et 8 : Tom passe à 25, à 50
+  (posture droite) s'il tient 3 séances cette semaine.
+- Bloc Force suivi en entier → Endurance 74,3 (aperçu), juste sous le palier 3 (75) : mollets à 0,
+  abdos et avant-bras à 30. Pas changé, c'est le programme qui le dit.
+- Vérifié : `tsc`, 129 tests Vitest (1 nouveau : Constance débutant ; grilles testées jusqu'au
+  palier 5), build ; rendu texte des grilles F4 / F5 regardé. Publié en 0.1.42, version.json et
+  empreinte de l'APK vérifiées au curl. Pas vu sur le S23.
+- Remarqué : le PC n'a pas de mot de passe de synchro (`acces-synchro.json` absent), ses données
+  datent des essais du 13 ; une séance d'essai (couché 20 × 9, le 13 à 6 h 14) est dans le vrai
+  journal et compte pour la Constance et les groupes.
+
 ## Prochaine étape
 
-1. **Synchro** : compte `exzifit` + dossier + mot de passe d'application créés le 2026-10-14
-   (README). Reste : Tom saisit le mot de passe dans Réglages › Synchro (PC et téléphone), puis
-   premier essai réel : séance au téléphone → visible au PC ; correction au PC → téléphone.
+1. **Synchro** : marche au téléphone (`etat.json` à jour le 2026-10-17). Reste le PC : saisir le
+   mot de passe dans Réglages › Synchro, puis vérifier séance au téléphone → visible au PC.
    Constat resté vrai : l'envoi des **sauvegardes** ne part qu'au lancement (1×/jour).
 2. Essai 0.1.21 à la salle : vibration (3 × 1 s), chiffres centrés, remplacement (top, séries
    gardées), carte « Rattrapage ».
-3. Personnage : avis sur le dessin et les seuils avec les vraies stats.
+3. Personnage : voir le palier 5 de Force sur le S23 (onglet Perso) ; rejuger Endurance et Constance
+   après 4 semaines de vraies données.
 
 ## Décisions
 

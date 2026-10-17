@@ -8,7 +8,7 @@ import type { Sexe, Stats } from "./stats";
 
 /** Seuils de passage au palier suivant ; palier = nombre de seuils atteints. */
 export const SEUILS = {
-  force: [40, 55, 70, 85],
+  force: [40, 55, 70, 85, 100],
   endurance: [25, 50, 75],
   constance: [50, 75],
 } as const;
@@ -72,10 +72,11 @@ export function grille({ force: f, endurance: e, constance: c }: Paliers, sexe: 
   bloc(2, 7 + o, 7 + o, Px.Peau);
   pose(9, 4 + o, Px.Yeux);
   if (c === 0) pose(9, 5 + o, Px.Ombre);
-  bloc(f >= 2 ? 2 : 1, 8 + o, 8 + o, Px.Peau);
+  // Cou ; à Force 5, les trapèzes le relient aux épaules (le corps n'a plus de place pour s'élargir).
+  bloc(f >= 5 ? 5 : f >= 2 ? 2 : 1, 8 + o, 8 + o, Px.Peau);
 
   // Torse : épaules arrondies (Force), poitrine sur 3 lignes, puis trapèze jusqu'à la taille (Endurance).
-  const haut = 9 + o, epaules = 4 + f, taille = [5, 4, 3, 3][e];
+  const haut = 9 + o, epaules = 4 + Math.min(f, 4), taille = [5, 4, 3, 3][e];
   bloc(epaules - 1, haut, haut, Px.Peau);
   bloc(epaules, haut + 1, haut + 3, Px.Peau);
   for (let y = haut + 4; y <= 16; y++) {
@@ -96,6 +97,8 @@ export function grille({ force: f, endurance: e, constance: c }: Paliers, sexe: 
     const l = y <= haut + 4 ? brasHaut + biceps : avantBras;
     for (let i = 0; i < l; i++) pose(10 - bras - i, y, Px.Peau);
   }
+  // Force 5 : une veine sur l'avant-bras, en biais.
+  if (f >= 5) for (const [i, y] of [[0, haut + 5], [0, haut + 6], [1, haut + 7]]) pose(10 - bras - i, y, Px.Ombre);
 
   bloc(Math.max(taille, 4) + (femme ? 1 : 0), 17, 19, Px.Short);
   const jambe = f >= 3 ? 3 : 2;
