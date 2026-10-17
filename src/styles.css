@@ -22,7 +22,10 @@ body {
   font-variant-numeric: tabular-nums;
   -webkit-tap-highlight-color: transparent;
 }
-#racine { min-height: 100%; display: flex; flex-direction: column; }
+/* Téléphone (Android 15+, bord à bord) : ne pas passer sous la barre d'état ni l'encoche ; 0 sur PC.
+ * Le bas est géré par la nav et .bas, qui gardent leur fond jusqu'au bord. */
+#racine { min-height: 100%; display: flex; flex-direction: column;
+          padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
 
 main { flex: 1; padding: 20px 16px 16px; }
 h1 { font: 700 24px/1.15 var(--police-titre); margin: 0 0 14px; }
@@ -140,7 +143,7 @@ details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: poi
 .machine { margin: 0 0 8px; }
 .machine .carte { margin-top: 6px; }
 /* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
-.saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px); }
+.saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px - env(safe-area-inset-top)); }
 .saisie .bas { margin-top: auto; }
 p.series { padding-left: 0; font: inherit; }
 .espace-haut { margin-top: 16px; }

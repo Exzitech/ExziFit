@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { nextcloud } from "./canal";
 
 /** Accès brut au dossier de données ; chemins relatifs en `/` (voir src-tauri/src/fichiers.rs). */
 export interface Stockage {
@@ -97,4 +98,14 @@ const navigateur: Stockage = {
   synchroEcrire: async () => { throw new Error("synchro indisponible dans le navigateur"); },
 };
 
-export const stockage: Stockage = dansTauri ? tauri : navigateur;
+// Version Google Play : ni envoi sur Nextcloud ni synchro (commandes absentes côté Rust, lib.rs).
+const play: Stockage = {
+  ...tauri,
+  envoyerSauvegarde: navigateur.envoyerSauvegarde,
+  synchroCompte: navigateur.synchroCompte,
+  synchroConfigurer: async () => { throw new Error("synchro absente de cette version"); },
+  synchroLire: navigateur.synchroLire,
+  synchroEcrire: async () => { throw new Error("synchro absente de cette version"); },
+};
+
+export const stockage: Stockage = !dansTauri ? navigateur : nextcloud ? tauri : play;

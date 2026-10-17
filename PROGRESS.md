@@ -3,7 +3,16 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.42 (personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.43 (marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+
+**Dev et prod, préparation Google Play (2026-10-17)** — README, « Dev et prod » ; démarches :
+[docs/play-store.md](docs/play-store.md). Deux apps depuis le même code (`EXZIFIT_CANAL`) :
+ExziFit Dev (`.dev`, Nextcloud, `npm run publier`) et ExziFit prod (AAB, `npm run publier-play`,
+depuis `main` propre, tag `vX.Y.Z`). Prod sans mise à jour Nextcloud, sans envoi ni synchro ;
+`SCHEDULE_EXACT_ALARM` au lieu de `USE_EXACT_ALARM` (bandeau « Autoriser ») ; plus d'Android TV.
+Décidé avec Tom : garder la clé actuelle comme clé de signature Play. À faire par Tom : installer
+ExziFit Dev, **tester le minuteur téléphone verrouillé** (nouvelle permission), créer le compte
+Play, branche `dev`, adresse de contact dans [docs/confidentialite.md](docs/confidentialite.md).
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -438,6 +447,8 @@ pesées 90 kg. Stats au 17 : Force 94, Endurance 10, Constance 12,5. Deux consta
 | 2026-10-13 | Personnage : paliers Force 40/55/70/85, Endurance 25/50/75, Constance 50/75 ; comparaison avec il y a 8 semaines (0.1.18) | seuils de Force serrés au niveau intermédiaire pour qu'un progrès se voie en quelques mois ; à revoir sur données réelles |
 | 2026-10-14 | Synchro PC ↔ téléphone par un etat.json dans un dossier Nextcloud privé, utilisateur dédié + mot de passe d'application saisi dans Réglages | Tom veut consulter et modifier sur le PC ; le lien des sauvegardes est public (APK) et en dépôt seul, il ne peut pas servir à lire |
 | 2026-10-14 | Remplaçants par schéma de mouvement, séries de l'exo remplacé gardées, rattrapage sous condition de repos | retours de la 1re séance à la salle |
+| 2026-10-17 | Freemium certain, après la v1 : partage, thèmes en plus, synchro, analyses longues payants ; données et personnage jamais payants (CLAUDE.md, « Freemium ») | Tom : une app de qualité en gratuit, des conforts de vie en payant, sans abus |
+| 2026-10-17 | Pro en achat unique (Android d'abord), abonnement seulement pour ce qui coûte un serveur ; synchro par Drive / iCloud avant tout serveur | ce qui est vendu ne coûte rien par mois ; pas de compte ni de données de santé chez nous |
 
 **Noms anglais et propositions de programmes (2026-10-13, 0.1.19)** — demande de Tom :
 - Noms des exercices en anglais dans l'app (`exercices.ts`, champ `nom` seul ; les identifiants
@@ -641,3 +652,9 @@ Pas vu sur le S23 (rendu selon le masque du lanceur Samsung).
   l'APK vérifiées au curl. Pas vu sur le S23.
 - Limites : programmes écrits dans l'app dans la langue de leur auteur ; erreurs techniques
   (fichier corrompu, synchro) en français ; portugais écrit sans relecture d'un Brésilien.
+
+**Barre d'état Android (2026-10-17, 0.1.43)** — l'écran passait sous l'heure, le wifi et la batterie :
+  `enableEdgeToEdge()` (MainActivity.kt) étend la WebView sous les barres système, et seul le bas
+  réservait `env(safe-area-inset-bottom)`. `#racine` réserve désormais le haut et les côtés
+  (`env(safe-area-inset-*)`, 0 sur PC), `.saisie` retranche le haut de sa hauteur mini. Build, 129 tests
+  verts, publié en 0.1.43. Pas vu sur le S23.

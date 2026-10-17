@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Mise à jour depuis Nextcloud (maj.rs, InstallateurPlugin.kt). -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- Minuteur de repos : alarme exacte (accord automatique pour API 33+, demandée avant).
-         Sans elle, le plugin retombe sur une alarme approximative qu'Android peut retarder. -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
-
-    <!-- AndroidTV support -->
-    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <!-- Mise à jour depuis Nextcloud : canal dev seulement, src/canal-dev/AndroidManifest.xml. -->
+    <!-- Minuteur de repos : alarme exacte. Accordée d'office jusqu'à Android 13, à permettre par
+         l'utilisateur depuis Android 14 (AlarmeExacte.tsx). Sans elle, le plugin retombe sur une
+         alarme approximative qu'Android peut retarder. Pas USE_EXACT_ALARM : Google Play la réserve
+         aux réveils et minuteurs dont c'est la fonction principale. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Sauvegarde Android : données restaurées d'elles-mêmes à la réinstallation (README, « Données »). -->
     <application
@@ -17,20 +14,19 @@
         android:dataExtractionRules="@xml/sauvegarde_android12"
         android:fullBackupContent="@xml/sauvegarde_android11"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="${nomApp}"
         android:theme="@style/Theme.exzifit"
         android:usesCleartextTraffic="${usesCleartextTraffic}">
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:launchMode="singleTask"
-            android:label="@string/main_activity_title"
+            android:label="${nomApp}"
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <!-- Pas de LEANBACK_LAUNCHER : Google Play passerait l'app en revue Android TV. -->
                 <category android:name="android.intent.category.LAUNCHER" />
-                <!-- AndroidTV support -->
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
 

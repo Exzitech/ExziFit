@@ -1,16 +1,21 @@
 package com.exzitech.exzifit
 
 import android.app.Activity
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
 import app.tauri.plugin.Invoke
+import app.tauri.plugin.JSObject
 import app.tauri.plugin.Plugin
 
 @InvokeArg
@@ -71,5 +76,26 @@ class ReposPlugin(private val activity: Activity) : Plugin(activity) {
     fun retirer(invoke: Invoke) {
         NotificationManagerCompat.from(activity).cancel(id)
         invoke.resolve()
+    }
+
+    /** Sans alarme exacte, le plugin de notification retombe sur une alarme qu'Android peut retarder. */
+    @Command
+    fun alarmeExacte(invoke: Invoke) {
+        val permise = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            activity.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+        invoke.resolve(JSObject().put("permise", permise))
+    }
+
+    @Command
+    fun alarmeExacteDemander(invoke: Invoke) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return invoke.resolve()
+        try {
+            activity.startActivity(
+                Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${activity.packageName}"))
+            )
+            invoke.resolve()
+        } catch (ex: Exception) {
+            invoke.reject("Réglage des alarmes introuvable : ${ex.message}")
+        }
     }
 }

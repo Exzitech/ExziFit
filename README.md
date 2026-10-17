@@ -16,8 +16,9 @@ Tauri 2 + React 18 / TypeScript / Vite 5.
 | `npm test` | tests TypeScript (Vitest) |
 | `cargo test --manifest-path src-tauri/Cargo.toml` | tests Rust (chemins, sauvegardes) |
 | `npm run build` | vérification des types + build de l'interface |
-| `npm run publier` | APK release signé, déposé sur Nextcloud ; le téléphone le propose au lancement |
-| `npx tauri android build --debug --target aarch64 --apk` | APK de debug (clé de debug : ne met pas à jour l'app installée) |
+| `npm run publier` | APK **dev** release signé (« ExziFit Dev »), déposé sur Nextcloud ; l'app dev le propose au lancement |
+| `npm run publier-play` | AAB **prod** pour Google Play, depuis `main` propre seulement ; pose le tag `vX.Y.Z` (voir « Dev et prod ») |
+| `npx tauri android build --debug --target aarch64 --apk` | APK de debug, canal dev (clé de debug : ne met pas à jour l'app dev installée) |
 
 Versions : les paquets npm `@tauri-apps/*` et les crates Rust sont figés à la même mineure
 (`~2.11` / `~2.4`). La CLI refuse de compiler sinon ; monter les deux ensemble. Pas de
@@ -119,24 +120,56 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   `src-tauri/icons/` et les mipmaps Android (`gen/android`, icône adaptative : premier plan
   réduit au disque visible, fond `#15110f`). Les PNG ne se retouchent pas à la main.
 
-## Mise à jour en ligne
+## Dev et prod
+
+Deux apps distinctes, compilées depuis le même code. La variable `EXZIFIT_CANAL` (`dev` par
+défaut, `prod`) est lue à trois endroits : `src-tauri/build.rs` (cfg Rust `canal_dev`),
+`gen/android/app/build.gradle.kts` (identifiant, nom, manifeste) et `vite.config.ts` (`src/canal.ts`).
+
+| | dev | prod |
+|---|---|---|
+| Identifiant, nom | `com.exzitech.exzifit.dev`, « ExziFit Dev » | `com.exzitech.exzifit`, « ExziFit » |
+| Données | les siennes : essayer en dev ne touche jamais l'historique réel | l'historique réel |
+| Mise à jour | Nextcloud (`npm run publier`, ci-dessous) | Google Play seulement (`npm run publier-play`) |
+| Envoi des sauvegardes, synchro | oui | non (pas de lien de dépôt dans l'app publique) |
+| Branche | `dev` (ou toute branche de travail) | `main`, tag `vX.Y.Z` par version publiée |
+
+Pourquoi le code Nextcloud sort de la prod : Google Play interdit à une app de se mettre à jour
+hors du Play Store (`REQUEST_INSTALL_PACKAGES` refusée pour cet usage), et le lien de dépôt
+intégré à l'APK serait lisible par n'importe qui. `maj.rs`, `envoi.rs`, `synchro.rs`,
+`InstallateurPlugin.kt` (`src/canal-dev/`) et la permission (`src/canal-dev/AndroidManifest.xml`)
+ne sont compilés qu'en dev. Le minuteur demande l'alarme exacte par `SCHEDULE_EXACT_ALARM` dans
+les deux canaux (bandeau `AlarmeExacte.tsx` tant qu'Android 14+ ne l'a pas permise), pour que la
+dev teste ce que la prod fait.
+
+**Flux** : travailler sur `dev`, `npm run publier` pour l'essayer à la salle sur ExziFit Dev ;
+quand c'est validé, fusionner dans `main`, `npm run publier-play`, déposer l'AAB sur la Play
+Console en **test interne**, l'installer depuis le Play Store, puis promouvoir en production.
+`publier-play` refuse : une autre branche que `main`, un fichier modifié ou non suivi, une
+version pas plus récente que le dernier tag ; il lance `npm test` et `cargo test`, vérifie le
+manifeste final (identifiant prod, aucune permission refusée par Play) et copie l'AAB dans
+`livraisons/` (hors dépôt). Bascule et démarches côté Google : [docs/play-store.md](docs/play-store.md).
+
+## Mise à jour en ligne (dev)
 
 Dossier `C:\Users\tomro\Nextcloud\ExziFit` (chemin dans `publier.local.json`, local),
 partagé par **lien public** Nextcloud ; le lien est dans `src-tauri/maj.json`, intégré à la
 compilation (fichier local, hors dépôt : copier `maj.exemple.json` et y mettre le lien).
-Il contient `ExziFit.apk` (première installation à la main, depuis l'app Nextcloud)
-et `version.json` (version, empreinte SHA-256, taille).
+Il contient `ExziFit-dev.apk` (première installation à la main, depuis l'app Nextcloud)
+et `version-dev.json` (version, empreinte SHA-256, taille). `ExziFit.apk` et `version.json`
+restent figés en 0.1.43 : les installations d'avant la séparation (identifiant prod) n'y
+trouveront plus rien et passeront par le Play Store.
 
 `npm run publier` passe au correctif suivant si la version est déjà publiée
 (`tauri.conf.json`, `Cargo.toml`, `package.json`), compile en release (Rust optimisé pour la
-taille, code natif compressé), dépose l'APK puis `version.json`. Au lancement, l'app compare
+taille, code natif compressé), dépose l'APK puis `version-dev.json`. Au lancement, l'app compare
 sa version (`src-tauri/src/maj.rs`) et affiche un bandeau **Installer** : téléchargement,
 vérification de l'empreinte, installeur d'Android (`gen/android/.../InstallateurPlugin.kt`).
 Sans réseau, rien ne s'affiche. La première fois, Android demande d'autoriser ExziFit à
 installer des applications.
 
-Signature : `src-tauri/gen/android/keystore.properties` (local) pointe vers
-`C:\Users\tomro\.android\exzifit-release.jks`. **Garder la clé et son mot de passe en lieu
+Signature (les deux canaux) : `src-tauri/gen/android/keystore.properties` (local) pointe vers
+`C:\Users\tomro\.android\exzifit-release.jks`, aussi clé de signature de la prod sur Google Play. **Garder la clé et son mot de passe en lieu
 sûr** : un APK signé par une autre clé (dont la clé de debug) ne peut pas mettre à jour l'app
 installée, il faut la désinstaller avec ses données.
 
@@ -197,6 +230,8 @@ actuelles dans `sauvegardes/avant-import-AAAA-MM-JJ-HHMMSS/` (ni élaguée ni en
 ensuite. Revenir en arrière = recopier à la main le contenu de cette copie dans le dossier de données.
 ### Synchro PC ↔ téléphone
 
+**Canal dev seulement** (voir « Dev et prod »).
+
 Les deux appareils partagent `etat.json` dans le dossier Nextcloud privé `ExziFit-sync`
 (format et règles de fusion : modèle de données, « Synchro »). Transport : `src-tauri/src/synchro.rs`
 (WebDAV authentifié) ; fusion : `src/donnees/synchro.ts`. Synchro au lancement, au retour dans
@@ -218,6 +253,8 @@ Le mot de passe est gardé dans `acces-synchro.json`, à la racine de `app_data_
 dans Nextcloud suffit.
 
 ### Sauvegarde sur Nextcloud
+
+**Canal dev seulement** (voir « Dev et prod ») : la version Google Play n'envoie rien.
 
 **Installation de Tom seulement** : `reglages.json` sans `envoi` (installation antérieure à l'écran
 de bienvenue). Une installation neuve (les potes) écrit `envoi: false` : le lien de dépôt est

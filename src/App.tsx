@@ -12,6 +12,8 @@ import EcranSeance from "./ecrans/Seance";
 import { estLangue, langueDuSysteme, t } from "./i18n";
 import { appliquerLangue } from "./langue";
 import MiseAJour, { surAndroid } from "./MiseAJour";
+import AlarmeExacte from "./AlarmeExacte";
+import { nextcloud } from "./canal";
 import { stockage } from "./stockage";
 import { appliquerTheme } from "./themes";
 
@@ -121,7 +123,8 @@ export default function App() {
           {erreurs.map((m, i) => <div className="erreur" key={i}>{m}</div>)}
         </div>
       )}
-      {surAndroid && <MiseAJour />}
+      {surAndroid && nextcloud && <MiseAJour />}
+      {surAndroid && <AlarmeExacte />}
       {aRelire && !enSeance && (
         <div className="erreurs">
           <button className="principal" onClick={relire}>{t.app.recues}</button>

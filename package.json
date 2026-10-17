@@ -1,7 +1,7 @@
 {
   "name": "exzifit",
   "private": true,
-  "version": "0.1.42",
+  "version": "0.1.43",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "test": "vitest run",
     "tauri": "tauri",
     "publier": "node scripts/publier.cjs",
+    "publier-play": "node scripts/publier-play.cjs",
     "icone": "vite-node scripts/icone.ts && tauri icon icone/icone.json"
   },
   "dependencies": {

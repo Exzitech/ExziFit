@@ -6,6 +6,7 @@ import type { Bilan } from "../donnees/synchro";
 import { lancerRepos, useReste } from "../minuteur";
 import { jourLocal } from "../donnees/fichier";
 import { LANGUES, langueDuSysteme, t } from "../i18n";
+import { nextcloud } from "../canal";
 import { dansTauri, stockage, type InfoSynchro } from "../stockage";
 import { THEMES } from "../themes";
 import Restaurer from "./Restaurer";
@@ -26,7 +27,7 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
   const reste = useReste(fin);
   const [salles, setSalles] = useState<Salle[]>([]);
   const [export_, setExport] = useState("");
-  const envoi = reglages.envoi !== false;
+  const envoi = nextcloud && reglages.envoi !== false;
 
   useEffect(() => {
     stockage.dossier().then(setDossier, (e) => setDossier(t.reglages.introuvable(String(e))));
@@ -119,7 +120,7 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
       <Restaurer remplace onErreur={onErreur} />
       <p className="doux petit">{envoi ? t.reglages.envoyee(envoyee) : t.reglages.copieLocale}</p>
 
-      <Synchro bilan={bilan} onSynchro={onSynchro} onErreur={onErreur} />
+      {nextcloud && <Synchro bilan={bilan} onSynchro={onSynchro} onErreur={onErreur} />}
 
       <h2>{t.reglages.version}</h2>
       <p className="doux petit">ExziFit {version}</p>

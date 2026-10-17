@@ -39,3 +39,27 @@ pub fn repos_retirer(app: AppHandle) -> Result<(), String> {
         .run_mobile_plugin::<()>("retirer", ())
         .map_err(|e| format!("Décompte du repos : {e}"))
 }
+
+/// Alarme exacte permise ? Sans elle, la vibration de fin peut arriver des minutes en retard.
+/// Accordée d'office jusqu'à Android 13 ; à demander depuis Android 14 (SCHEDULE_EXACT_ALARM).
+#[tauri::command]
+pub fn alarme_exacte(app: AppHandle) -> Result<bool, String> {
+    #[derive(serde::Deserialize)]
+    struct Reponse {
+        permise: bool,
+    }
+    app.state::<Repos>()
+        .0
+        .run_mobile_plugin::<Reponse>("alarmeExacte", ())
+        .map(|r| r.permise)
+        .map_err(|e| format!("Alarme exacte : {e}"))
+}
+
+/// Ouvre l'écran d'Android qui permet les alarmes exactes pour ExziFit.
+#[tauri::command]
+pub fn alarme_exacte_demander(app: AppHandle) -> Result<(), String> {
+    app.state::<Repos>()
+        .0
+        .run_mobile_plugin::<()>("alarmeExacteDemander", ())
+        .map_err(|e| format!("Alarme exacte : {e}"))
+}

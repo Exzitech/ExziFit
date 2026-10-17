@@ -53,6 +53,10 @@ export const pt: Textes = {
     telechargement: (avancement) => `Baixando…${avancement}`,
     reessayer: "Tentar de novo", installer: "Instalar",
   },
+  alarme: {
+    imprecise: "Cronômetro impreciso: sem alarme exato, a vibração do fim do descanso pode atrasar.",
+    autoriser: "Permitir",
+  },
   restaurer: {
     bouton: "Restaurar uma exportação",
     resume: (jour, prenom, n) => `Exportação de ${jour}${prenom ? ` (${prenom})` : ""}: ${n} treino${s(n)}.`,

@@ -6,3 +6,5 @@ src-tauri/gen/android/keystore.properties
 # Liens de partage Nextcloud (sauvegarde.json est en écriture) : jamais dans le dépôt public.
 src-tauri/maj.json
 src-tauri/sauvegarde.json
+# AAB de la prod (npm run publier-play) : envoyés sur la Play Console, pas dans le dépôt.
+livraisons/

@@ -275,6 +275,7 @@ fn a_elaguer(mut jours: Vec<String>) -> Vec<String> {
 }
 
 /// Dernière copie locale réunie en un seul fichier JSON, prête à envoyer.
+#[cfg_attr(not(canal_dev), allow(dead_code))] // Envoi Nextcloud : canal dev seulement (lib.rs).
 pub(crate) struct Paquet {
     pub jour: String,
     pub texte: String,
@@ -305,6 +306,7 @@ pub fn sauvegarde_envoyee(app: tauri::AppHandle) -> Result<Option<String>, Strin
 /// La copie locale la plus récente, si elle est postérieure à la dernière envoyée et que son
 /// contenu en diffère (un jour sans séance n'envoie rien). Format : `{ format, jour, fichiers }`,
 /// `fichiers` associant chaque chemin relatif à son texte exact.
+#[cfg_attr(not(canal_dev), allow(dead_code))] // Envoi Nextcloud : canal dev seulement (lib.rs).
 pub(crate) fn paquet_a_envoyer(racine: &Path) -> Result<Option<Paquet>, String> {
     let dossier = racine.join(SAUVEGARDES);
     let jours = match fs::read_dir(&dossier) {
@@ -430,6 +432,7 @@ fn importer_paquet(racine: &Path, texte: &str, etiquette: &str) -> Result<Option
     Ok(copie)
 }
 
+#[cfg_attr(not(canal_dev), allow(dead_code))] // Envoi Nextcloud : canal dev seulement (lib.rs).
 pub(crate) fn marquer_envoye(racine: &Path, p: &Paquet) -> Result<(), String> {
     let texte = serde_json::to_string(&Envoyee { jour: p.jour.clone(), sha256: p.empreinte.clone() })
         .map_err(|e| e.to_string())?;

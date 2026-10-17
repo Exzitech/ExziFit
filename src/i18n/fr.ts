@@ -57,6 +57,10 @@ export const fr = {
     telechargement: (avancement: string) => `Téléchargement…${avancement}`,
     reessayer: "Réessayer", installer: "Installer",
   },
+  alarme: {
+    imprecise: "Minuteur imprécis : sans alarme exacte, la vibration de fin peut arriver en retard.",
+    autoriser: "Autoriser",
+  },
   restaurer: {
     bouton: "Restaurer un export",
     resume: (jour: string, prenom: string | undefined, n: number) =>

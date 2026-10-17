@@ -67,9 +67,34 @@ de 2027. Donc, dès le premier jour et avant toute fonctionnalité :
 - **Pas de comptes, pas de serveur, pas d'amis, pas de classement.** Comparer avec un pote =
   un fichier qu'on s'envoie. Le social multiplie l'ouvrage par trois et arrive pile quand la
   motivation retombe. Le socle existe déjà (VM + Nextcloud) le jour où quatre personnes le réclament.
-- **Pas de clients, pas de monétisation.** Une app de santé vendue, c'est des obligations
-  légales, du support et des remboursements. À rouvrir quand l'app existe et sert.
+- **Pas de clients, pas de monétisation en v1.** Le freemium viendra (voir ci-dessous), mais pas
+  avant que l'app serve : une app de santé vendue, c'est des obligations légales (RGPD, données de
+  santé), du support, des remboursements, le Play Store et sa facturation, et un vrai serveur pour
+  la synchro (pas le Nextcloud de Tom).
 - Rien qui ne serve pas directement les trois points de la v1.
+
+## Freemium (décidé le 2026-10-17, après la v1)
+
+**Une app de qualité en gratuit, des conforts de vie en payant, sans abus.**
+
+- **Gratuit** : toute la saisie, la charge du jour, le personnage et toutes ses stats, le journal,
+  le résumé et les records, l'export, la sauvegarde locale et la restauration.
+- **Payant** (proposé, à affiner) : partage avec les potes, thèmes au-delà du thème par défaut,
+  synchro entre appareils et sauvegarde dans le cloud, analyses longues (fiche exo avec courbes,
+  courbe des stats, bilans de bloc), programmes fournis en plus et programmes perso illimités,
+  plusieurs salles.
+- **Jamais payant** : les données (historique, export, restauration : les retenir serait une prise
+  d'otage) et le personnage (pas de stat, de trait ou de boost achetable : voir le principe plus haut).
+- Pas de pub, pas de limite sur le nombre de séances ni sur la durée d'historique.
+- **Modèle** : « Pro » en **achat unique** au lancement (Google Play d'abord, iOS si ça marche).
+  Abonnement seulement pour les fonctions qui coûtent un serveur chaque mois (partage, le jour où il
+  en demande un). Une fonction achetée n'est jamais retirée ni remise dans un abonnement ; jamais
+  d'essai qui bascule en abonnement ni de relance d'achat pendant une séance.
+- **Synchro payante** : Drive de l'utilisateur (Android) / iCloud (iOS) envisagés avant tout serveur
+  à nous : pas de compte ni de données de santé chez nous. Comptes Google + Apple (l'App Store
+  impose Apple si Google est proposé) seulement quand le partage l'exige.
+- D'ici là : pas de paywall dans le code. Une fonction prévue payante reste isolée derrière une
+  condition simple, sans mêler sa logique à la saisie.
 
 ## Stack — Tauri 2 + React/TypeScript/Vite (décidé le 2026-10-13, prototype validé)
 
@@ -81,6 +106,8 @@ de 2027. Donc, dès le premier jour et avant toute fonctionnalité :
   lancement, télécharge, vérifie le SHA-256 et ouvre l'installeur Android. Voir dans ExziHub :
   `hub/src-tauri/src/maj_apk.rs`, `gen/android/.../InstallateurPlugin.kt`, `npm run publier-apk`
   et le README, section « Mise à jour depuis l'app ». Le câble ne sert plus qu'au débogage.
+  **Depuis le 2026-10-17, ce circuit ne sert que l'app dev** (« ExziFit Dev », données à part) ;
+  la prod passe par Google Play, qui interdit toute autre mise à jour. Voir le README, « Dev et prod ».
 - Chaîne de build Android, signature et Nextcloud déjà en place et connus de Tom.
 
 **Alternatives écartées** :

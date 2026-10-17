@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Canal dev seulement (build.gradle.kts) : fusionné avec src/main/AndroidManifest.xml.
+     Google Play refuse cette permission pour une app qui se met à jour elle-même. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Mise à jour depuis Nextcloud (maj.rs, InstallateurPlugin.kt). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

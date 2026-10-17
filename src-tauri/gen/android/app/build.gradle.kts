@@ -23,6 +23,12 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+// Canal (README, « Dev et prod »), le même que lit src-tauri/build.rs. dev (par défaut) :
+// « ExziFit Dev », identifiant .dev, installée à côté de la prod avec ses propres données, mise à
+// jour par Nextcloud. prod : la version Google Play, sans mise à jour hors du Play Store.
+val canal = System.getenv("EXZIFIT_CANAL") ?: "dev"
+require(canal == "dev" || canal == "prod") { "EXZIFIT_CANAL=$canal : attendu dev ou prod" }
+
 android {
     compileSdk = 36
     if (!keystoreProperties.isEmpty) {
@@ -39,6 +45,8 @@ android {
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.exzitech.exzifit"
+        if (canal == "dev") applicationIdSuffix = ".dev"
+        manifestPlaceholders["nomApp"] = if (canal == "dev") "ExziFit Dev" else "ExziFit"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
@@ -69,6 +77,14 @@ android {
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
                     .toList().toTypedArray()
             )
+        }
+    }
+    if (canal == "dev") {
+        sourceSets {
+            getByName("main").java.srcDir("src/canal-dev/java")
+            // Un seul manifeste par jeu de sources : celui du canal passe par les types de build.
+            getByName("debug").manifest.srcFile("src/canal-dev/AndroidManifest.xml")
+            getByName("release").manifest.srcFile("src/canal-dev/AndroidManifest.xml")
         }
     }
     kotlinOptions {

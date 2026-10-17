@@ -1,14 +1,17 @@
-// Publie l'APK sur Nextcloud : npm run publier
+// Publie l'APK **dev** sur Nextcloud : npm run publier (la prod passe par npm run publier-play).
 //
-// Compile l'APK release signé, le dépose en ExziFit.apk dans le dossier partagé (synchronisé
-// par le client Nextcloud, chemin dans publier.local.json) et écrit version.json : l'app
-// installée propose la mise à jour au lancement (src-tauri/src/maj.rs).
+// Compile l'APK release signé du canal dev (« ExziFit Dev », com.exzitech.exzifit.dev), le dépose
+// en ExziFit-dev.apk dans le dossier partagé (synchronisé par le client Nextcloud, chemin dans
+// publier.local.json) et écrit version-dev.json : l'app dev installée propose la mise à jour au
+// lancement (src-tauri/src/maj.rs). ExziFit.apk et version.json restent figés en 0.1.43 pour les
+// installations d'avant la séparation dev/prod, qui passent ensuite par le Play Store.
 // Si la version courante n'est pas plus récente que celle publiée, elle passe au correctif
 // suivant dans tauri.conf.json, Cargo.toml et package.json avant la compilation.
 const { execSync } = require("child_process");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { nombres, plusRecente } = require("./versions.cjs");
 
 const racine = path.resolve(__dirname, "..");
 const lire = (f) => fs.readFileSync(path.join(racine, f), "utf8");
@@ -23,18 +26,11 @@ if (!fs.existsSync(path.join(racine, "src-tauri/gen/android/keystore.properties"
   throw new Error("src-tauri/gen/android/keystore.properties absent : l'APK sortirait non signé.");
 }
 
-const nombres = (v) => v.split(".").map((n) => parseInt(n, 10) || 0);
-const plusRecente = (a, b) => {
-  const [x, y] = [nombres(a), nombres(b)];
-  for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
-  return false;
-};
-
 let version = JSON.parse(lire("src-tauri/tauri.conf.json")).version;
 const cargo = lire("src-tauri/Cargo.toml").match(/^version = "(.+)"/m)?.[1];
 if (cargo !== version) throw new Error(`Versions différentes : tauri.conf.json ${version}, Cargo.toml ${cargo}.`);
 
-const fichierVersion = path.join(dossier, "version.json");
+const fichierVersion = path.join(dossier, "version-dev.json");
 const publiee = fs.existsSync(fichierVersion) ? JSON.parse(fs.readFileSync(fichierVersion, "utf8")).version : null;
 if (publiee && !plusRecente(version, publiee)) {
   const [maj, min, cor] = nombres(publiee);
@@ -48,19 +44,19 @@ if (publiee && !plusRecente(version, publiee)) {
 
 // Rust optimisé pour la taille : APK bien plus léger à télécharger par l'envoi lent de la
 // maison, sans effet sensible ici (pas de calcul lourd).
-const env = { ...process.env, CARGO_PROFILE_RELEASE_OPT_LEVEL: "z", CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" };
+const env = { ...process.env, EXZIFIT_CANAL: "dev", CARGO_PROFILE_RELEASE_OPT_LEVEL: "z", CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "1" };
 execSync("npx tauri android build --apk --target aarch64", { cwd: racine, stdio: "inherit", env });
 const apk = path.join(racine, "src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk");
 const octets = fs.readFileSync(apk);
 
-// L'APK d'abord, version.json ensuite : une app qui lit la nouvelle version trouve le bon
+// L'APK d'abord, version-dev.json ensuite : une app qui lit la nouvelle version trouve le bon
 // fichier (sauf synchro Nextcloud en cours, que l'empreinte détecte). Renommage atomique.
 const deposer = (nom, contenu) => {
   const f = path.join(dossier, nom);
   fs.writeFileSync(f + ".tmp", contenu);
   fs.renameSync(f + ".tmp", f);
 };
-deposer("ExziFit.apk", octets);
+deposer("ExziFit-dev.apk", octets);
 const sha256 = crypto.createHash("sha256").update(octets).digest("hex");
-deposer("version.json", JSON.stringify({ version, fichier: "ExziFit.apk", sha256, taille: octets.length }, null, 2) + "\n");
-console.log(`ExziFit ${version} publié dans ${dossier} (${(octets.length / 1024 / 1024).toFixed(1)} Mo)`);
+deposer("version-dev.json", JSON.stringify({ version, fichier: "ExziFit-dev.apk", sha256, taille: octets.length }, null, 2) + "\n");
+console.log(`ExziFit Dev ${version} publié dans ${dossier} (${(octets.length / 1024 / 1024).toFixed(1)} Mo)`);
