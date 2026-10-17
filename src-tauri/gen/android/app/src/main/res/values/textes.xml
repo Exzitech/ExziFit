@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textes du code natif (Kotlin), dans la langue du téléphone ; l'interface suit, elle, le réglage de l'app. -->
+<resources>
+    <string name="canal_fin_repos">Rest finished</string>
+    <string name="canal_repos_en_cours">Rest in progress</string>
+    <string name="repos">Rest</string>
+    <string name="exporter">Export data</string>
+</resources>

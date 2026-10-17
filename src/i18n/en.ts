@@ -1,0 +1,278 @@
+import type { Textes } from "./fr";
+
+const s = (n: number) => (n === 1 ? "" : "s");
+
+export const en: Textes = {
+  locale: "en-GB",
+  pct: (v) => `${v}%`,
+  idJour: (id) => id.replace(/^J/, "D"),
+  idSemaine: (nom) => nom.replace(/^S/, "W"),
+
+  commun: {
+    homme: "Male", femme: "Female", prenom: "First name", poidsCorpsKg: "Body weight (kg)", poidsCorps: "Body weight",
+    personnage: "Character", programme: "Programme", langue: "Language", annuler: "Cancel", enregistrer: "Save",
+    jours: (n) => `${n} day${s(n)}`, semaines: (n) => `${n} week${s(n)}`, sem: (n) => `${n} wk`,
+    modifier: (nom) => `Edit ${nom} ›`, groupes: "Muscle groups", option: "optional",
+  },
+  app: {
+    erreur: (contexte, message) => `${contexte}: ${message}`,
+    recues: "Data received from the other device · Refresh",
+    ctx: {
+      boutonRetour: "Back button", synchro: "Sync", programmesPerso: "Custom programmes", reglages: "Settings",
+      sauvegarde: "Daily backup", envoi: "Backup upload", enregistrement: "Saving settings",
+      bienvenue: "Welcome", seance: "Workout", journal: "Log", personnage: "Character",
+    },
+  },
+  nav: { seance: "Workout", journal: "Log", perso: "Hero", reglages: "Settings" },
+  bienvenue: {
+    creer: "+ Create my programme",
+    choisir: "Pick a programme to see what it builds.",
+    ensuite: "You can change everything later: the programme on the home screen, the rest in settings.",
+    commencer: "Start",
+    donnees: "Your data stays on this phone. To keep a copy elsewhere: Settings → Export data.",
+    nouveau: "New phone?",
+  },
+  programmes: {
+    retour: "‹ Workout", titre: "Programmes", enCours: "current", creer: "+ Create a programme",
+    bloc: "Each programme keeps its own block: coming back picks up at the day where it left off.",
+    actuel: "Current programme", passer: (nom) => `Switch to ${nom}`,
+  },
+  apercu: {
+    apres: (n, avecStats) =>
+      `After 4 weeks at ${n} workouts a week, all done${avecStats ? " (today → with this programme)" : ""}.`,
+    lourdes: (n) => `${n} heavy sets / wk`,
+    lourdesNote: "6 reps or fewer, on the exercises that count towards it",
+    parSemaine: (n) => `${n} workout${s(n)} / wk`,
+    note: "Same formulas as the Hero tab, optional exercises not counted. Strength depends on the weights " +
+      "you lift: no number in advance. Consistency counts the weeks where you do at least this many workouts.",
+  },
+  maj: {
+    echec: (e) => `Update failed: ${e}`,
+    dispo: (v) => `ExziFit ${v} is available.`,
+    mo: (n) => `${n} MB`,
+    telechargement: (avancement) => `Downloading…${avancement}`,
+    reessayer: "Retry", installer: "Install",
+  },
+  restaurer: {
+    bouton: "Restore an export",
+    resume: (jour, prenom, n) => `Export from ${jour}${prenom ? ` (${prenom})` : ""}: ${n} workout${s(n)}.`,
+    remplace: "Replaces the data on this phone; a copy is kept in the backups.",
+    remplacer: "Replace my data", restaurer: "Restore",
+  },
+  reglages: {
+    titre: "Settings", theme: "Theme", navigateur: "browser (development)",
+    introuvable: (e) => `not found: ${e}`, aucune: "none", inconnue: (e) => `unknown: ${e}`,
+    sexe: "Changes the drawing and the Strength references (each sex's “very advanced” level).",
+    salles: "Gyms", salle: (n) => `Gym ${n}`,
+    machines: (n) => `${n} machine${s(n)} set up`,
+    ajouterSalle: "Add a gym",
+    sallesNote: "Empty weight and 2:1 pulleys are set during the workout, under the exercise name; the gym " +
+      "is picked on the home screen.",
+    minuteur: "Timer", tester: "Test the vibration (15 s)", verrouiller: "Lock the phone: it should vibrate at zero.",
+    donnees: "Data", exporter: "Export data", exporte: (x) => `Exported: ${x}`,
+    envoyee: (j) => `Last copy sent to Nextcloud: ${j}`,
+    copieLocale: "Daily copy on this phone; to keep it elsewhere, export.",
+    version: "Version",
+  },
+  synchro: {
+    titre: "PC ↔ phone sync",
+    pasLancee: "not started yet", pasConfiguree: "not set up",
+    horsLigne: "offline, will retry next time you come back to the app",
+    aJour: (quand, recues, envoyees) =>
+      `up to date (${quand})${recues ? ", data received" : ""}${envoyees ? ", data sent" : ""}`,
+    dossier: (etat) => `ExziFit-sync folder: ${etat}`, enCours: "syncing…",
+    maintenant: "Sync now", changer: "Change account",
+    explication: "Dedicated Nextcloud account that only sees the shared ExziFit-sync folder. App " +
+      "password: Nextcloud, Personal settings › Security, with that account.",
+    serveur: "Server", utilisateur: "User", mdp: "App password", inchange: "unchanged",
+    enregistrer: "Save and sync",
+  },
+  journal: {
+    titre: "Log", libre: "Free workout", aucune: "No finished workout.", retour: "‹ Log",
+    poulie: " · double pulley", plusDeSerie: "No sets left: the exercise will be removed.", ech: "w-up", test: "test",
+    supprimerSerie: "Delete the set", corbeille: "The previous version is kept in corbeille.json.",
+    viderSeance: "No sets left: delete the workout", confirmer: "Confirm deletion", supprimer: "Delete workout",
+    kgInvalide: (v) => `invalid weight “${v}”`, repsInvalides: (v) => `invalid reps “${v}”`,
+    rirInvalide: (v) => `invalid RIR “${v}”`,
+    probleme: (exo, r) => `${exo}: ${r}`,
+  },
+  perso: {
+    palier: (p, n) => `tier ${p}/${n}`, max: "Top tier.",
+    suivant: (seuil, effet) => `At ${seuil}: ${effet}.`, perte: (seuil) => ` Below ${seuil}, it drops back.`,
+    nouveau: "new",
+    avant: "Character 8 weeks ago", ilYa: "8 wk ago", aujourdhuiNom: "Character today",
+    aujourdhui: "Today", meme: "Same build as 8 wk ago.",
+    aNoter: "enter it", pesee: (date) => `Last weigh-in: ${date}.`,
+    sansPesee: "No weigh-in, no Strength (it is relative to body weight).",
+    aucunExoForce: "no strength exercise", peseeManquante: "weigh-in missing", pasDeComparaison: "nothing to compare yet",
+    progression4: "Progress over 4 weeks", aucunExo: "No exercise done in the last 14 days.",
+    note: "Computed from the log, nothing is credited: Strength from estimated 1RMs relative to body " +
+      "weight, muscle groups and Endurance from hard sets over the last 4 weeks, Consistency over " +
+      "the last 8 weeks. Progress: estimated 1RM of the last 14 days compared with 4 to 6 weeks ago, " +
+      "on hard sets; the stat is the share of comparable exercises going up by at least 1%.",
+  },
+  editeur: {
+    annuler: "‹ Cancel", modifier: "Edit", nouveau: "New programme", nom: "Name", nomDefaut: "My programme",
+    explication: "A rotation of days: you move to the next one once the previous one is done. The first exercise " +
+      "of each day is the main lift (warm-up, longer rest). Weights are worked out during the workout, at 2 reps in reserve.",
+    jour: (n) => `Day ${n}`, principal: "main · ",
+    reglage: (series, min, max, repos) => `${series} × ${min}–${max} · rest ${repos} s`,
+    moinsSerie: "one set fewer", plusSerie: "one more set", retirer: "remove",
+    ajouterExo: "+ Add an exercise", ajouterExoNom: "Add an exercise",
+    retirerJour: "Remove this day", ajouterJour: "+ Add a day", resultat: "What it builds",
+    manque: (nom) => `Missing ${nom ? "an exercise in a day" : "a name"}.`,
+  },
+  seance: {
+    titre: "Workout", pdc: "BW", aCalibrer: "weight to calibrate", repos: (d) => `rest ${d}`,
+    tentative: (serie, reps) => `${serie} → next attempt (target: ${reps} at 0 RIR)`,
+    ouverture: "Opener at 95% of the estimated max.", sansMax: "No estimated max: pick the weight.",
+    monte: "going up", baisse: "going down", meme: "same weight",
+    recale: (serie, sens, reps, rir) => `${serie} → ${sens} (target: ${reps} reps at ${rir} RIR)`,
+    ratee: "Missed set: weight cut by 10% for the extra sets.",
+    terminee: "Workout done",
+    bilan: (min, series, volume) => `${min} min · ${series} sets · ${volume} kg lifted`,
+    record: (nom, kg) => `PR: ${nom}, estimated 1RM ${kg} kg`,
+    recordAvant: (kg) => ` (was ${kg})`,
+    changerProgramme: "Change programme ›", optionnel: " (optional)",
+    aRattraper: (n) => `+ ${n} to make up at the end of the workout (below)`,
+    sautes: (n) => `${n} skipped exercise${s(n)} to make up (below)`,
+    rattrapage: "Make-up", rattrapageNote: "Skipped in the last few days. Ticked = added at the end of the workout.",
+    plusTard: (nom, jour, raison) => `${nom} (${jour}), later: ${raison}`,
+    echauffement: (min) => `Warm-up · ≈ ${min} min`,
+    echauffementNote: "Then the empty bar and the ramp-up sets, shown when you log the first exercise.",
+    blocTermine: "Block finished",
+    blocNote: "Start opens a new block at W1, with these 1RMs (block test, otherwise best estimate):",
+    rmSuivant: (nom, v) => `${nom}: ${v ?? "to calibrate"}`,
+    libre: "Free workout (no programme)", libreTitre: "Free workout",
+    derniere: (date) => `Last workout: ${date}`,
+    nouveauBloc: "New block · ", demarrer: "Start ",
+    confirmerFin: "Confirm finish", terminer: "Finish workout",
+    pourquoi: { programme: "listed by the programme", mouvement: "same movement", muscles: "same muscles" },
+    retour: "‹ Back", remplacerExo: (nom) => `Replace ${nom}`, ajouterExercice: "Add an exercise",
+    gardees: (reste, n) => `Sets already done are kept: ${reste} of ${n} left.`,
+    autres: "Other exercises", top: "top", rattrapageBadge: (j) => `make-up ${j}`, ajouterExo: "Add exercise",
+    remplacer: "Replace",
+    test: (nom, n) => `${nom} test · attempt ${n}`,
+    serie: (i, n, cible) => `Set ${i}/${n} · ${cible}`,
+    serieEnPlus: (i, cible) => `Set ${i} (extra) · ${cible}`,
+    superset: (noms) => `Superset with ${noms}`,
+    pdcManquant: "Body weight missing (enter it on the home screen).",
+    calibrage: "Calibration: the app raises the weight every set based on your RIR. Steps at 4+ count as warm-up.",
+    calibre: "Calibrated: the weight follows your RIR set after set.",
+    echauffementExo: (etapes) => `Warm-up: ${etapes}`,
+    disquesCote: "plates per side", parCote: "per side",
+    jamaisDepart: "Never done: enter your starting weight, next time it will be prefilled.", jamais: "Never done.",
+    go: "Go", moinsRep: "one rep fewer", plusRep: "one more rep", repsFaites: "reps done",
+    reserve: "Reps in reserve?", tentativeBouton: (kg, reps) => `Attempt · ${kg} × ${reps}`,
+    passerTest: "Skip the test", enPlus: (kg, reps) => `Extra set · ${kg} × ${reps}`,
+    suivant: (nom) => `Next: ${nom}`, enOption: "optional · if you still have gas in the tank",
+    valider: (kg, reps) => `Log ${kg} × ${reps}`,
+    moinsCharge: "less weight", plusCharge: "more weight", reps: "reps",
+  },
+  machine: {
+    aVide: (kg) => `${kg} kg empty`, aVideNonNote: "empty weight not set",
+    moufle: "2:1 pulley (stack × 2)", normale: "normal pulley",
+    manque: "Empty weight not set here yet: without it, 1RM, % and Strength are underestimated. It is often written on the sled.",
+    champ: "Empty weight (sled, Smith bar)",
+    disquesNote: "Log the plates only: the app adds this weight for the 1RM, the % and the stats.",
+    normaleBouton: "Normal", moufleBouton: "2:1", pile2: "stack × 2",
+    moufleNote: "Always log the number on the stack. 2:1 pulley: the stack shows twice what you pull " +
+      "(26 kg elsewhere = 52 kg here); the app halves it to compare your gyms.",
+  },
+  rm: {
+    titre: "Block 1RM", aSaisir: (n) => ` · ${n} to enter or calibrate`, peseeManquante: " · weigh-in missing",
+    leste: " (body + added)", aVide: (kg) => ` (plates + ${kg} empty)`, calibrer: "calibrate",
+    note: "Empty = estimated from your last workout (≈), otherwise a guided ramp-up during the workout. The 1RM for " +
+      "the % never goes down: the block's last workout raises it if it did better (Epley with reserve).",
+  },
+  calculs: {
+    ecart: (y, h, heures, x) => `${y} ${h} h ago: ${heures} h recommended before ${x}.`,
+    auJour: (y, heures, x) => `${y} is in today's workout: ${heures} h recommended with ${x}.`,
+    pdcFois: (reps) => `BW ×${reps}`, barre: "Bar ×15", aVide: "Empty ×15",
+    mobilite: [
+      "Arm circles · 10 each way", "Bodyweight squat · 10", "Slow push-ups · 8",
+      "Standing Y-T-W, arms straight · 5 each", "Good morning, hands behind the head · 10",
+      "Leg swings · 10 per side", "Calf raises · 15", "Wrist circles · 10",
+    ],
+    phrases: [
+      "Exercise done. Grab a sip, on to the next.",
+      "Clean. Same technique on the next one.",
+      "Done. Sets like that one are what make the block.",
+      "Well held. Breathe, the next one is waiting.",
+      "Ticked. One more line in the log.",
+      "Solid. Keep this pace.",
+    ],
+    record: (kg, avant) => `PR: estimated 1RM ${kg} kg (was ${avant}).`,
+    plusKg: (kg) => `+${kg} kg compared with last time.`,
+    plusReps: (n) => `${n} more rep${s(n)} than last time.`,
+  },
+  charge: { leste: "added kg", disques: "plates", pile: "stack", kg: "kg" },
+  objectifs: { force: "Strength", hypertrophie: "Hypertrophy", endurance: "Endurance" },
+  themes: { braise: "Ember", nuit: "Night", foret: "Forest", craie: "Chalk (light)" },
+  stats: { force: "Strength", endurance: "Endurance", constance: "Consistency", progression: "Progress" },
+  muscles: {
+    pectoraux: "Chest", dos: "Back", epaules: "Shoulders", biceps: "Biceps", triceps: "Triceps",
+    quadriceps: "Quads", ischios: "Hamstrings", fessiers: "Glutes", mollets: "Calves",
+    abdos: "Abs", "avant-bras": "Forearms",
+  },
+  effets: {
+    force: ["broader shoulders", "thicker arms, chest", "biceps, thicker legs", "maximum build"],
+    endurance: ["slimmer waist", "ab line", "defined abs"],
+    constance: ["upright posture, healthy glow", "halo"],
+  },
+  salleDefaut: "My gym",
+  minuteur: {
+    fin: "Rest over", suivante: "Next set",
+    permission: "notification permission denied: the timer won't be able to vibrate",
+  },
+  fichier: {
+    pasExport: "This file is not an ExziFit export (unreadable JSON).",
+    illisible: "This file is not an ExziFit export this version can read.",
+  },
+  exos: {},
+  programmesTextes: {
+    "Bloc Force": "Strength Block",
+    "Capacité de travail": "Work Capacity",
+    "Push / Pull / Legs": "Push / Pull / Legs",
+    "Haut / bas express": "Upper / Lower Express",
+    "Calib.": "Calib.", "85 %": "85%", "Pic": "Peak", "Test": "Test", "Continu": "Ongoing",
+    "70 %": "70%", "72,5 %": "72.5%", "75 %": "75%", "77,5 %": "77.5%", "Décharge": "Deload",
+    "Bench lourd": "Heavy bench", "Jambes lourd": "Heavy legs", "Tirage + épaules": "Pull + shoulders",
+    "Soulevé de terre": "Deadlift", "Bench volume": "Bench volume", "Points faibles": "Weak points",
+    "RPE ≤ 7. Volume léger pour les postérieurs, les bras et la poigne.":
+      "RPE ≤ 7. Light volume for the posterior chain, arms and grip.",
+    "par jambe": "per leg", "par bras": "per arm", "un bras": "one arm at a time",
+    "Leg curl allongé si pas de leg curl assis": "Lying leg curl if there's no seated leg curl",
+    "Face pull à la place si l'épaule grince": "Face pull instead if the shoulder complains",
+    "Ancre bench": "Bench anchor", "Ancre hack": "Hack anchor", "Ancre traction": "Pull-up anchor",
+    "Ancre soulevé": "Deadlift anchor",
+    "Ancre au bench, puis un superset haut, jambes, épaules et bras.":
+      "Bench anchor, then one superset each for upper body, legs, shoulders and arms.",
+    "Ancre au hack squat, jambes en unilatéral.": "Hack squat anchor, single-leg work for the legs.",
+    "Ancre aux tractions, la poussée passe en incliné.": "Pull-up anchor, pressing moves to the incline.",
+    "Ancre au soulevé, pas de jambes ensuite : elles ont déjà travaillé.":
+      "Deadlift anchor, no legs afterwards: they've already worked.",
+    "fentes : par jambe": "split squat: per leg",
+    "Push A": "Push A", "Pull A": "Pull A", "Legs A": "Legs A", "Push B": "Push B", "Pull B": "Pull B", "Legs B": "Legs B",
+    "Les deux poussées lourdes quand tu es frais, puis épaules latérales et triceps.":
+      "Both heavy presses while you're fresh, then side delts and triceps.",
+    "Largeur (tractions) puis épaisseur (rowing), bras étirés à la fin.":
+      "Width (pull-ups) then thickness (rows), arms in the stretch at the end.",
+    "Quadriceps lourds, ischios étirés : la séance de jambes la plus exigeante.":
+      "Heavy quads, stretched hamstrings: the toughest leg day.",
+    "Pas de bench : les épaules mènent, les pectoraux travaillent étirés à la poulie.":
+      "No bench: shoulders lead, the chest works in the stretch on the cable.",
+    "L'inverse du Pull A : épaisseur d'abord, largeur ensuite, angle différent.":
+      "The reverse of Pull A: thickness first, then width, different angle.",
+    "Plus de reps, unilatéral et mollets : du volume sans écraser le dos.":
+      "More reps, single-leg work and calves: volume without crushing your back.",
+    "Haut A": "Upper A", "Bas A": "Lower A", "Haut B": "Upper B", "Bas B": "Lower B",
+    "Poussée lourde seule, puis paires poussée / tirage et biceps / triceps.":
+      "Heavy press on its own, then push / pull and biceps / triceps pairs.",
+    "Hack lourd seul, puis quadriceps / ischios et ischios / mollets.":
+      "Heavy hack squat on its own, then quads / hamstrings and hamstrings / calves pairs.",
+    "Tirage lourd seul, puis les paires inverses du Haut A.": "Heavy pull on its own, then the reverse pairs of Upper A.",
+    "Presse, unilatéral et fessiers : le volume des jambes en 40 min.":
+      "Leg press, single-leg work and glutes: leg volume in 40 min.",
+  },
+};

@@ -36,7 +36,7 @@ class ReposPlugin(private val activity: Activity) : Plugin(activity) {
             val duree = fin - System.currentTimeMillis()
             if (duree <= 0) return invoke.resolve()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val c = NotificationChannel(canal, "Repos en cours", NotificationManager.IMPORTANCE_DEFAULT)
+                val c = NotificationChannel(canal, activity.getString(R.string.canal_repos_en_cours), NotificationManager.IMPORTANCE_DEFAULT)
                 c.setSound(null, null)
                 c.enableVibration(false)
                 activity.getSystemService(NotificationManager::class.java).createNotificationChannel(c)
@@ -44,7 +44,7 @@ class ReposPlugin(private val activity: Activity) : Plugin(activity) {
             val ouvrir = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
             val notif = NotificationCompat.Builder(activity, canal)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("Repos")
+                .setContentTitle(activity.getString(R.string.repos))
                 .setWhen(fin)
                 .setShowWhen(true)
                 .setUsesChronometer(true)

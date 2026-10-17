@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.38 (fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.41 (trois langues : français, anglais, portugais ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -570,3 +570,55 @@ de Force des nouveaux exos posées sans données (docs/stats.md). Rattrapage et 
 remplacements branchés sur le programme de la séance et le contexte de salle. Vérifié : `tsc`,
 113 tests Vitest, `cargo check`, `cargo test`, build ; publié en 0.1.38, pas vu sur le S23. Limites : la synchro ne transporte ni `salles.json` ni
 `reglages.json` ; « Restaurer un export » puis synchro peut refusionner les séances de l'autre appareil.
+
+**Icône (2026-10-16, 0.1.39)** — Android affichait l'icône Tauri par défaut : l'ancienne icône
+(haltère, `icone/exzifit.svg`) n'était générée que dans `src-tauri/icons` (`-o`), jamais dans
+`gen/android`. Nouvelle icône = le personnage de l'onglet Perso (Force 4, Endurance 3, Constance 1,
+couleurs Braise), dessiné par `scripts/icone.ts` depuis `avatar.ts` ; `npm run icone` écrit
+`icone/` (icône pleine, premier plan transparent, manifeste) puis `tauri icon` régénère bureau et
+mipmaps Android, avec icône adaptative (premier plan réduit au disque visible, fond `#15110f` au
+lieu du blanc par défaut). Vérifié : PNG xxxhdpi (premier plan et rond) et 128 px relus, `tsc`,
+build, 113 tests Vitest ; publié en 0.1.39, version.json et empreinte de l'APK vérifiées au curl.
+Pas vu sur le S23 (rendu selon le masque du lanceur Samsung).
+
+**Aperçu à la bienvenue, éditeur de programmes (2026-10-16, 0.1.40)** — demande de Tom pour les potes :
+- **Aperçu des stats** du programme choisi sur l'écran de bienvenue (sans « aujourd'hui → », pas
+  d'historique) : composant `Apercu.tsx` sorti de `Programmes.tsx`, partagé avec l'éditeur.
+- **Créer son programme** depuis la bienvenue (« Créer mon programme ») et la page Programmes
+  (« Créer un programme », « Modifier » sur un programme perso). `EditeurProgramme.tsx` : nom, jours
+  en rotation, objectif par jour (force / hypertrophie / endurance), exos du catalogue (menu par
+  muscle, distance exclue), séries −/+, aperçu en direct. `programmes-perso.ts` : l'objectif donne
+  fourchette, repos et RIR 2 (premier exo = principal) ; une semaine « Continu », sans règle ;
+  `programmes.json` lu au lancement (`App.tsx`) et posé après les programmes du code
+  (`poserProgrammesPerso`). Un jour retiré ne prête jamais son id (`dernierJour`).
+- Vérifié : 119 tests Vitest (6 nouveaux : conversion, ids de jours, aller-retour, rotation et
+  aperçu d'un programme perso), `tsc`, build, parcours Edge headless 390 px (bienvenue → aperçu PPL →
+  éditeur : 2 jours, Endurance au 2e, série +1 → Enregistrer → programme choisi, prénom gardé →
+  Commencer → `programmes.json` et `reglages.json` relus → relance : accueil sur le programme perso →
+  Programmes → Modifier : renommé, J2 retiré, jour ajouté = J3). Corrigé en route : deux changements
+  rapides du brouillon s'écrasaient (mises à jour fonctionnelles). Publié en 0.1.40, partage vérifié
+  au curl (version.json 0.1.40, empreinte de l'APK identique). Pas vu sur le S23.
+- Limites : `programmes.json` n'est pas synchronisé (un programme perso créé au téléphone est
+  inconnu du PC, dont les séances retombent sur le Bloc Force) ; pas de suppression de programme,
+  pas de superset ni de % du 1RM dans l'éditeur, fourchettes fixées par l'objectif ; retirer un jour
+  déjà fait affiche ses séances en « Séance libre » au Journal.
+
+**Trois langues (2026-10-17, 0.1.41)** — français, anglais, portugais du Brésil, demande de Tom pour les potes :
+- **Choix** en tête de la bienvenue (proposée d'après le téléphone) et dans Réglages (section Langue) ;
+  `langue` dans `reglages.json`, absent = langue du téléphone (l'installation de Tom reste en français).
+- **Sans bibliothèque** : `src/i18n/` (`fr.ts` = référence et type `Textes`, `en.ts`, `pt.ts`), `t`
+  en liaison vivante lue au rendu ; `appliquerLangue` (`src/langue.ts`) pose aussi les noms d'exos
+  (portugais seulement : Supino reto… ; français et anglais gardent les noms anglais du catalogue) et
+  les textes des programmes du code (dictionnaire texte français → traduction). Ids inchangés : aucun
+  fichier réécrit. Nombres, % et dates au format de la langue ; jours affichés D1 en anglais et
+  portugais, semaines W1 en anglais. Changer de langue dans Réglages remonte les écrans.
+- **Natif** : notification de repos, canaux et titre du partage en ressources Android
+  (`res/values`, `values-fr`, `values-pt`, fichier `textes.xml`) : langue du téléphone, pas de l'app.
+- Vérifié : `tsc`, 128 tests Vitest (9 nouveaux : chaque texte de programme et chaque exo traduit,
+  listes alignées, aller-retour de langue, nombres anglais), build, parcours Edge headless 390 px
+  (téléphone en portugais : bienvenue → aperçu → accueil → saisie → RIR ; téléphone en français :
+  passage en anglais, puis portugais depuis Réglages, retour au français, relance restée en
+  portugais) ; APK compilé (Kotlin et ressources) et publié en 0.1.41, version.json et empreinte de
+  l'APK vérifiées au curl. Pas vu sur le S23.
+- Limites : programmes écrits dans l'app dans la langue de leur auteur ; erreurs techniques
+  (fichier corrompu, synchro) en français ; portugais écrit sans relecture d'un Brésilien.

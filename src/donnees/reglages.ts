@@ -1,3 +1,4 @@
+import type { Langue } from "../i18n";
 import { estTheme, THEME_DEFAUT, type IdTheme } from "../themes";
 import { stockage } from "../stockage";
 import { ecrireJson, FORMAT, lireJson } from "./fichier";
@@ -12,6 +13,8 @@ export interface Reglages {
   programme?: string;
   /** Références de Force et dessin du personnage ; absent = homme. */
   sexe?: Sexe;
+  /** Langue de l'interface ; absent = celle du téléphone (`langueDuSysteme`). */
+  langue?: Langue;
   /** Saisi au premier lancement, titre de l'onglet Perso. */
   prenom?: string;
   /** Envoi des sauvegardes sur Nextcloud, dans le dossier de Tom (lien dans l'APK). Absent = actif :

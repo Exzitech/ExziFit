@@ -3,16 +3,17 @@ import { useBoutonRetour } from "../boutonRetour";
 import { exercice } from "../donnees/exercices";
 import { corrigerListe, corrigerSeance, facteurPoulie, lireSeances, type Seance, type Serie } from "../donnees/journal";
 import { jourDeSeance } from "../donnees/programme";
+import { t } from "../i18n";
 
 /** Série en cours de correction : champs texte, pour taper « 102,5 » sans être interrompu. */
 interface Brouillon { serie: Serie; kg: string; reps: string; rir: string }
 
 const date = (iso: string) =>
-  new Date(iso).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-const heure = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleDateString(t.locale, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const heure = (iso: string) => new Date(iso).toLocaleTimeString(t.locale, { hour: "2-digit", minute: "2-digit" });
 const titre = (s: Seance) => {
   const j = jourDeSeance(s);
-  return j ? `${j.id} · ${j.nom}` : "Séance libre";
+  return j ? `${t.idJour(j.id)} · ${j.nom}` : t.journal.libre;
 };
 
 const nb = (v: string) => (v.trim() === "" ? NaN : Number(v.replace(",", ".")));
@@ -20,9 +21,9 @@ const nb = (v: string) => (v.trim() === "" ? NaN : Number(v.replace(",", ".")));
 /** Série corrigée, ou le message qui dit quel champ est faux. La charge affichée est ÷ `f` (poulie). */
 function relire(b: Brouillon, f: number): Serie | string {
   const kg = nb(b.kg), reps = nb(b.reps), rir = b.rir.trim() === "" ? undefined : nb(b.rir);
-  if (!(kg >= 0)) return `charge « ${b.kg} » invalide`;
-  if (!Number.isInteger(reps) || reps < 0) return `reps « ${b.reps} » invalides`;
-  if (rir !== undefined && !(Number.isInteger(rir) && rir >= 0)) return `RIR « ${b.rir} » invalide`;
+  if (!(kg >= 0)) return t.journal.kgInvalide(b.kg);
+  if (!Number.isInteger(reps) || reps < 0) return t.journal.repsInvalides(b.reps);
+  if (rir !== undefined && !(Number.isInteger(rir) && rir >= 0)) return t.journal.rirInvalide(b.rir);
   const s: Serie = { ...b.serie, kg: Math.round((kg / f) * 100) / 100, reps };
   if (rir === undefined) delete s.rir;
   else s.rir = rir;
@@ -45,12 +46,13 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
 
   useBoutonRetour(ouverte ? () => setOuverte(null) : null, onErreur);
 
-  if (!seances) return <h1>Journal</h1>;
+  if (!seances) return <h1>{t.journal.titre}</h1>;
 
   function ouvrir(s: Seance) {
     setOuverte(s);
     setBrouillon(s.exercices.map((x) => x.series.map((serie) => ({
-      serie, kg: String(Math.round(serie.kg * facteurPoulie(s, exercice(x.exo)) * 100) / 100).replace(".", ","), reps: String(serie.reps), rir: serie.rir === undefined ? "" : String(serie.rir),
+      // Séparateur décimal de la langue (« 102,5 » ou « 102.5 »), sans séparateur de milliers ; `nb` lit les deux.
+      serie, kg: (serie.kg * facteurPoulie(s, exercice(x.exo))).toLocaleString(t.locale, { maximumFractionDigits: 2, useGrouping: false }), reps: String(serie.reps), rir: serie.rir === undefined ? "" : String(serie.rir),
     }))));
     setModifie(false);
     setProbleme(null);
@@ -70,8 +72,8 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
   if (!ouverte) {
     return (
       <>
-        <h1>Journal</h1>
-        {seances.length === 0 && <p className="doux">Aucune séance terminée.</p>}
+        <h1>{t.journal.titre}</h1>
+        {seances.length === 0 && <p className="doux">{t.journal.aucune}</p>}
         <div className="liste">
           {[...seances].reverse().map((s) => (
             <button key={s.debut} className="ligne" onClick={() => ouvrir(s)}>
@@ -105,7 +107,7 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
       const series: Serie[] = [];
       for (const b of brouillon[ei]) {
         const r = relire(b, f);
-        if (typeof r === "string") return setProbleme(`${exercice(x.exo).nom} : ${r}`);
+        if (typeof r === "string") return setProbleme(t.journal.probleme(exercice(x.exo).nom, r));
         series.push(r);
       }
       exercices.push({ ...x, series });
@@ -119,31 +121,31 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
 
   return (
     <>
-      <div className="haut"><button className="lien" onClick={() => setOuverte(null)}>‹ Journal</button></div>
+      <div className="haut"><button className="lien" onClick={() => setOuverte(null)}>{t.journal.retour}</button></div>
       <h1>{date(s.debut)}</h1>
-      <p className="doux">{titre(s)} · {heure(s.debut)}{s.fin ? ` → ${heure(s.fin)}` : ""}{s.poulie ? " · poulie double" : ""}</p>
+      <p className="doux">{titre(s)} · {heure(s.debut)}{s.fin ? ` → ${heure(s.fin)}` : ""}{s.poulie ? t.journal.poulie : ""}</p>
       {s.exercices.map((x, ei) => (
         <div key={ei} className="carte">
           <h2 className="titre-carte">{exercice(x.exo).nom}</h2>
-          {brouillon[ei].length === 0 && <p className="doux petit">Plus de série : l'exo sera retiré.</p>}
+          {brouillon[ei].length === 0 && <p className="doux petit">{t.journal.plusDeSerie}</p>}
           {brouillon[ei].map((b, si) => (
             <div key={si} className="corr">
-              <span className="doux petit">{b.serie.type === "echauffement" ? "éch." : b.serie.test ? "test" : brouillon[ei].slice(0, si + 1).filter((x) => x.serie.type === "travail").length}</span>
+              <span className="doux petit">{b.serie.type === "echauffement" ? t.journal.ech : b.serie.test ? t.journal.test : brouillon[ei].slice(0, si + 1).filter((x) => x.serie.type === "travail").length}</span>
               <label><input type="text" inputMode="decimal" value={b.kg} onChange={(e) => changer(ei, si, "kg", e.target.value)} />kg</label>
-              <label><input type="text" inputMode="numeric" value={b.reps} onChange={(e) => changer(ei, si, "reps", e.target.value)} />reps</label>
+              <label><input type="text" inputMode="numeric" value={b.reps} onChange={(e) => changer(ei, si, "reps", e.target.value)} />{t.seance.reps}</label>
               <label><input type="text" inputMode="numeric" value={b.rir} placeholder="–" onChange={(e) => changer(ei, si, "rir", e.target.value)} />RIR</label>
-              <button aria-label="Supprimer la série" onClick={() => retirer(ei, si)}>✕</button>
+              <button aria-label={t.journal.supprimerSerie} onClick={() => retirer(ei, si)}>✕</button>
             </div>
           ))}
         </div>
       ))}
       {probleme && <p className="alerte">{probleme}</p>}
-      <p className="doux petit">L'ancienne version est gardée dans corbeille.json.</p>
+      <p className="doux petit">{t.journal.corbeille}</p>
       <div className="bas">
         <button className="principal valider espace-bas" disabled={!modifie || reste === 0} onClick={enregistrer}>
-          {reste === 0 ? "Plus de série : supprimer la séance" : "Enregistrer"}
+          {reste === 0 ? t.journal.viderSeance : t.commun.enregistrer}
         </button>
-        <button onClick={supprimer}>{suppressionDemandee ? "Confirmer la suppression" : "Supprimer la séance"}</button>
+        <button onClick={supprimer}>{suppressionDemandee ? t.journal.confirmer : t.journal.supprimer}</button>
       </div>
     </>
   );

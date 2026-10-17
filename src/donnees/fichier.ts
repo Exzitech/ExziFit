@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { stockage } from "../stockage";
 
 /** Version du format des fichiers de données (docs/modele-donnees.md, principe 3). */
@@ -70,10 +71,10 @@ export function resumerExport(texte: string): { jour: string; seances: number; p
   try {
     paquet = JSON.parse(texte);
   } catch {
-    throw new Error("Ce fichier n'est pas un export ExziFit (JSON illisible).");
+    throw new Error(t.fichier.pasExport);
   }
   if (paquet?.format !== FORMAT || typeof paquet.fichiers !== "object" || paquet.fichiers === null) {
-    throw new Error("Ce fichier n'est pas un export ExziFit lisible par cette version.");
+    throw new Error(t.fichier.illisible);
   }
   const lire = (chemin: string) => JSON.parse(paquet.fichiers![chemin]);
   const seances = Object.keys(paquet.fichiers)

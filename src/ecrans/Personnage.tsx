@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
-import { bandes, bornes, EFFETS, grille, HAUTEUR, LARGEUR, palier, paliers, SEUILS, type Paliers, type Trait } from "../donnees/avatar";
+import { bandes, bornes, effet, grille, HAUTEUR, LARGEUR, palier, paliers, SEUILS, type Paliers, type Trait } from "../donnees/avatar";
 import { lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bloc";
-import { exercice, type Muscle } from "../donnees/exercices";
+import { exercice } from "../donnees/exercices";
 import { jourLocal } from "../donnees/fichier";
 import { lireSeances } from "../donnees/journal";
 import { programme } from "../donnees/programme";
 import { lireSalles, normaliser } from "../donnees/salles";
 import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Sexe, type Stats } from "../donnees/stats";
-
-export const NOMS: Record<Muscle, string> = {
-  pectoraux: "Pectoraux", dos: "Dos", epaules: "Épaules", biceps: "Biceps", triceps: "Triceps",
-  quadriceps: "Quadriceps", ischios: "Ischios", fessiers: "Fessiers", mollets: "Mollets",
-  abdos: "Abdos", "avant-bras": "Avant-bras",
-};
+import { t } from "../i18n";
 
 /** Seuil de Constance : celui du programme choisi s'il a un bloc ouvert, sinon celui sans programme. */
 export function seuilActuel(blocs: Bloc[], choisi: string | undefined) {
@@ -43,17 +38,17 @@ function Ligne({ nom, valeur, vide = "" }: { nom: string; valeur: number | undef
 /** Une ligne par stat qui a bougé d'au moins un point, pour le résumé de fin de séance. */
 export function Ecarts({ avant, apres }: { avant: Stats; apres: Stats }) {
   const lignes: [string, number | undefined, number | undefined][] = [
-    ["Force", avant.force, apres.force],
-    ["Endurance", avant.endurance, apres.endurance],
-    ["Constance", avant.constance, apres.constance],
-    ["Progression", avant.progression, apres.progression],
-    ...MUSCLES.map((m) => [NOMS[m], avant.groupes[m], apres.groupes[m]] as [string, number, number]),
+    [t.stats.force, avant.force, apres.force],
+    [t.stats.endurance, avant.endurance, apres.endurance],
+    [t.stats.constance, avant.constance, apres.constance],
+    [t.stats.progression, avant.progression, apres.progression],
+    ...MUSCLES.map((m) => [t.muscles[m], avant.groupes[m], apres.groupes[m]] as [string, number, number]),
   ];
   const bougees = lignes.filter(([, a, b]) => b !== undefined && Math.round(b) !== Math.round(a ?? 0));
   if (!bougees.length) return null;
   return (
     <div className="carte espace-haut">
-      <h2 className="titre-carte">Personnage</h2>
+      <h2 className="titre-carte">{t.commun.personnage}</h2>
       {bougees.map(([nom, a, b]) => (
         <div key={nom} className="stat">
           <span>{nom}</span>
@@ -76,19 +71,19 @@ export function Avatar({ p, sexe, taille, nom }: { p: Paliers; sexe: Sexe; taill
   );
 }
 
-const TRAITS: [Trait, string][] = [["force", "Force"], ["endurance", "Endurance"], ["constance", "Constance"]];
+const TRAITS: Trait[] = ["force", "endurance", "constance"];
 
 /** Ce qui changera sur le personnage au prochain palier, et sous quel score il redescend. */
-function Prochain({ t, nom, valeur }: { t: Trait; nom: string; valeur: number | undefined }) {
-  const { suivant, perte } = bornes(t, valeur);
-  const p = palier(t, valeur);
+function Prochain({ trait, valeur }: { trait: Trait; valeur: number | undefined }) {
+  const { suivant, perte } = bornes(trait, valeur);
+  const p = palier(trait, valeur);
   return (
     <div className="stat">
-      <span>{nom} {valeur === undefined ? "" : Math.round(valeur)}</span>
-      <b className="doux">palier {p}/{SEUILS[t].length}</b>
+      <span>{t.stats[trait]} {valeur === undefined ? "" : Math.round(valeur)}</span>
+      <b className="doux">{t.perso.palier(p, SEUILS[trait].length)}</b>
       <span className="doux petit pleine-largeur">
-        {suivant === undefined ? "Palier maximal." : `À ${suivant} : ${EFFETS[t][p]}.`}
-        {perte === undefined ? "" : ` Sous ${perte}, il redescend.`}
+        {suivant === undefined ? t.perso.max : t.perso.suivant(suivant, effet(trait, p))}
+        {perte === undefined ? "" : t.perso.perte(perte)}
       </span>
     </div>
   );
@@ -96,9 +91,9 @@ function Prochain({ t, nom, valeur }: { t: Trait; nom: string; valeur: number | 
 
 /** « ▲ +4 % », « ▼ −2 % », « = » à moins de 1 % d'écart. */
 function ecart(x: Progres): string {
-  if (x.avant === undefined) return "nouveau";
-  const pct = Math.max(1, Math.round((100 * Math.abs(x.actuel - x.avant)) / x.avant));
-  return monte(x) ? `▲ +${pct} %` : x.actuel <= x.avant * 0.99 ? `▼ −${pct} %` : "=";
+  if (x.avant === undefined) return t.perso.nouveau;
+  const pct = t.pct(String(Math.max(1, Math.round((100 * Math.abs(x.actuel - x.avant)) / x.avant))));
+  return monte(x) ? `▲ +${pct}` : x.actuel <= x.avant * 0.99 ? `▼ −${pct}` : "=";
 }
 
 export default function EcranPersonnage(
@@ -133,62 +128,57 @@ export default function EcranPersonnage(
     noterPoidsCorps(jourLocal(new Date()), n).then(charger, onErreur);
   };
 
-  if (!s) return <h1>Personnage</h1>;
+  if (!s) return <h1>{t.commun.personnage}</h1>;
   const derniere = pesees[pesees.length - 1];
   const pa = paliers(s);
   const pAvant = avant && paliers(avant);
-  const change = pAvant && TRAITS.some(([t]) => pAvant[t] !== pa[t]);
+  const change = pAvant && TRAITS.some((x) => pAvant[x] !== pa[x]);
   return (
     <>
-      <h1>{prenom ?? "Personnage"}</h1>
+      <h1>{prenom ?? t.commun.personnage}</h1>
       <div className="carte">
         <div className="avatars">
           {change && pAvant && (
             <figure>
-              <Avatar p={pAvant} sexe={sexe} taille={4} nom="Personnage il y a 8 semaines" />
-              <figcaption className="doux">Il y a 8 sem.</figcaption>
+              <Avatar p={pAvant} sexe={sexe} taille={4} nom={t.perso.avant} />
+              <figcaption className="doux">{t.perso.ilYa}</figcaption>
             </figure>
           )}
           <figure>
-            <Avatar p={pa} sexe={sexe} taille={6} nom="Personnage aujourd'hui" />
-            <figcaption>{change ? "Aujourd'hui" : "Même silhouette qu'il y a 8 sem."}</figcaption>
+            <Avatar p={pa} sexe={sexe} taille={6} nom={t.perso.aujourdhuiNom} />
+            <figcaption>{change ? t.perso.aujourdhui : t.perso.meme}</figcaption>
           </figure>
         </div>
-        {TRAITS.map(([t, nom]) => <Prochain key={t} t={t} nom={nom} valeur={s[t]} />)}
+        {TRAITS.map((x) => <Prochain key={x} trait={x} valeur={s[x]} />)}
       </div>
       <div className="carte rm">
         <label>
-          Poids de corps (kg)
-          <input type="number" inputMode="decimal" defaultValue={derniere?.kg ?? ""} placeholder="à noter"
+          {t.commun.poidsCorpsKg}
+          <input type="number" inputMode="decimal" defaultValue={derniere?.kg ?? ""} placeholder={t.perso.aNoter}
                  onBlur={(ev) => peser(ev.target.value)} />
         </label>
-        <p className="doux petit">{derniere ? `Dernière pesée : ${derniere.date}.` : "Sans pesée, pas de Force (elle se rapporte au poids de corps)."}</p>
+        <p className="doux petit">{derniere ? t.perso.pesee(derniere.date) : t.perso.sansPesee}</p>
       </div>
       <div className="carte">
-        <Ligne nom="Force" valeur={s.force} vide={pesees.length ? "aucun exo de force" : "pesée manquante"} />
-        <Ligne nom="Endurance" valeur={s.endurance} />
-        <Ligne nom="Constance" valeur={s.constance} />
-        <Ligne nom="Progression" valeur={s.progression} vide="pas encore de comparaison" />
+        <Ligne nom={t.stats.force} valeur={s.force} vide={pesees.length ? t.perso.aucunExoForce : t.perso.peseeManquante} />
+        <Ligne nom={t.stats.endurance} valeur={s.endurance} />
+        <Ligne nom={t.stats.constance} valeur={s.constance} />
+        <Ligne nom={t.stats.progression} valeur={s.progression} vide={t.perso.pasDeComparaison} />
       </div>
-      <h2>Progression sur 4 semaines</h2>
+      <h2>{t.perso.progression4}</h2>
       <div className="carte">
         {p.length ? p.map((x) => (
           <div key={x.exo} className="stat">
             <span>{exercice(x.exo).nom}</span>
             <b className={monte(x) ? "record" : x.avant === undefined ? "doux" : undefined}>{ecart(x)}</b>
           </div>
-        )) : <p className="doux">Aucun exo fait ces 14 derniers jours.</p>}
+        )) : <p className="doux">{t.perso.aucunExo}</p>}
       </div>
-      <h2>Groupes musculaires</h2>
+      <h2>{t.commun.groupes}</h2>
       <div className="carte">
-        {MUSCLES.map((m) => <Ligne key={m} nom={NOMS[m]} valeur={s.groupes[m]} />)}
+        {MUSCLES.map((m) => <Ligne key={m} nom={t.muscles[m]} valeur={s.groupes[m]} />)}
       </div>
-      <p className="doux petit espace-haut">
-        Calculé depuis le journal, rien n'est crédité : Force sur les 1RM estimés rapportés au poids
-        de corps, groupes et Endurance sur les séries dures des 4 dernières semaines, Constance sur
-        les 8 dernières semaines. Progression : 1RM estimé des 14 derniers jours comparé à celui d'il y a
-        4 à 6 semaines, sur les séries dures ; la stat est la part des exos comparables qui montent d'au moins 1 %.
-      </p>
+      <p className="doux petit espace-haut">{t.perso.note}</p>
     </>
   );
 }

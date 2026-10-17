@@ -967,7 +967,7 @@ dependencies = [
 
 [[package]]
 name = "exzifit"
-version = "0.1.38"
+version = "0.1.41"
 dependencies = [
  "base64 0.22.1",
  "serde",

@@ -40,14 +40,19 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   le calcul de la charge préremplie. `corrigerSeance` : correction ou suppression d'une séance
   terminée (identifiée par `debut`), l'ancienne version copiée d'abord dans `corbeille.json`.
 - `src/ecrans/Bienvenue.tsx` : premier lancement d'une installation neuve (ni `reglages.json` ni
-  journal) : prénom, poids de corps, homme / femme, programme ; écrit `reglages.json` avec
-  `envoi: false` (pas d'envoi Nextcloud, voir « Données »).
+  journal) : langue (proposée d'après le téléphone), prénom, poids de corps, homme / femme, programme (avec l'aperçu de ses stats, ou
+  « Créer mon programme ») ; écrit `reglages.json` avec `envoi: false` (pas d'envoi Nextcloud,
+  voir « Données »).
+- `src/ecrans/Programmes.tsx` : choix du programme et aperçu de ses stats (`Apercu.tsx`, partagé
+  avec la bienvenue et l'éditeur). `EditeurProgramme.tsx` : écrire ou modifier un programme
+  (jours en rotation, objectif force / hypertrophie / endurance par jour, exos du catalogue et
+  nombre de séries) ; `donnees/programmes-perso.ts` : objectif → fourchette de reps, repos,
+  RIR 2, premier exo principal ; enregistrement dans `programmes.json`, chargé au lancement.
 - `src/ecrans/Journal.tsx` : onglet « Journal », séances terminées (la plus récente en haut) ;
   une séance ouverte = charge (affichée × 2 sur poulie double), reps et RIR modifiables par série,
   ✕ pour retirer une série, suppression de la séance en deux taps.
-- `src/donnees/programme.ts` : programmes proposés (`src/donnees/programmes/*.json`, dans le
-  code tant qu'il n'y a pas d'éditeur : Bloc Force, Push / Pull / Legs, Capacité de travail,
-  Haut / bas express), choisi sur l'accueil (« Changer de programme », `reglages.json`), jour
+- `src/donnees/programme.ts` : programmes proposés (`src/donnees/programmes/*.json` : Bloc Force,
+  Push / Pull / Legs, Capacité de travail, Haut / bas express ; puis ceux de `programmes.json`), choisi sur l'accueil (« Changer de programme », `reglages.json`), jour
   et semaine proposés (rotation, jour optionnel sauté après 5 jours lourds d'affilée), charge
   prescrite (% du 1RM du bloc relevé par la dernière séance, double progression, RPE), recalage
   série par série par le RIR (`recalage`), échauffement et disques par côté, avertissements des
@@ -92,13 +97,27 @@ compatibles, une mise à jour en a tiré qui ne compilent plus avec tauri 2.11.
   `src-tauri/gen/android/app/src/main/AndroidManifest.xml`), jamais un compteur JS. Pendant le
   repos, décompte muet dans le volet et sur l'écran verrouillé (`ReposPlugin.kt`, chronomètre
   système, effacé à la fin ; commandes `repos_afficher` / `repos_retirer` dans `src-tauri/src/repos.rs`).
+- `src/i18n/` : langues de l'interface, français (`fr.ts`, la référence et le type `Textes`),
+  anglais (`en.ts`), portugais du Brésil (`pt.ts`), sans bibliothèque. `t` est lu au rendu ;
+  `src/langue.ts` (`appliquerLangue`) le pose et traduit aussi les noms d'exos (`t.exos`, posés
+  sur le catalogue) et les textes des programmes du code (`t.programmesTextes`, texte français →
+  traduction). Langue choisie à la bienvenue et dans Réglages (`langue` de `reglages.json`,
+  absent = langue du téléphone). Les fichiers ne gardent que des identifiants : changer de langue
+  ne réécrit rien ; les programmes écrits dans l'app restent dans la langue de leur auteur.
+  Textes natifs (notification de repos, canaux, partage) : `res/values*/textes.xml` dans
+  `gen/android`, selon la langue du téléphone. Ajouter un texte : la clé dans `fr.ts`, le
+  compilateur réclame les deux autres ; un texte de programme ou un exo sans traduction fait
+  échouer `src/i18n/i18n.test.ts`.
 - `src/theme.css` : toutes les couleurs, un bloc par thème (règle 60/30/10) ; liste des thèmes
   dans `src/themes.ts`. Couleurs des disques fixes.
 - `src/styles.css` : style « Fiche de perso » (Chakra Petch, libellés en capitales espacées, angles
   carrés, bordures épaisses, bouton principal en relief). Thème par défaut : Braise.
 - `src/polices/` : Chakra Petch embarquée (woff2, sous-ensemble latin, licence OFL) :
   aucune police chargée depuis Internet, l'app reste complète en mode avion.
-- Icône : `icone/exzifit.svg`, régénérée par `npx tauri icon icone/exzifit.svg -o src-tauri/icons`.
+- Icône : le personnage de l'onglet Perso (thème Braise), dessiné par `scripts/icone.ts` depuis
+  `avatar.ts`. `npm run icone` écrit les sources dans `icone/` puis `tauri icon` régénère
+  `src-tauri/icons/` et les mipmaps Android (`gen/android`, icône adaptative : premier plan
+  réduit au disque visible, fond `#15110f`). Les PNG ne se retouchent pas à la main.
 
 ## Mise à jour en ligne
 

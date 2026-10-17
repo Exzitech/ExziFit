@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="canal_fin_repos">Fim do descanso</string>
+    <string name="canal_repos_en_cours">Descanso em andamento</string>
+    <string name="repos">Descanso</string>
+    <string name="exporter">Exportar os dados</string>
+</resources>

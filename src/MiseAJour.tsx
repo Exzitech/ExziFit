@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
+import { t } from "./i18n";
 import { dansTauri } from "./stockage";
 
 /** Seul l'APK se met à jour depuis Nextcloud (src-tauri/src/maj.rs) ; ni le PC ni le navigateur. */
@@ -37,10 +38,10 @@ export default function MiseAJour() {
 
   if (!version) return null;
 
-  const mo = (n: number) => (n / 1024 / 1024).toFixed(1);
+  const mo = (n: number) => (n / 1024 / 1024).toLocaleString(t.locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const avancement = !progression ? "" : progression.total
-    ? ` ${Math.round((progression.recu * 100) / progression.total)} %`
-    : ` ${mo(progression.recu)} Mo`;
+    ? ` ${t.pct(String(Math.round((progression.recu * 100) / progression.total)))}`
+    : ` ${t.maj.mo(mo(progression.recu))}`;
   const installer = async () => {
     setEtat("telechargement");
     setProgression(null);
@@ -56,10 +57,10 @@ export default function MiseAJour() {
   return (
     <div className="maj">
       <p className={etat === "erreur" ? "alerte" : undefined}>
-        {etat === "erreur" ? `Échec de la mise à jour : ${erreur}` : `ExziFit ${version} est disponible.`}
+        {etat === "erreur" ? t.maj.echec(erreur) : t.maj.dispo(version)}
       </p>
       <button className="principal" disabled={etat === "telechargement"} onClick={installer}>
-        {etat === "telechargement" ? `Téléchargement…${avancement}` : etat === "erreur" ? "Réessayer" : "Installer"}
+        {etat === "telechargement" ? t.maj.telechargement(avancement) : etat === "erreur" ? t.maj.reessayer : t.maj.installer}
       </button>
     </div>
   );

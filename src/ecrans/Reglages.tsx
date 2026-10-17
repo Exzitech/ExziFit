@@ -5,6 +5,7 @@ import { ecrireSalles, lireSalles, type Salle } from "../donnees/salles";
 import type { Bilan } from "../donnees/synchro";
 import { lancerRepos, useReste } from "../minuteur";
 import { jourLocal } from "../donnees/fichier";
+import { LANGUES, langueDuSysteme, t } from "../i18n";
 import { dansTauri, stockage, type InfoSynchro } from "../stockage";
 import { THEMES } from "../themes";
 import Restaurer from "./Restaurer";
@@ -20,7 +21,7 @@ interface Props {
 export default function EcranReglages({ reglages, onChange, onErreur, bilan, onSynchro }: Props) {
   const [dossier, setDossier] = useState("…");
   const [envoyee, setEnvoyee] = useState("…");
-  const [version, setVersion] = useState(dansTauri ? "…" : "navigateur (développement)");
+  const [version, setVersion] = useState(dansTauri ? "…" : t.reglages.navigateur);
   const [fin, setFin] = useState(0);
   const reste = useReste(fin);
   const [salles, setSalles] = useState<Salle[]>([]);
@@ -28,9 +29,9 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
   const envoi = reglages.envoi !== false;
 
   useEffect(() => {
-    stockage.dossier().then(setDossier, (e) => setDossier(`introuvable : ${e}`));
-    if (envoi) stockage.sauvegardeEnvoyee().then((j) => setEnvoyee(j ?? "aucune"), (e) => setEnvoyee(`inconnue : ${e}`));
-    if (dansTauri) getVersion().then(setVersion, (e) => setVersion(`inconnue : ${e}`));
+    stockage.dossier().then(setDossier, (e) => setDossier(t.reglages.introuvable(String(e))));
+    if (envoi) stockage.sauvegardeEnvoyee().then((j) => setEnvoyee(j ?? t.reglages.aucune), (e) => setEnvoyee(t.reglages.inconnue(String(e))));
+    if (dansTauri) getVersion().then(setVersion, (e) => setVersion(t.reglages.inconnue(String(e))));
     lireSalles().then(setSalles, onErreur);
   }, []);
 
@@ -43,93 +44,96 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
   const ajouter = () => {
     let n = salles.length + 1;
     while (salles.some((x) => x.id === `salle-${n}`)) n++;
-    changerSalles([...salles, { id: `salle-${n}`, nom: `Salle ${n}`, machines: {} }]);
+    changerSalles([...salles, { id: `salle-${n}`, nom: t.reglages.salle(n), machines: {} }]);
   };
+  const langue = reglages.langue ?? langueDuSysteme();
 
   return (
     <>
-      <h1>Réglages</h1>
+      <h1>{t.reglages.titre}</h1>
 
-      <h2>Thème</h2>
+      <h2>{t.commun.langue}</h2>
+      <div className="seg" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+        {LANGUES.map((l) => (
+          <button key={l.id} lang={l.id} aria-pressed={langue === l.id} onClick={() => onChange({ ...reglages, langue: l.id })}>{l.nom}</button>
+        ))}
+      </div>
+
+      <h2>{t.reglages.theme}</h2>
       <div className="choix">
-        {THEMES.map((t) => (
+        {THEMES.map((x) => (
           <button
-            key={t.id}
-            aria-pressed={reglages.theme === t.id}
-            onClick={() => onChange({ ...reglages, theme: t.id })}
+            key={x.id}
+            aria-pressed={reglages.theme === x.id}
+            onClick={() => onChange({ ...reglages, theme: x.id })}
           >
-            {t.nom}
+            {t.themes[x.id]}
           </button>
         ))}
       </div>
 
-      <h2>Personnage</h2>
+      <h2>{t.commun.personnage}</h2>
       <div className="choix">
         {(["homme", "femme"] as const).map((x) => (
           <button key={x} aria-pressed={(reglages.sexe ?? "homme") === x} onClick={() => onChange({ ...reglages, sexe: x })}>
-            {x === "homme" ? "Homme" : "Femme"}
+            {t.commun[x]}
           </button>
         ))}
       </div>
-      <p className="doux petit">Change le dessin et les références de Force (niveau « très avancé » de chaque sexe).</p>
+      <p className="doux petit">{t.reglages.sexe}</p>
       <div className="carte rm">
         <label>
-          Prénom
+          {t.commun.prenom}
           <input defaultValue={reglages.prenom ?? ""}
                  onBlur={(ev) => ev.target.value.trim() !== (reglages.prenom ?? "") && onChange({ ...reglages, prenom: ev.target.value.trim() || undefined })} />
         </label>
       </div>
 
-      <h2>Salles</h2>
+      <h2>{t.reglages.salles}</h2>
       <div className="carte rm">
         {salles.map((x) => (
           <label key={x.id} className="petit">
-            {Object.keys(x.machines).length} machine{Object.keys(x.machines).length > 1 ? "s" : ""} réglée{Object.keys(x.machines).length > 1 ? "s" : ""}
+            {t.reglages.machines(Object.keys(x.machines).length)}
             <input defaultValue={x.nom} onBlur={(ev) => renommer(x.id, ev.target.value)} />
           </label>
         ))}
-        <button onClick={ajouter}>Ajouter une salle</button>
-        <p className="doux petit">
-          Poids à vide et poulie à moufle se règlent pendant la séance, sous le nom de l'exercice ; la salle
-          se choisit sur l'accueil.
-        </p>
+        <button onClick={ajouter}>{t.reglages.ajouterSalle}</button>
+        <p className="doux petit">{t.reglages.sallesNote}</p>
       </div>
 
-      <h2>Minuteur</h2>
+      <h2>{t.reglages.minuteur}</h2>
       <div className="carte">
         <div className="compte">{fin ? `${reste} s` : "–"}</div>
         <button className="principal" onClick={() => lancerRepos(15).then(setFin, onErreur)}>
-          Tester la vibration (15 s)
+          {t.reglages.tester}
         </button>
-        <p className="doux petit">Verrouiller le téléphone : il doit vibrer à zéro.</p>
+        <p className="doux petit">{t.reglages.verrouiller}</p>
       </div>
 
-      <h2>Données</h2>
+      <h2>{t.reglages.donnees}</h2>
       <p className="doux petit">{dossier}</p>
-      <button onClick={() => stockage.exporter(jourLocal(new Date())).then((x) => setExport(`Exporté : ${x}`), onErreur)}>
-        Exporter les données
+      <button onClick={() => stockage.exporter(jourLocal(new Date())).then((x) => setExport(t.reglages.exporte(x)), onErreur)}>
+        {t.reglages.exporter}
       </button>
       {export_ && <p className="doux petit">{export_}</p>}
       <Restaurer remplace onErreur={onErreur} />
-      <p className="doux petit">
-        {envoi ? `Dernière copie envoyée sur Nextcloud : ${envoyee}` : "Copie quotidienne sur ce téléphone ; pour la garder ailleurs, exporter."}
-      </p>
+      <p className="doux petit">{envoi ? t.reglages.envoyee(envoyee) : t.reglages.copieLocale}</p>
 
       <Synchro bilan={bilan} onSynchro={onSynchro} onErreur={onErreur} />
 
-      <h2>Version</h2>
+      <h2>{t.reglages.version}</h2>
       <p className="doux petit">ExziFit {version}</p>
     </>
   );
 }
 
-const heure = (d: Date) => d.toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+const heure = (d: Date) => d.toLocaleString(t.locale, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 
 function texteBilan(b: Bilan | null): string {
-  if (!b) return "pas encore lancée";
-  if (b.etat === "non-configure") return "pas configurée";
-  if (b.etat === "hors-ligne") return "hors ligne, nouvel essai au prochain retour dans l'app";
-  return `à jour (${heure(b.le)})${b.recues ? ", données reçues" : ""}${b.envoyees ? ", données envoyées" : ""}`;
+  if (!b) return t.synchro.pasLancee;
+  if (b.etat === "non-configure") return t.synchro.pasConfiguree;
+  if (b.etat === "hors-ligne") return t.synchro.horsLigne;
+  return t.synchro.aJour(heure(b.le), Boolean(b.recues), Boolean(b.envoyees));
 }
 
 /**
@@ -173,28 +177,25 @@ function Synchro({ bilan, onSynchro, onErreur }: { bilan: Bilan | null; onSynchr
   const compte = info?.compte;
   return (
     <>
-      <h2>Synchro PC ↔ téléphone</h2>
+      <h2>{t.synchro.titre}</h2>
       <div className="carte">
         {compte && !edition ? (
           <>
             <p className="petit">{compte.utilisateur} · {compte.serveur.replace("https://", "")}</p>
-            <p className="doux petit">Dossier ExziFit-sync : {occupe ? "synchro…" : texteBilan(bilan)}</p>
-            <button className="principal" disabled={occupe} onClick={lancer}>Synchroniser maintenant</button>
-            <button className="lien" onClick={() => setEdition(true)}>Changer de compte</button>
+            <p className="doux petit">{t.synchro.dossier(occupe ? t.synchro.enCours : texteBilan(bilan))}</p>
+            <button className="principal" disabled={occupe} onClick={lancer}>{t.synchro.maintenant}</button>
+            <button className="lien" onClick={() => setEdition(true)}>{t.synchro.changer}</button>
           </>
         ) : (
           <>
-            <p className="doux petit">
-              Compte Nextcloud dédié, qui ne voit que le dossier partagé ExziFit-sync. Mot de passe
-              d'application : Nextcloud, Paramètres personnels › Sécurité, avec ce compte.
-            </p>
-            <label className="champ">Serveur<input value={serveur} onChange={(e) => setServeur(e.target.value)} autoCapitalize="none" /></label>
-            <label className="champ">Utilisateur<input value={utilisateur} onChange={(e) => setUtilisateur(e.target.value)} autoCapitalize="none" /></label>
-            <label className="champ">Mot de passe d'application
-              <input type="password" value={mdp} placeholder={compte ? "inchangé" : ""} onChange={(e) => setMdp(e.target.value)} autoCapitalize="none" />
+            <p className="doux petit">{t.synchro.explication}</p>
+            <label className="champ">{t.synchro.serveur}<input value={serveur} onChange={(e) => setServeur(e.target.value)} autoCapitalize="none" /></label>
+            <label className="champ">{t.synchro.utilisateur}<input value={utilisateur} onChange={(e) => setUtilisateur(e.target.value)} autoCapitalize="none" /></label>
+            <label className="champ">{t.synchro.mdp}
+              <input type="password" value={mdp} placeholder={compte ? t.synchro.inchange : ""} onChange={(e) => setMdp(e.target.value)} autoCapitalize="none" />
             </label>
-            <button className="principal" disabled={!compte && !mdp} onClick={enregistrer}>Enregistrer et synchroniser</button>
-            {compte && <button className="lien" onClick={() => setEdition(false)}>Annuler</button>}
+            <button className="principal" disabled={!compte && !mdp} onClick={enregistrer}>{t.synchro.enregistrer}</button>
+            {compte && <button className="lien" onClick={() => setEdition(false)}>{t.commun.annuler}</button>}
           </>
         )}
       </div>

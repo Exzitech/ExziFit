@@ -3,6 +3,7 @@ import {
 } from "@tauri-apps/plugin-notification";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
+import { t } from "./i18n";
 import { dansTauri } from "./stockage";
 
 // Les commandes de canal, de programmation et d'annulation du plugin n'existent que sur mobile :
@@ -16,7 +17,7 @@ let pret = false;
 async function preparer(): Promise<void> {
   if (pret) return;
   if (!(await isPermissionGranted()) && (await requestPermission()) !== "granted") {
-    throw new Error("permission de notification refusée : le minuteur ne pourra pas vibrer");
+    throw new Error(t.minuteur.permission);
   }
   pret = true;
 }
@@ -32,7 +33,7 @@ export async function lancerRepos(secondes: number): Promise<number> {
   if (!surAndroid) return fin;
   await preparer();
   sendNotification({
-    id: ID_NOTIF, channelId: CANAL, title: "Repos terminé", body: "Série suivante",
+    id: ID_NOTIF, channelId: CANAL, title: t.minuteur.fin, body: t.minuteur.suivante,
     schedule: Schedule.at(new Date(fin), false, true),
   });
   await invoke("repos_afficher", { fin });

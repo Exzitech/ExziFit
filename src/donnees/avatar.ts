@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import type { Sexe, Stats } from "./stats";
 
 /**
@@ -15,12 +16,8 @@ export const SEUILS = {
 export type Trait = keyof typeof SEUILS;
 export type Paliers = Record<Trait, number>;
 
-/** Ce que chaque palier change, du palier 1 au dernier (index = palier − 1). */
-export const EFFETS: Record<Trait, string[]> = {
-  force: ["épaules plus larges", "bras plus épais, pectoraux", "biceps, jambes plus épaisses", "carrure maximale"],
-  endurance: ["taille affinée", "ligne d'abdos", "abdos dessinés"],
-  constance: ["posture droite, teint vif", "halo"],
-};
+/** Ce que chaque palier change, du palier 1 au dernier (index = palier − 1), dans la langue courante. */
+export const effet = (tr: Trait, p: number): string => t.effets[tr][p];
 
 /** Une stat absente (Force sans pesée) compte pour 0. */
 export const palier = (t: Trait, valeur: number | undefined) =>

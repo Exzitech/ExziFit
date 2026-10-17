@@ -2,10 +2,10 @@
 
 Validé par Tom le 2026-10-13. **Implémenté** : exercices de base, journal, séance en cours,
 `blocs.json`, `poids.json`, prescriptions et rotation, avertissements des règles `ecart`,
-semaine de test et fin de bloc, choix du programme (0.1.30). Les programmes sont lus depuis le
-code (`src/donnees/programmes/*.json` : Bloc Force, Push / Pull / Legs, Capacité de travail,
-Haut / bas express), pas encore depuis `programmes.json`. Reste : éditeur de programmes,
-exercices perso.
+semaine de test et fin de bloc, choix du programme (0.1.30), éditeur de programmes (0.1.40).
+Les programmes viennent du code (`src/donnees/programmes/*.json` : Bloc Force, Push / Pull / Legs,
+Capacité de travail, Haut / bas express) puis de `programmes.json` (id `perso-…`, une seule
+semaine, accessoires en fourchette ; pas synchronisé entre appareils). Reste : exercices perso.
 Validée sur papier par la transcription
 du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programmes/bloc-force.json).
 
@@ -35,7 +35,7 @@ du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programm
 | `exercices.json` | exercices **perso** uniquement | à la création d'un exercice |
 | `poids.json` | pesées | à chaque pesée |
 | `salles.json` | salles et réglages de leurs machines (voir « Salles ») | à l'ajout ou au renommage d'une salle (Réglages), au réglage d'une machine (saisie) |
-| `reglages.json` | thème, programme choisi (`programme`, absent = Bloc Force), `sexe` (`"homme"` / `"femme"`, absent = homme : références de Force et dessin), `prenom` (optionnel, titre de l'onglet Perso), `envoi` (`false` = pas d'envoi Nextcloud ; absent = actif, installation de Tom), disques disponibles, barre | dans les réglages ; au changement de programme (accueil) ; créé par l'écran de bienvenue (installation neuve) |
+| `reglages.json` | thème, programme choisi (`programme`, absent = Bloc Force), `sexe` (`"homme"` / `"femme"`, absent = homme : références de Force et dessin), `prenom` (optionnel, titre de l'onglet Perso), `langue` (`"fr"` / `"en"` / `"pt-BR"`, absent = langue du téléphone), `envoi` (`false` = pas d'envoi Nextcloud ; absent = actif, installation de Tom), disques disponibles, barre | dans les réglages ; au changement de programme (accueil) ; créé par l'écran de bienvenue (installation neuve) |
 | `suppressions.json` | séances supprimées depuis le Journal (`debut` + `le`), pour que la synchro les retire aussi de l'autre appareil | à chaque suppression |
 | `sauvegardes/` | copies datées de tout le dossier ; `sync-AAAAMMJJ-HHMMSS/` avant chaque fusion de synchro (20 gardées) | au lancement, une fois par jour ; avant d'appliquer une synchro |
 

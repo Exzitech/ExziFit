@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="canal_fin_repos">Fin du repos</string>
+    <string name="canal_repos_en_cours">Repos en cours</string>
+    <string name="repos">Repos</string>
+    <string name="exporter">Exporter les données</string>
+</resources>

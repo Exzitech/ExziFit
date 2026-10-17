@@ -179,3 +179,12 @@ p.alerte { word-break: normal; }
 .champ { display: block; margin: 0 0 10px; font-size: 14px; color: var(--texte-doux); }
 .champ input { display: block; width: 100%; min-height: 48px; margin-top: 4px; padding: 0 10px; font: 500 17px var(--police);
                background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; }
+/* Éditeur de programme : un exo par ligne (nom, séries −/+, retirer), puis le menu d'ajout. */
+.exo-prog { display: grid; grid-template-columns: minmax(0, 1fr) 48px 48px 48px; gap: 6px; align-items: center;
+            padding: 6px 0; border-bottom: 2px solid var(--bord); }
+.exo-prog small { display: block; font-size: 13px; }
+.exo-prog button.puce { width: 48px; min-height: 48px; padding: 0; }
+select.ajout-exo { display: block; width: 100%; min-height: 52px; margin: 10px 0 4px; padding: 0 10px; font: 600 17px var(--police);
+                   background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; }
+.seg.objectifs button { font-size: 13px; }
+.liens { display: flex; flex-wrap: wrap; gap: 0 16px; }

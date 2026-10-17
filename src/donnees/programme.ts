@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { EXERCICES, exercice, type Exercice, type Muscle } from "./exercices";
 import { historique, type Rattrapage, type Seance, type Serie } from "./journal";
 import blocForce from "./programmes/bloc-force.json";
@@ -53,11 +54,39 @@ export interface Programme {
 }
 
 /**
- * Programmes proposés, dans le code tant qu'il n'y a pas d'éditeur (le modèle prévoit
- * `programmes.json` le jour où Tom en écrit un depuis l'app).
+ * Programmes proposés : ceux du code, puis ceux écrits dans l'app (`programmes.json`, posés au
+ * lancement par programmes-perso.ts). Un seul tableau, lu partout sans attendre de fichier.
  */
 export const PROGRAMMES: Programme[] = [blocForce, pushPullLegs, endurance, supersetExpress]
   .flatMap((f) => (f as unknown as { programmes: Programme[] }).programmes);
+const DU_CODE = PROGRAMMES.length;
+/** Programmes du code tels qu'écrits (en français) : chaque langue repart d'eux. */
+const ORIGINAUX = PROGRAMMES.slice(0, DU_CODE);
+
+/**
+ * Textes affichés des programmes du code dans la langue courante (`t.programmesTextes`, texte français
+ * → traduction ; absent = gardé). Les ids ne changent pas : séances et blocs y renvoient toujours.
+ * Les programmes écrits dans l'app restent dans la langue de leur auteur.
+ */
+export function traduireProgrammes(): void {
+  const tr = (x: string) => t.programmesTextes[x] ?? x;
+  PROGRAMMES.splice(0, DU_CODE, ...ORIGINAUX.map((p) => ({
+    ...p,
+    nom: tr(p.nom),
+    semaines: p.semaines.map((s) => ({ ...s, label: tr(s.label) })),
+    jours: p.jours.map((j) => ({
+      ...j,
+      nom: tr(j.nom),
+      ...(j.note ? { note: tr(j.note) } : {}),
+      exercices: j.exercices.map((x) => (x.note ? { ...x, note: tr(x.note) } : x)),
+    })),
+  })));
+}
+
+/** Remplace les programmes écrits dans l'app, après ceux du code. */
+export function poserProgrammesPerso(l: Programme[]): void {
+  PROGRAMMES.splice(DU_CODE, PROGRAMMES.length - DU_CODE, ...l);
+}
 
 /** Programme des séances d'avant le choix du programme (0.1.29 et avant), et choix par défaut. */
 export const PROGRAMME_DEFAUT = "bloc-force";
@@ -153,7 +182,7 @@ export function avertissements(p: Programme, jour: Jour, seances: Seance[], main
         const s = [...seances].reverse().find((s) => s.exercices.some((e) => e.exo === y && e.series.some((v) => v.type === "travail")));
         if (!s) continue;
         const h = Math.floor((maintenant.getTime() - Date.parse(s.fin ?? s.debut)) / 3_600_000);
-        if (h < r.heures) res.push(`${exercice(y).nom} il y a ${h} h : ${r.heures} h conseillées avant ${exercice(x).nom}.`);
+        if (h < r.heures) res.push(t.calculs.ecart(exercice(y).nom, h, r.heures, exercice(x).nom));
       }
     }
   }
@@ -201,9 +230,9 @@ export function reposManquant(p: Programme, id: string, seances: Seance[], auJou
     if (f.force && f.id !== id && f.muscles.principaux.some((m) => jambes.includes(m))) voisins.push({ y: f.id, heures: REPOS_JAMBES_H });
   }
   for (const { y, heures } of voisins) {
-    if (auJour.includes(y)) return `${exercice(y).nom} au programme du jour : ${heures} h conseillées avec ${e.nom}.`;
+    if (auJour.includes(y)) return t.calculs.auJour(exercice(y).nom, heures, e.nom);
     const h = heuresDepuis(seances, y, maintenant);
-    if (h !== null && h < heures) return `${exercice(y).nom} il y a ${h} h : ${heures} h conseillées avant ${e.nom}.`;
+    if (h !== null && h < heures) return t.calculs.ecart(exercice(y).nom, h, heures, e.nom);
   }
   return null;
 }
@@ -267,7 +296,7 @@ export interface Contexte {
   passees: Seance[];
 }
 
-const pct = (v: number) => `${Math.round(v * 1000) / 10}`.replace(".", ",");
+const pct = (v: number) => nombre(Math.round(v * 1000) / 10);
 
 /**
  * Total → charge à afficher (lest, disques, pile), arrondie au pas ; `null` sans pesée sur un lesté.
@@ -404,7 +433,7 @@ export function cible(e: Exercice, pr: Prescription, c: Contexte): Cible {
     case "pct1rm": {
       const s = c.semaine.schemas[pr.schema];
       if (!s) throw new Error(`schéma « ${pr.schema} » absent de la semaine ${c.semaine.nom}`);
-      const texte = s.pct.map(pct).join("–") + " %";
+      const texte = t.pct(s.pct.map(pct).join("–"));
       return { series: s.series, reps: s.reps, kg: c.rm === undefined ? null : charge(c.rm * s.pct[0]), texte };
     }
     case "fourchette": {
@@ -444,17 +473,19 @@ export function retour(e: Exercice, kg: number, poidsCorps?: number): number {
 
 /**
  * Mobilité dynamique d'avant séance, au poids du corps (faisable partout, sans matériel), par ordre
- * d'utilité ; chaque mouvement est proposé si un exo du jour travaille un de ses muscles.
+ * d'utilité ; chaque mouvement est proposé si un exo du jour travaille un de ses muscles. Textes au
+ * même rang dans `t.calculs.mobilite` : cercles de bras, squat, pompes, Y-T-W, good morning,
+ * balancements de jambe, montées sur pointes, cercles de poignets.
  */
-const MOBILITE: { texte: string; muscles: Muscle[] }[] = [
-  { texte: "Cercles de bras · 10 dans chaque sens", muscles: ["pectoraux", "epaules", "triceps", "biceps", "dos"] },
-  { texte: "Squat au poids du corps · 10", muscles: ["quadriceps", "fessiers"] },
-  { texte: "Pompes lentes · 8", muscles: ["pectoraux", "triceps"] },
-  { texte: "Y-T-W debout, bras tendus · 5 de chaque", muscles: ["dos", "epaules"] },
-  { texte: "Good morning mains sur la nuque · 10", muscles: ["ischios", "fessiers"] },
-  { texte: "Balancements de jambe · 10 par côté", muscles: ["quadriceps", "ischios", "fessiers"] },
-  { texte: "Montées sur pointes · 15", muscles: ["mollets"] },
-  { texte: "Cercles de poignets · 10", muscles: ["avant-bras", "biceps"] },
+const MOBILITE: Muscle[][] = [
+  ["pectoraux", "epaules", "triceps", "biceps", "dos"],
+  ["quadriceps", "fessiers"],
+  ["pectoraux", "triceps"],
+  ["dos", "epaules"],
+  ["ischios", "fessiers"],
+  ["quadriceps", "ischios", "fessiers"],
+  ["mollets"],
+  ["avant-bras", "biceps"],
 ];
 
 /** Plafond de l'échauffement général (demande de Tom) : 5 mouvements de 30 s. */
@@ -467,7 +498,8 @@ const MOUVEMENTS_MAX = 5;
  */
 export function preparation(exos: Exercice[]): { minutes: number; etapes: string[] } {
   const muscles = new Set(exos.flatMap((e) => e.muscles.principaux));
-  const mobilite = MOBILITE.filter((m) => m.muscles.some((x) => muscles.has(x))).map((m) => m.texte).slice(0, MOUVEMENTS_MAX);
+  const mobilite = MOBILITE.map((m, i) => [m, t.calculs.mobilite[i]] as const)
+    .filter(([m]) => m.some((x) => muscles.has(x))).map(([, texte]) => texte).slice(0, MOUVEMENTS_MAX);
   return { minutes: Math.ceil(mobilite.length / 2), etapes: mobilite };
 }
 
@@ -476,8 +508,8 @@ export function preparation(exos: Exercice[]): { minutes: number; etapes: string
  * à vide ×15 tient lieu d'échauffement général ; les paliers lourds restent courts pour ne pas fatiguer.
  */
 export function echauffement(e: Exercice, kg: number): string[] {
-  if (e.charge === "poids-corps-leste") return kg > 0 ? ["PDC ×5", `+${nombre(arrondir(kg / 2, e.pas))} ×3`] : [];
-  const vide = e.charge === "barre" ? "Barre ×15" : "À vide ×15";
+  if (e.charge === "poids-corps-leste") return kg > 0 ? [t.calculs.pdcFois(5), `+${nombre(arrondir(kg / 2, e.pas))} ×3`] : [];
+  const vide = e.charge === "barre" ? t.calculs.barre : t.calculs.aVide;
   // Les % portent sur le total (chariot compris), puis reviennent en disques.
   const total = totalDe(e, kg, 0);
   const paliers = ([[0.4, 5], [0.6, 3], [0.75, 2]] as const)
@@ -502,7 +534,7 @@ export function disques(kg: number, barre = 20): number[] | null {
   return reste === 0 ? res : null;
 }
 
-export const nombre = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+export const nombre = (n: number) => n.toLocaleString(t.locale, { maximumFractionDigits: 2 });
 
 export interface Bilan {
   minutes: number;
@@ -537,19 +569,10 @@ export function bilan(s: Seance, passees: Seance[], poidsCorps?: number): Bilan 
   return { minutes, series, volume: Math.round(volume), exos };
 }
 
-/** Phrases sans chiffre, quand la séance ne bat pas la précédente : jamais de reproche. */
-const PHRASES = [
-  "Exo bouclé. Bois un coup, on enchaîne.",
-  "Propre. Même technique sur le suivant.",
-  "Fait. Ce sont les séries comme celle-là qui font le bloc.",
-  "Bien tenu. Respire, le suivant attend.",
-  "Coché. Une ligne de plus dans le journal.",
-  "Solide. Garde ce rythme.",
-];
-
 /**
  * Message de fin d'exo, tiré des données : record de 1RM estimé, charge ou reps au-dessus de la
- * dernière fois ; sinon une phrase choisie par `graine` (stable d'un rendu à l'autre).
+ * dernière fois ; sinon une phrase sans chiffre (`t.calculs.phrases`, jamais de reproche) choisie
+ * par `graine` (stable d'un rendu à l'autre).
  */
 export function encouragement(e: Exercice, series: Serie[], passees: Seance[], graine: string, poidsCorps?: number): string {
   const travail = series.filter((s) => s.type === "travail");
@@ -557,19 +580,19 @@ export function encouragement(e: Exercice, series: Serie[], passees: Seance[], g
   const apresRm = meilleurE1rm(e, travail, poidsCorps);
   const avantRm = meilleurE1rm(e, avant, poidsCorps);
   if (apresRm !== undefined && avantRm !== undefined && apresRm > avantRm) {
-    return `Record : 1RM estimé ${nombre(Math.round(apresRm))} kg (avant ${nombre(Math.round(avantRm))}).`;
+    return t.calculs.record(nombre(Math.round(apresRm)), nombre(Math.round(avantRm)));
   }
   const derniere = [...passees].reverse().find((p) => p.exercices.some((x) => x.exo === e.id));
   const dernieres = derniere ? derniere.exercices.filter((x) => x.exo === e.id).flatMap((x) => x.series).filter((s) => s.type === "travail") : [];
   if (travail.length && dernieres.length && e.charge !== "distance") {
     const haut = (l: Serie[]) => Math.max(...l.map((s) => s.kg));
     const ecart = haut(travail) - haut(dernieres);
-    if (ecart > 0) return `+${nombre(ecart)} kg par rapport à la dernière fois.`;
+    if (ecart > 0) return t.calculs.plusKg(nombre(ecart));
     const reps = (l: Serie[]) => l.reduce((t, s) => t + s.reps, 0);
     const plus = reps(travail) - reps(dernieres);
-    if (ecart === 0 && plus > 0) return `${plus} rep${plus > 1 ? "s" : ""} de plus que la dernière fois.`;
+    if (ecart === 0 && plus > 0) return t.calculs.plusReps(plus);
   }
   let h = 0;
   for (const c of graine) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return PHRASES[h % PHRASES.length];
+  return t.calculs.phrases[h % t.calculs.phrases.length];
 }

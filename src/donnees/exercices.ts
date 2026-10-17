@@ -1,5 +1,7 @@
 /** Exercices de base, dans le code (docs/modele-donnees.md, « Exercice »). Identifiants stables. */
 
+import { t } from "../i18n";
+
 export type TypeCharge = "barre" | "halteres" | "machine" | "poulie" | "poids-corps-leste" | "poids-corps" | "distance";
 
 export type Muscle =
@@ -99,6 +101,13 @@ export const EXERCICES: Exercice[] = [
 ];
 
 const PAR_ID = new Map(EXERCICES.map((e) => [e.id, e]));
+/** Noms du catalogue ci-dessus (ceux du français et de l'anglais) ; une langue peut les remplacer (`t.exos`). */
+const NOMS = new Map(EXERCICES.map((e) => [e.id, e.nom]));
+
+/** Noms dans la langue courante, posés sur le catalogue lui-même : tous les écrans lisent `nom`. */
+export function traduireExercices(): void {
+  for (const e of EXERCICES) e.nom = t.exos[e.id] ?? NOMS.get(e.id)!;
+}
 
 export function exercice(id: string): Exercice {
   const e = PAR_ID.get(id);
@@ -108,7 +117,7 @@ export function exercice(id: string): Exercice {
 
 /** Libellé du champ charge : sur un lesté, `kg` est le lest seul ; sur une machine à disques, les disques seuls. */
 export const libelleCharge = (e: Exercice) =>
-  e.charge === "poids-corps-leste" ? "lest kg" : e.disques ? "disques" : e.poulie ? "pile" : "kg";
+  e.charge === "poids-corps-leste" ? t.charge.leste : e.disques ? t.charge.disques : e.poulie ? t.charge.pile : t.charge.kg;
 
 export interface Remplacant { e: Exercice; raison: "programme" | "mouvement" | "muscles" | null }
 

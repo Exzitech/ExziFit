@@ -20,7 +20,7 @@ class MainActivity : TauriActivity() {
    */
   private fun creerCanalRepos() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-    val canal = NotificationChannel("repos-long", "Fin du repos", NotificationManager.IMPORTANCE_HIGH)
+    val canal = NotificationChannel("repos-long", getString(R.string.canal_fin_repos), NotificationManager.IMPORTANCE_HIGH)
     canal.enableVibration(true)
     // Trois impulsions d'une seconde (≈ 3,8 s en tout).
     canal.vibrationPattern = longArrayOf(0, 1000, 400, 1000, 400, 1000)

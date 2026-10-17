@@ -28,7 +28,7 @@ class PartagePlugin(private val activity: Activity) : Plugin(activity) {
                 .putExtra(Intent.EXTRA_STREAM, uri)
                 .putExtra(Intent.EXTRA_SUBJECT, fichier.name)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            activity.startActivity(Intent.createChooser(envoi, "Exporter les données"))
+            activity.startActivity(Intent.createChooser(envoi, activity.getString(R.string.exporter)))
             invoke.resolve()
         } catch (ex: Exception) {
             invoke.reject(ex.message)

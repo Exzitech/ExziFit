@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { exercice, type Exercice } from "./exercices";
 import { ecrireJson, FORMAT, lireJson } from "./fichier";
 import type { Seance } from "./journal";
@@ -25,12 +26,13 @@ export interface Salle {
 interface Fichier { format: number; salles: Salle[] }
 
 const CHEMIN = "salles.json";
-const PREMIERE: Salle = { id: "salle-1", nom: "Ma salle", machines: {} };
+/** Nommée dans la langue du moment ; une fois écrite dans salles.json, c'est un nom comme un autre. */
+const premiere = (): Salle => ({ id: "salle-1", nom: t.salleDefaut, machines: {} });
 
 /** Jamais vide : sans fichier, une salle « Ma salle » sans réglage. */
 export async function lireSalles(): Promise<Salle[]> {
-  const f = await lireJson<Fichier>(CHEMIN, () => ({ format: FORMAT, salles: [PREMIERE] }));
-  return f.salles.length ? f.salles : [PREMIERE];
+  const f = await lireJson<Fichier>(CHEMIN, () => ({ format: FORMAT, salles: [premiere()] }));
+  return f.salles.length ? f.salles : [premiere()];
 }
 
 export const ecrireSalles = (salles: Salle[]) => ecrireJson(CHEMIN, { format: FORMAT, salles } as Fichier);

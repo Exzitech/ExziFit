@@ -2,15 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
 import { jourLocal, quandEcrit } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
+import { chargerProgrammesPerso } from "./donnees/programmes-perso";
 import EcranBienvenue from "./ecrans/Bienvenue";
 import { estSynchronise, synchroniser, type Bilan } from "./donnees/synchro";
 import EcranJournal from "./ecrans/Journal";
 import EcranPersonnage from "./ecrans/Personnage";
 import EcranReglages from "./ecrans/Reglages";
 import EcranSeance from "./ecrans/Seance";
+import { estLangue, langueDuSysteme, t } from "./i18n";
+import { appliquerLangue } from "./langue";
 import MiseAJour, { surAndroid } from "./MiseAJour";
 import { stockage } from "./stockage";
 import { appliquerTheme } from "./themes";
+
+/** Langue des réglages, sinon celle du téléphone. */
+const langueDe = (r: Reglages) => (estLangue(r.langue) ? r.langue : langueDuSysteme());
 
 type Ecran = "seance" | "journal" | "personnage" | "reglages";
 
@@ -35,9 +41,10 @@ export default function App() {
   ici.current = { ecran, enSeance };
 
   const signaler = (contexte: string) => (e: unknown) =>
-    setErreurs((l) => [...l, `${contexte} : ${e instanceof Error ? e.message : String(e)}`]);
+    setErreurs((l) => [...l, t.app.erreur(contexte, e instanceof Error ? e.message : String(e))]);
+  const ctx = t.app.ctx;
 
-  useBoutonRetour(ecran !== "seance" ? () => setEcran("seance") : null, signaler("Bouton retour"));
+  useBoutonRetour(ecran !== "seance" ? () => setEcran("seance") : null, signaler(ctx.boutonRetour));
 
   const synchro = () =>
     synchroniser()
@@ -48,7 +55,7 @@ export default function App() {
         if (ici.current.enSeance || ici.current.ecran === "journal") setARelire(true);
         else setGeneration((g) => g + 1);
       })
-      .catch(signaler("Synchro"));
+      .catch(signaler(ctx.synchro));
 
   const relire = () => {
     setARelire(false);
@@ -76,29 +83,35 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const lecture = lireReglages();
+    // Programmes écrits dans l'app d'abord : les écrans les lisent dès leur premier rendu.
+    // Fichier illisible : signalé, l'app s'ouvre avec les programmes du code.
+    const lecture = chargerProgrammesPerso().catch(signaler(ctx.programmesPerso)).then(lireReglages);
     lecture
       .then((r) => {
-        if (r) appliquerTheme(r.theme);
+        if (r) {
+          appliquerTheme(r.theme);
+          appliquerLangue(langueDe(r));
+        }
         setReglages(r);
       })
-      .catch(signaler("Réglages"));
+      .catch(signaler(ctx.reglages));
     // Une copie datée par jour, au lancement, avant toute écriture de séance ; puis envoi sur
     // Nextcloud en arrière-plan (la dernière copie existante, même si celle du jour a échoué),
     // pour l'installation de Tom seulement. Réglages illisibles : déjà signalé juste au-dessus, pas d'envoi.
     stockage
       .sauvegardeDuJour(jourLocal(new Date()))
-      .catch(signaler("Sauvegarde du jour"))
+      .catch(signaler(ctx.sauvegarde))
       .then(() => lecture.catch(() => null))
       .then((r) => (r && r.envoi !== false ? stockage.envoyerSauvegarde() : null))
-      .catch(signaler("Envoi de la sauvegarde"))
+      .catch(signaler(ctx.envoi))
       .then(synchro);
   }, []);
 
   const changerReglages = (r: Reglages) => {
     appliquerTheme(r.theme);
+    appliquerLangue(langueDe(r));
     setReglages(r);
-    ecrireReglages(r).catch(signaler("Enregistrement des réglages"));
+    ecrireReglages(r).catch(signaler(ctx.enregistrement));
   };
 
   return (
@@ -111,34 +124,35 @@ export default function App() {
       {surAndroid && <MiseAJour />}
       {aRelire && !enSeance && (
         <div className="erreurs">
-          <button className="principal" onClick={relire}>Données reçues de l'autre appareil · Actualiser</button>
+          <button className="principal" onClick={relire}>{t.app.recues}</button>
         </div>
       )}
-      <main key={generation}>
-        {reglages === null && <EcranBienvenue onFini={changerReglages} onErreur={signaler("Bienvenue")} />}
+      {/* Langue changée dans les réglages : les écrans se remontent, rien de leur état n'en garde l'ancienne. */}
+      <main key={`${generation}-${reglages?.langue}`}>
+        {reglages === null && <EcranBienvenue onFini={changerReglages} onErreur={signaler(ctx.bienvenue)} />}
         {ecran === "seance" && reglages && (
           <EcranSeance programmeChoisi={reglages.programme} sexe={reglages.sexe ?? "homme"} onProgramme={(programme) => changerReglages({ ...reglages, programme })}
-                       onErreur={signaler("Séance")} onEnSeance={setEnSeance} />
+                       onErreur={signaler(ctx.seance)} onEnSeance={setEnSeance} />
         )}
-        {ecran === "journal" && <EcranJournal onErreur={signaler("Journal")} />}
-        {ecran === "personnage" && reglages && <EcranPersonnage programmeChoisi={reglages.programme} prenom={reglages.prenom} sexe={reglages.sexe ?? "homme"} onErreur={signaler("Personnage")} />}
+        {ecran === "journal" && <EcranJournal onErreur={signaler(ctx.journal)} />}
+        {ecran === "personnage" && reglages && <EcranPersonnage programmeChoisi={reglages.programme} prenom={reglages.prenom} sexe={reglages.sexe ?? "homme"} onErreur={signaler(ctx.personnage)} />}
         {ecran === "reglages" && reglages && (
-          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler("Réglages")}
+          <EcranReglages reglages={reglages} onChange={changerReglages} onErreur={signaler(ctx.reglages)}
                          bilan={bilan} onSynchro={synchro} />
         )}
       </main>
       {!enSeance && reglages && <nav>
         <button aria-current={ecran === "seance" ? "page" : undefined} onClick={() => setEcran("seance")}>
-          Séance
+          {t.nav.seance}
         </button>
         <button aria-current={ecran === "journal" ? "page" : undefined} onClick={() => setEcran("journal")}>
-          Journal
+          {t.nav.journal}
         </button>
         <button aria-current={ecran === "personnage" ? "page" : undefined} onClick={() => setEcran("personnage")}>
-          Perso
+          {t.nav.perso}
         </button>
         <button aria-current={ecran === "reglages" ? "page" : undefined} onClick={() => setEcran("reglages")}>
-          Réglages
+          {t.nav.reglages}
         </button>
       </nav>}
     </>
