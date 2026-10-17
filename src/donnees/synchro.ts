@@ -1,15 +1,19 @@
 import { stockage } from "../stockage";
 import { BLOCS, lireBlocs, lirePesees, POIDS, type Bloc } from "./bloc";
-import { cheminJournal, FORMAT, horodatage, texteJson, verifierFormat } from "./fichier";
+import { cheminJournal, FORMAT, horodatage, lireJson, texteJson, verifierFormat } from "./fichier";
 import { lireSeances, lireSuppressions, mettreALaCorbeille, SUPPRESSIONS, type Seance, type Suppression } from "./journal";
+import type { Programme } from "./programme";
+import { lireProgrammesPerso, PROGRAMMES_PERSO } from "./programmes-perso";
+import { avecProfil, profilDe, REGLAGES, type Profil, type Reglages } from "./reglages";
+import { SALLES, sallesEcrites, type Salle } from "./salles";
 import type { Pesee } from "./stats";
 
 /**
  * Synchro PC ↔ téléphone (docs/modele-donnees.md, « Synchro ») : `etat.json` dans le dossier
  * Nextcloud privé `ExziFit-sync` contient tout ce qui se synchronise. Chaque appareil le lit, le
  * fusionne avec ses fichiers, écrit chez lui ce qui a changé (après une copie horodatée), puis
- * renvoie la fusion si elle diffère. Pas synchronisés : la séance en cours, la corbeille, les
- * réglages (thème propre à chaque appareil).
+ * renvoie la fusion si elle diffère. Pas synchronisés : la séance en cours, la corbeille, le
+ * thème, la langue et l'envoi des sauvegardes (propres à chaque appareil).
  */
 export interface Etat {
   format: number;
@@ -17,13 +21,18 @@ export interface Etat {
   suppressions: Suppression[];
   blocs: Bloc[];
   pesees: Pesee[];
+  /** Ajoutés en 0.1.47 : absents d'un `etat.json` écrit avant, lus comme vides. */
+  programmes: Programme[];
+  salles: Salle[];
+  /** Prénom, sexe, programme choisi ; `null` tant qu'aucun appareil ne les a changés. */
+  profil: Profil | null;
 }
 
-const VIDE: Etat = { format: FORMAT, seances: [], suppressions: [], blocs: [], pesees: [] };
+const VIDE: Etat = { format: FORMAT, seances: [], suppressions: [], blocs: [], pesees: [], programmes: [], salles: [], profil: null };
 
 /** Fichiers qui entrent dans `etat.json` : une écriture de l'app sur l'un d'eux appelle une synchro. */
 export const estSynchronise = (chemin: string) =>
-  chemin.startsWith("journal/") || [BLOCS, POIDS, SUPPRESSIONS].includes(chemin);
+  chemin.startsWith("journal/") || [BLOCS, POIDS, SUPPRESSIONS, PROGRAMMES_PERSO, SALLES, REGLAGES].includes(chemin);
 
 const t = (iso?: string | null) => (iso ? Date.parse(iso) : 0);
 /**
@@ -68,7 +77,11 @@ export function fusionner(a: Etat, b: Etat): Etat {
   const blocs = recents(a.blocs, b.blocs, (x) => x.id, (x) => t(x.modifie))
     .sort((x, y) => chrono((z: Bloc) => z.debut)(x, y) || (x.id < y.id ? -1 : 1));
   const pesees = recents(a.pesees, b.pesees, (x) => x.date, (x) => t(x.le)).sort(chrono((x) => x.date));
-  return { format: FORMAT, seances, suppressions, blocs, pesees };
+  const parId = <T extends { id: string; modifie?: string }>(x: T[], y: T[]) =>
+    // salle-2 avant salle-10 : la première salle reste celle des séances d'avant les salles.
+    recents(x, y, (z) => z.id, (z) => t(z.modifie)).sort((u, v) => u.id.length - v.id.length || (u.id < v.id ? -1 : 1));
+  const profil = recents([a.profil, b.profil].filter((p) => p !== null), [], () => "", (p) => t(p.modifie))[0] ?? null;
+  return { format: FORMAT, seances, suppressions, blocs, pesees, programmes: parId(a.programmes, b.programmes), salles: parId(a.salles, b.salles), profil };
 }
 
 const egal = (a: Etat, b: Etat) => JSON.stringify(a) === JSON.stringify(b);
@@ -82,16 +95,20 @@ function lireDistant(texte: string): Etat {
   } catch (e) {
     throw new Error(`etat.json (Nextcloud) illisible : ${(e as Error).message}`);
   }
-  const e = verifierFormat<Etat>("etat.json (Nextcloud)", d);
-  for (const k of ["seances", "suppressions", "blocs", "pesees"] as const) {
+  const e = { ...VIDE, ...verifierFormat<Etat>("etat.json (Nextcloud)", d) };
+  for (const k of ["seances", "suppressions", "blocs", "pesees", "programmes", "salles"] as const) {
     if (!Array.isArray(e[k])) throw new Error(`etat.json (Nextcloud) : « ${k} » n'est pas une liste`);
   }
   return e;
 }
 
+const lireReglagesBruts = () => lireJson<Partial<Reglages> & { format: number }>(REGLAGES, () => ({ format: FORMAT }));
+
 async function etatLocal(): Promise<Etat> {
-  const [seances, suppressions, blocs, pesees] = await Promise.all([lireSeances(), lireSuppressions(), lireBlocs(), lirePesees()]);
-  return { format: FORMAT, seances, suppressions, blocs, pesees };
+  const [seances, suppressions, blocs, pesees, programmes, salles, reglages] = await Promise.all([
+    lireSeances(), lireSuppressions(), lireBlocs(), lirePesees(), lireProgrammesPerso(), sallesEcrites(), lireReglagesBruts(),
+  ]);
+  return { format: FORMAT, seances, suppressions, blocs, pesees, programmes, salles, profil: profilDe(reglages) };
 }
 
 const deux = (n: number) => String(n).padStart(2, "0");
@@ -128,9 +145,15 @@ async function appliquer(local: Etat, fusion: Etat): Promise<void> {
     [BLOCS, { format: FORMAT, blocs: fusion.blocs }, local.blocs, fusion.blocs],
     [POIDS, { format: FORMAT, pesees: fusion.pesees }, local.pesees, fusion.pesees],
     [SUPPRESSIONS, { format: FORMAT, seances: fusion.suppressions }, local.suppressions, fusion.suppressions],
+    [PROGRAMMES_PERSO, { format: FORMAT, programmes: fusion.programmes }, local.programmes, fusion.programmes],
+    [SALLES, { format: FORMAT, salles: fusion.salles }, local.salles, fusion.salles],
   ] as const;
   for (const [chemin, contenu, a, b] of fichiers) {
     if (JSON.stringify(a) !== JSON.stringify(b)) await stockage.ecrire(chemin, texteJson(contenu));
+  }
+  // Après les programmes : le programme choisi peut être l'un de ceux qui viennent d'arriver.
+  if (fusion.profil && JSON.stringify(fusion.profil) !== JSON.stringify(local.profil)) {
+    await stockage.ecrire(REGLAGES, texteJson(avecProfil(await lireReglagesBruts(), fusion.profil)));
   }
 }
 

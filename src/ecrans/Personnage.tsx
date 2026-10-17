@@ -7,7 +7,9 @@ import { lireSeances } from "../donnees/journal";
 import { programme } from "../donnees/programme";
 import { lireSalles, normaliser } from "../donnees/salles";
 import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Sexe, type Stats } from "../donnees/stats";
+import { poidsCorpsDouteux } from "../donnees/aberrant";
 import { t } from "../i18n";
+import ChampSur from "./ChampSur";
 
 /** Seuil de Constance : celui du programme choisi s'il a un bloc ouvert, sinon celui sans programme. */
 export function seuilActuel(blocs: Bloc[], choisi: string | undefined) {
@@ -154,8 +156,7 @@ export default function EcranPersonnage(
       <div className="carte rm">
         <label>
           {t.commun.poidsCorpsKg}
-          <input type="number" inputMode="decimal" defaultValue={derniere?.kg ?? ""} placeholder={t.perso.aNoter}
-                 onBlur={(ev) => peser(ev.target.value)} />
+          <ChampSur defaut={derniere?.kg} placeholder={t.perso.aNoter} douteux={(kg) => poidsCorpsDouteux(kg, derniere?.kg)} onValeur={peser} />
         </label>
         <p className="doux petit">{derniere ? t.perso.pesee(derniere.date) : t.perso.sansPesee}</p>
       </div>

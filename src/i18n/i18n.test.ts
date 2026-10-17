@@ -39,6 +39,13 @@ describe("dictionnaires", () => {
     for (const tr of Object.keys(SEUILS) as (keyof typeof SEUILS)[]) expect(fr.effets[tr]).toHaveLength(SEUILS[tr].length);
   });
 
+  it("consignes : 2 ou 3 pour chaque exercice du catalogue, dans chaque langue", () => {
+    for (const d of [fr, en, pt]) {
+      expect(Object.keys(d.consignes).sort()).toEqual(EXERCICES.map((e) => e.id).sort());
+      expect(Object.entries(d.consignes).filter(([, c]) => c.length < 2 || c.length > 3)).toEqual([]);
+    }
+  });
+
   it("portugais : un nom pour chaque exercice du catalogue", () => {
     expect(EXERCICES.map((e) => e.id).filter((id) => !(id in pt.exos))).toEqual([]);
   });

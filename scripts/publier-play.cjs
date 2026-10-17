@@ -34,6 +34,7 @@ if (derniere && !plusRecente(version, derniere)) {
 
 lancer("npm test");
 lancer("cargo test --manifest-path src-tauri/Cargo.toml");
+lancer("npm run scenarios");
 
 // Même optimisation que publier.cjs ; arm64 + armv7 : Google Play ne livre à chaque téléphone que
 // le code de son processeur, l'AAB peut donc tout contenir sans alourdir le téléchargement.

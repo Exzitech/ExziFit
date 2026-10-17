@@ -166,12 +166,21 @@ fn sauvegarder(racine: &Path, jour: &str) -> Result<Option<PathBuf>, String> {
     if cible.exists() || !contient_donnees(racine)? {
         return Ok(None);
     }
-    // Copie dans un dossier `.tmp` renommé à la fin : une copie interrompue ne passe jamais pour faite.
+    // Copie dans un dossier `.tmp` renommé à la fin : une copie interrompue, différente des données
+    // ou que « Restaurer » refuserait ne passe jamais pour faite (ni n'élague les précédentes).
     let tmp = dossier.join(format!("{jour}.tmp"));
     if tmp.exists() {
         fs::remove_dir_all(&tmp).map_err(|e| erreur("suppression de", &tmp, e))?;
     }
-    copier(racine, &tmp, true)?;
+    let verifiee = copier(racine, &tmp, true).and_then(|_| {
+        let mut fichiers = BTreeMap::new();
+        lire_tout(&tmp, "", &mut fichiers)?;
+        controler_paquet(&fichiers)
+    });
+    if let Err(e) = verifiee {
+        fs::remove_dir_all(&tmp).map_err(|err| erreur("suppression de", &tmp, err))?;
+        return Err(format!("copie du {jour} abandonnée : {e}"));
+    }
     fs::rename(&tmp, &cible).map_err(|e| erreur("renommage de", &tmp, e))?;
 
     let mut jours = Vec::new();
@@ -241,6 +250,7 @@ pub fn sauvegarde_synchro(app: tauri::AppHandle, instant: String) -> Result<Stri
 }
 
 /// Copie récursive ; à la racine, saute `sauvegardes/`. Les `.tmp` (écritures en cours) sont ignorés.
+/// Chaque fichier est relu après écriture et comparé à ce qui a été lu de la source.
 fn copier(src: &Path, dst: &Path, racine: bool) -> Result<(), String> {
     fs::create_dir_all(dst).map_err(|e| erreur("création de", dst, e))?;
     for e in fs::read_dir(src).map_err(|e| erreur("lecture de", src, e))? {
@@ -253,7 +263,11 @@ fn copier(src: &Path, dst: &Path, racine: bool) -> Result<(), String> {
         if de.is_dir() {
             copier(&de, &vers, false)?;
         } else {
-            fs::copy(&de, &vers).map_err(|err| erreur("copie de", &de, err))?;
+            let octets = fs::read(&de).map_err(|err| erreur("lecture de", &de, err))?;
+            fs::write(&vers, &octets).map_err(|err| erreur("écriture de", &vers, err))?;
+            if fs::read(&vers).map_err(|err| erreur("relecture de", &vers, err))? != octets {
+                return Err(format!("{} relu différent de {}", vers.display(), de.display()));
+            }
         }
     }
     Ok(())
@@ -392,15 +406,7 @@ fn importer_paquet(racine: &Path, texte: &str, etiquette: &str) -> Result<Option
     if export.format != 1 {
         return Err(format!("export au format {}, inconnu de cette version", export.format));
     }
-    if export.fichiers.is_empty() {
-        return Err("export vide".into());
-    }
-    for (chemin, contenu) in &export.fichiers {
-        valider(chemin)?;
-        if chemin.ends_with(".json") {
-            serde_json::from_str::<serde_json::Value>(contenu).map_err(|e| format!("{chemin} illisible : {e}"))?;
-        }
-    }
+    controler_paquet(&export.fichiers)?;
 
     let copie = if contient_donnees(racine)? {
         let cible = racine.join(SAUVEGARDES).join(format!("avant-import-{etiquette}"));
@@ -430,6 +436,21 @@ fn importer_paquet(racine: &Path, texte: &str, etiquette: &str) -> Result<Option
         ecrire_atomique(&racine.join(chemin), contenu)?;
     }
     Ok(copie)
+}
+
+/// Ce que l'import exige des fichiers d'un paquet ; aussi appliqué à la copie du jour, envoyée et
+/// restaurable dans ce même format.
+fn controler_paquet(fichiers: &BTreeMap<String, String>) -> Result<(), String> {
+    if fichiers.is_empty() {
+        return Err("export vide".into());
+    }
+    for (chemin, contenu) in fichiers {
+        valider(chemin)?;
+        if chemin.ends_with(".json") {
+            serde_json::from_str::<serde_json::Value>(contenu).map_err(|e| format!("{chemin} illisible : {e}"))?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg_attr(not(canal_dev), allow(dead_code))] // Envoi Nextcloud : canal dev seulement (lib.rs).
@@ -525,6 +546,14 @@ mod tests {
         // Le lendemain : la copie précédente n'est pas recopiée dans la nouvelle.
         let cible = sauvegarder(&r, "2026-10-14").unwrap().unwrap();
         assert!(!cible.join(SAUVEGARDES).exists());
+
+        // Copie que « Restaurer » refuserait : abandonnée, rien de marqué fait, retentée au lancement suivant.
+        ecrire_atomique(&r.join("poids.json"), "{").unwrap();
+        let e = sauvegarder(&r, "2026-10-15").unwrap_err();
+        assert!(e.contains("poids.json illisible"), "{e}");
+        assert!(!r.join(SAUVEGARDES).join("2026-10-15").exists() && !r.join(SAUVEGARDES).join("2026-10-15.tmp").exists());
+        ecrire_atomique(&r.join("poids.json"), "{}").unwrap();
+        assert!(sauvegarder(&r, "2026-10-15").unwrap().is_some());
 
         fs::remove_dir_all(&r).unwrap();
     }

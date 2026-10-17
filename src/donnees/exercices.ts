@@ -15,7 +15,8 @@ export type Muscle =
 export type Mouvement =
   | "squat" | "fente" | "charniere" | "hanche" | "poussee-horizontale" | "poussee-verticale"
   | "tirage-vertical" | "tirage-horizontal" | "flexion-genou" | "extension-genou" | "mollets"
-  | "elevation-laterale" | "arriere-epaule" | "curl" | "extension-coude" | "abdos" | "port";
+  | "elevation-laterale" | "arriere-epaule" | "curl" | "extension-coude" | "abdos" | "port"
+  | "abduction-hanche" | "adduction-hanche";
 
 export interface Exercice {
   id: string;
@@ -98,6 +99,21 @@ export const EXERCICES: Exercice[] = [
   exo("tirage-vertical", "Lat pulldown", "poulie", "tirage-vertical", 2.5, ["dos"], ["biceps"], [1, 0.5]),
   exo("rowing-poulie", "Seated cable row", "poulie", "tirage-horizontal", 2.5, ["dos"], ["biceps"], [1.2, 0.5]),
   exo("releve-jambes", "Hanging leg raise", "poids-corps", "abdos", 1, ["abdos"], []),
+  // Séances d'une testeuse (2026-10-17) : fessiers, machines guidées, poids du corps. Sans part
+  // dans la Force (pas de référence connue). Pas de groupe adducteurs : en ajouter un changerait
+  // l'Endurance de tous (moyenne des groupes) ; l'adduction est rangée avec les fessiers, comme sa machine.
+  exo("abduction-machine", "Hip abduction machine", "machine", "abduction-hanche", 5, ["fessiers"], []),
+  exo("adduction-machine", "Hip adduction machine", "machine", "adduction-hanche", 5, ["fessiers"], []),
+  exo("abduction-quatre-pattes", "Quadruped hip abduction", "poids-corps", "abduction-hanche", 1, ["fessiers"], []),
+  exo("pont-fessier", "Glute bridge", "poids-corps", "hanche", 1, ["fessiers"], ["ischios"]),
+  exo("squat-sumo-haltere", "Dumbbell sumo squat", "halteres", "squat", 2, ["quadriceps", "fessiers"], []),
+  exo("fente-laterale", "Lateral lunge", "barre", "fente", 2.5, ["quadriceps", "fessiers"], []),
+  exo("rowing-halteres-penche", "Bent-over dumbbell row", "halteres", "tirage-horizontal", 2, ["dos"], ["biceps"]),
+  exo("curl-inverse-barre", "Reverse barbell curl", "barre", "curl", 2.5, ["biceps"], ["avant-bras"]),
+  exo("kickback-triceps", "Dumbbell triceps kickback", "halteres", "extension-coude", 2, ["triceps"], []),
+  exo("sit-up", "Sit-up", "poids-corps", "abdos", 1, ["abdos"], []),
+  exo("crunch-jambes-levees", "Legs-up crunch", "poids-corps", "abdos", 1, ["abdos"], []),
+  exo("mollets-poids-corps", "Bodyweight calf raise", "poids-corps", "mollets", 1, ["mollets"], []),
 ];
 
 const PAR_ID = new Map(EXERCICES.map((e) => [e.id, e]));

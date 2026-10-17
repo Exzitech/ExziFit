@@ -63,6 +63,12 @@ button:not(.principal):active { background: var(--bord); }
 .erreur { background: var(--surface); border: var(--trait) solid var(--alerte); color: var(--alerte);
           padding: 12px; margin-bottom: 8px; font-size: 15px; }
 
+.rm label:has(.sur) { flex-wrap: wrap; }
+.rm .sur { flex-basis: 100%; min-height: 48px; border-color: var(--alerte); color: var(--alerte); }
+.avertissement { background: var(--surface); border: var(--trait) solid var(--alerte); padding: 12px; margin-bottom: 8px; font-size: 15px; }
+.avertissement p { margin: 0 0 8px; }
+.avertissement ul { margin: 0 0 10px; padding-left: 18px; color: var(--texte-doux); font-size: 13px; overflow-wrap: anywhere; }
+
 .maj { margin: 12px 16px 0; padding: 12px; background: var(--surface); border: var(--trait) solid var(--accent); }
 .maj p { margin: 0 0 10px; }
 .alerte { color: var(--alerte); }
@@ -104,6 +110,7 @@ button.valider small { display: block; font: 600 13px var(--police); opacity: .8
 .bas { position: sticky; bottom: 0; margin: 20px -16px -16px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
        background: var(--fond); border-top: var(--trait) solid var(--bord); }
 .bas .reglage { margin-bottom: 8px; }
+.fin-sans-nav { padding-bottom: env(safe-area-inset-bottom); }
 .bas .compte { font-size: 44px; margin: 4px 0 8px; }
 .espace-bas { margin-bottom: 8px; }
 .haut { display: flex; justify-content: space-between; margin: -8px 0 4px; }
@@ -142,6 +149,8 @@ details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: poi
 .rm input:not([type=number]) { width: 16ch; text-align: left; }
 .machine { margin: 0 0 8px; }
 .machine .carte { margin-top: 6px; }
+.consignes { margin: 0 0 8px; }
+.consignes ul { margin: 6px 0 0; padding-left: 20px; }
 /* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
 .saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px - env(safe-area-inset-top)); }
 .saisie .bas { margin-top: auto; }

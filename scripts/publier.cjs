@@ -26,6 +26,9 @@ if (!fs.existsSync(path.join(racine, "src-tauri/gen/android/keystore.properties"
   throw new Error("src-tauri/gen/android/keystore.properties absent : l'APK sortirait non signé.");
 }
 
+// Parcours complets dans l'interface web (README, « Scénarios dirigés ») : un échec arrête tout.
+execSync("npm run scenarios", { cwd: racine, stdio: "inherit" });
+
 let version = JSON.parse(lire("src-tauri/tauri.conf.json")).version;
 const cargo = lire("src-tauri/Cargo.toml").match(/^version = "(.+)"/m)?.[1];
 if (cargo !== version) throw new Error(`Versions différentes : tauri.conf.json ${version}, Cargo.toml ${cargo}.`);

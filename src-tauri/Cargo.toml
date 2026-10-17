@@ -1,6 +1,6 @@
 [package]
 name = "exzifit"
-version = "0.1.44"
+version = "0.1.50"
 edition = "2021"
 
 [lib]

@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.43 (marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.48 (consignes de technique par exo, repliées en saisie ; 0.1.47 : synchro des programmes perso, salles et profil ; 0.1.46 : sauvegarde du jour relue et contrôlée ; 0.1.45 : valeurs aberrantes à confirmer, avertissement sur données impossibles ; 0.1.44 : agent de QA, blocage sur charge démesurée corrigé ; 0.1.43 : marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
 
 **Dev et prod, préparation Google Play (2026-10-17)** — README, « Dev et prod » ; démarches :
 [docs/play-store.md](docs/play-store.md). Deux apps depuis le même code (`EXZIFIT_CANAL`) :
@@ -25,6 +25,43 @@ Vérifié : test de régression, 129 tests, build ; chemin du rapport rejoué da
 libre → Overhead press → 1e9 kg) : figé sans la garde, 0 disque et réponse en 1 ms avec, 100 kg
 → 25 + 15. Pas de bornes sur les champs (charge, reps, 1RM) : non nécessaires pour le blocage,
 à décider si les valeurs absurdes gênent ailleurs (stats, records).
+
+**Prochain chantier : fiabilité (décidé avec Tom le 2026-10-17)**, dans cet ordre :
+1. ~~**Contrôle des données enregistrées par l'agent de QA**~~ (2026-10-17) : `controlerFichier`
+   (`src/donnees/controle.ts`, pur, 5 tests), appelé par l'agent après chaque action (« donnée
+   impossible ») et au départ. **Dans l'app (0.1.45)** : contrôle à chaque `lireJson`,
+   avertissement en haut (décidé avec Tom : avertir, jamais refuser la lecture). Coût mesuré :
+   ≈ 12 ms pour 5 ans synthétiques (1 200 séances, 36 000 séries) sur PC.
+2. ~~**Confirmation des valeurs aberrantes**~~ (0.1.45) : « Sûr ? » au premier toucher, règles
+   dans `aberrant.ts` (README, « Organisation »), relatives à l'historique de l'exo pour ne pas
+   redemander à chaque série. Vérifié dans Chromium : 1050 au lieu de 105 en séance (1er toucher
+   rien d'écrit, 2e écrit), pesée 820 puis correction en 83 sans question, 1000 kg au Journal.
+3. ~~**Scénarios dirigés**~~ (2026-10-17) : `scripts/qa-scenarios.mjs`, scriptés sans IA (un 7B
+   ne finit pas une séance de façon fiable, et un contrôle avant publication doit être répétable) :
+   séance complète, remplacement puis fin, langue changée + relance en pleine séance (la nav est
+   cachée en séance : changer de langue passe forcément par une relance). ≈ 19 s, lancés par
+   `publier` et `publier-play`. Vérifié qu'ils échouent : séries tronquées à 2 dans `Seance.tsx`
+   → « séance toujours pas finie après 300 actions » (mutation retirée ensuite).
+4. ~~**Sauvegarde automatique vérifiée**~~ (2026-10-17, 0.1.46) : `copier` (fichiers.rs) relit chaque
+   fichier écrit et le compare aux octets lus (copie du jour, avant synchro, avant import) ; la
+   copie du jour passe en plus `controler_paquet` (les contrôles de l'import, extraits) avant son
+   renommage, sinon `.tmp` supprimé, erreur affichée au lancement, pas d'élagage. Vérifié : 13 tests
+   Rust (test `sauvegarde` étendu ; il échoue si le contrôle est retiré), dossier de données du PC
+   conforme. Limites : la relecture sort du cache disque (détecte troncature et bug, pas une panne
+   du support) ; pas de test pour « relu différent » (impossible à provoquer sans injection) ;
+   données corrompues = plus de copie du jour tant qu'elles le restent (les anciennes restent).
+5. ~~**Synchro complète**~~ (2026-10-17, 0.1.47) : `etat.json` porte aussi `programmes`, `salles`
+   et `profil` (prénom, sexe, programme choisi), le plus récent `modifie` gagne (`dater`, extrait
+   de `ecrireBlocs`, sert aux trois). Thème, langue, envoi restent à chaque appareil. Un profil
+   n'est daté qu'à un changement, jamais à la première écriture (bienvenue) : une installation
+   neuve n'impose pas ses choix. À l'arrivée, App recharge programmes et réglages avant de remonter
+   les écrans. Vérifié : `tsc`, 144 tests Vitest (5 nouveaux : programme + machine tél → PC, salle
+   par défaut non envoyée, profil daté/non daté et thème gardé, ancien `etat.json`, fusion
+   symétrique des salles) ; dossier du PC relu : ni salles, ni programmes, ni prénom, donc pas de
+   conflit à la première synchro ; scénarios de QA verts, publié en 0.1.47 (version-dev.json relu).
+   Limites : deux salles créées hors synchro sur chaque appareil
+   prennent le même id (`salle-2`, la plus récente gagne) ; pas vu entre le S23 et le PC.
+Toujours à faire par Tom sur le S23 : minuteur téléphone verrouillé sur ExziFit Dev.
 
 **Retours de Tom après essai (2026-10-15)**, triés et précisés avec lui ; ordre de travail :
 1. ~~Le 0 se décale à la saisie ; exo en option signalé dans « Suivant » + message changeant~~ (0.1.25).
@@ -670,3 +707,19 @@ Pas vu sur le S23 (rendu selon le masque du lanceur Samsung).
   réservait `env(safe-area-inset-bottom)`. `#racine` réserve désormais le haut et les côtés
   (`env(safe-area-inset-*)`, 0 sur PC), `.saisie` retranche le haut de sa hauteur mini. Build, 129 tests
   verts, publié en 0.1.43. Pas vu sur le S23.
+
+**12 exercices pour une testeuse (2026-10-17, 0.1.49)** — ses deux séances (autre app, en portugais)
+  n'existaient qu'à moitié dans le catalogue : abduction et adduction machine, abduction à 4 pattes,
+  pont fessier, squat sumo haltère, fente latérale, rowing penché haltères, curl inversé barre,
+  kickback, sit-up, crunch jambes levées, mollets au poids du corps (`exercices.ts`, nouveaux
+  schémas `abduction-hanche` / `adduction-hanche`, consignes fr/en/pt, noms pt). Aucun dans la Force ;
+  pas de groupe adducteurs (il changerait l'Endurance de tous), l'adduction compte en fessiers.
+  Ses séances livrées en export « programme seul » (`programmes.json`, `perso-sessoes-1-2`), à
+  restaurer depuis la bienvenue avant de choisir le programme. Vérifié : `tsc`, 145 tests, test
+  jetable sur l'export (exos connus, `controlerDonnees` sans anomalie, `resumerExport`, cibles sans
+  historique), publié en 0.1.49. Pas vu sur téléphone.
+
+**Bienvenue sous la barre système (2026-10-17, 0.1.50)** — « Restaurer un export », dernier élément de
+  la bienvenue, passait sous les boutons Android (seul écran sans onglets ni bandeau `.bas`, les deux
+  seuls à réserver `env(safe-area-inset-bottom)`). La fin de l'écran est dans `.fin-sans-nav`, qui
+  réserve cette marge. `tsc`, 145 tests, publié en 0.1.50. Pas vu sur téléphone (0 sur PC).

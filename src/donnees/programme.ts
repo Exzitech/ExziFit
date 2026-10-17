@@ -51,6 +51,8 @@ export interface Programme {
   jours: Jour[];
   regles: ({ type: "ecart"; exos: string[]; heures: number } | { type: "max-lourds-consecutifs"; jours: number })[];
   notes: string[];
+  /** Programme écrit dans l'app : dernier changement (synchro), posé par `enregistrerProgramme`. */
+  modifie?: string;
 }
 
 /**

@@ -3,7 +3,7 @@ import type { Bloc } from "./bloc";
 import type { Seance } from "./journal";
 import { fusionner, type Etat } from "./synchro";
 
-const etat = (e: Partial<Etat>): Etat => ({ format: 1, seances: [], suppressions: [], blocs: [], pesees: [], ...e });
+const etat = (e: Partial<Etat>): Etat => ({ format: 1, seances: [], suppressions: [], blocs: [], pesees: [], programmes: [], salles: [], profil: null, ...e });
 const seance = (debut: string, kg: number, modifie?: string): Seance => ({
   debut, fin: debut.replace("T18", "T19"), exercices: [{ exo: "developpe-couche", series: [{ type: "travail", kg, reps: 5 }] }],
   ...(modifie ? { modifie } : {}),
@@ -68,5 +68,14 @@ describe("fusionner", () => {
     const f = fusionner(a, b);
     expect(fusionner(f, a)).toEqual(f);
     expect(fusionner(f, b)).toEqual(f);
+  });
+
+  it("salles : la plus récente par id, même ordre des deux côtés (salle-2 avant salle-10)", () => {
+    const salle = (id: string, nom: string, modifie?: string) => ({ id, nom, machines: {}, ...(modifie ? { modifie } : {}) });
+    const tel = etat({ salles: [salle("salle-1", "Basic-Fit", "2026-10-16T10:00:00+02:00"), salle("salle-10", "Hôtel")] });
+    const pc = etat({ salles: [salle("salle-2", "Travail"), salle("salle-1", "Ma salle")] });
+    const f = fusionner(tel, pc);
+    expect(f).toEqual(fusionner(pc, tel));
+    expect(f.salles.map((s) => s.nom)).toEqual(["Basic-Fit", "Travail", "Hôtel"]);
   });
 });

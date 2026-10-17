@@ -15,6 +15,7 @@ Tauri 2 + React 18 / TypeScript / Vite 5.
 | `scripts/lancer-bureau.vbs` | même chose sans console (raccourci « ExziFit (dev) » du bureau) ; sortie dans `%TEMP%\exzifit-dev.log`, boîte d'erreur si l'arrêt n'est pas normal |
 | `npm test` | tests TypeScript (Vitest) |
 | `npm run qa` | agent de QA par IA locale sur l'interface web (voir « Agent de QA ») |
+| `npm run scenarios` | scénarios dirigés (séance complète, remplacement, relance) ; lancés par les deux publications (voir « Scénarios dirigés ») |
 | `cargo test --manifest-path src-tauri/Cargo.toml` | tests Rust (chemins, sauvegardes) |
 | `npm run build` | vérification des types + build de l'interface |
 | `npm run publier` | APK **dev** release signé (« ExziFit Dev »), déposé sur Nextcloud ; l'app dev le propose au lancement |
@@ -55,13 +56,37 @@ négatif, très long, caractères spéciaux). `keep_alive` à 2 min pendant la s
 
 Détecté, **problème** : `pageerror`, `console.error`, promesse rejetée non gérée, écran blanc (racine
 React vide), message du bandeau d'erreurs de l'app, NaN / undefined / [object Object] / Infinity
-dans le texte, page figée (plus de réponse en 10 s : nouvel onglet ; encore figée, fin de session).
+dans le texte, page figée (plus de réponse en 10 s : nouvel onglet ; encore figée, fin de session),
+**donnée impossible** enregistrée : après chaque action, les fichiers du localStorage passent par
+`controlerFichier` (`src/donnees/controle.ts`, importé tel quel par Node) : charge, reps ou RIR
+non numériques ou négatifs (un NaN s'écrit `null`), séance terminée sans série, fin avant le début,
+séance hors du mois de son fichier, pesée, 1RM ou poids à vide invalides. Des données de départ
+déjà fautives arrêtent la session.
 **Suspect**, à vérifier à l'œil : bouton sans aucun effet, blocage, texte plus large que sa boîte,
 avis de l'IA sur la capture (texte coupé, chevauchement).
 
 Rapport dans `qa-rapports/<date-heure>/` (hors dépôt) : `rapport.md` (résumé, chaque problème
 dédoublonné avec la suite exacte d'actions depuis le départ, trace, capture), `journal.jsonl` (toutes
 les étapes, avec la raison donnée par l'IA et ses refus), les captures.
+
+### Scénarios dirigés
+
+`scripts/qa-scenarios.mjs`, sans IA : des parcours complets rejoués à l'identique, ≈ 20 s en tout.
+`npm run publier` et `npm run publier-play` les lancent avant de compiler ; un échec arrête la publication.
+Même banc que l'agent (`npm run dev`, Chromium 390 × 844, jeu « exemple » dans un navigateur neuf).
+Chaque série est validée telle que préremplie, RIR 2.
+
+| Scénario | Parcours |
+|---|---|
+| `seance-complete` | jour suivant du Bloc Force, de Démarrer au résumé |
+| `remplacement` | une série, Remplacer → premier remplaçant proposé, puis fin ; le remplaçant doit être au journal |
+| `langue-relance` | une série, langue passée en anglais dans `reglages.json`, page rechargée : la séance reprend intacte, saisie en anglais, puis fin |
+
+Vérifié après chaque action : aucune erreur JS, rien dans le bandeau d'erreurs ou d'avertissement,
+`controlerFichier` sans faute, ni NaN / undefined affichés, jamais de « Sûr ? » sur une valeur préremplie.
+En fin de séance : une séance de plus au journal, `en-cours.json` vidé, autant de séries que de
+validations, résumé affiché. `node scripts/qa-scenarios.mjs [--visible] [scénario…]` ; en échec,
+capture dans `qa-rapports/scenarios-<date-heure>/`.
 
 Mesuré sur la RTX 3060 Ti (8 Go), le 2026-10-17 : 1,6 à 2,8 s par étape, appel à l'IA ≈ 1,1 s ;
 modèle 5,1 Go en mémoire vidéo, pic de la carte ≈ 7,8 Go sur 8 (bureau compris) : rien d'autre de
@@ -88,7 +113,10 @@ les notifications et la reprise après veille.
   y étaient à la racine, déplacées au premier lancement de la 0.1.2). Lecture, écriture atomique (`.tmp` + `sync_all`
   + renommage), liste, suppression, chemins validés (relatifs, minuscules, pas de `..`).
   Sauvegarde quotidienne au lancement dans `sauvegardes/AAAA-MM-JJ/` : 30 derniers jours +
-  la première copie de chaque mois.
+  la première copie de chaque mois. Toute copie (du jour, avant synchro, avant import) relit chaque
+  fichier écrit et le compare à la source ; celle du jour doit en plus passer les contrôles de
+  « Restaurer un export » (chemins, JSON lisibles), sinon elle est abandonnée avec une erreur
+  affichée, retentée au lancement suivant, et les copies précédentes ne sont pas élaguées.
 - `src/stockage.ts` : même interface côté front ; dans le navigateur, repli localStorage pour
   travailler l'interface sans téléphone.
 - `src/donnees/` : fichiers du modèle (`format` contrôlé à la lecture, JSON indenté, dates locales).
@@ -96,6 +124,14 @@ les notifications et la reprise après veille.
   (`en-cours.json`, réécrit à chaque série) et journal mensuel (séance ajoutée à la fin), plus
   le calcul de la charge préremplie. `corrigerSeance` : correction ou suppression d'une séance
   terminée (identifiée par `debut`), l'ancienne version copiée d'abord dans `corbeille.json`.
+  `controle.ts` : valeurs impossibles d'un fichier (charge ou reps non numériques ou négatives,
+  séance sans série…), contrôlées par `lireJson` à chaque lecture : **avertissement** en haut de
+  l'app (« Compris » le masque jusqu'à la relance), jamais de refus de lecture. Aussi utilisé par
+  l'agent de QA. `aberrant.ts` : valeurs saisies à faire confirmer (« Sûr ? », un toucher de plus,
+  jamais un refus) : charge plus du double de ce que l'exo a connu (et +20 kg ; > 300 kg sans
+  historique), plus de 50 reps et du double, poids de corps hors 30–200 kg ou à plus de 15 % de la
+  dernière pesée, RIR > 10. Sur Valider en séance, la correction au Journal, Commencer (bienvenue),
+  et les champs 1RM et poids de corps (`ChampSur.tsx` : bouton « Sûr ? » sous le champ).
 - `src/ecrans/Bienvenue.tsx` : premier lancement d'une installation neuve (ni `reglages.json` ni
   journal) : langue (proposée d'après le téléphone), prénom, poids de corps, homme / femme, programme (avec l'aperçu de ses stats, ou
   « Créer mon programme ») ; écrit `reglages.json` avec `envoi: false` (pas d'envoi Nextcloud,
@@ -158,7 +194,8 @@ les notifications et la reprise après veille.
   anglais (`en.ts`), portugais du Brésil (`pt.ts`), sans bibliothèque. `t` est lu au rendu ;
   `src/langue.ts` (`appliquerLangue`) le pose et traduit aussi les noms d'exos (`t.exos`, posés
   sur le catalogue) et les textes des programmes du code (`t.programmesTextes`, texte français →
-  traduction). Langue choisie à la bienvenue et dans Réglages (`langue` de `reglages.json`,
+  traduction). Consignes de technique (2–3 par exo du catalogue, `t.consignes`, repliées sous
+  « Technique » en saisie) : une entrée par langue, l'oubli fait échouer le test. Langue choisie à la bienvenue et dans Réglages (`langue` de `reglages.json`,
   absent = langue du téléphone). Les fichiers ne gardent que des identifiants : changer de langue
   ne réécrit rien ; les programmes écrits dans l'app restent dans la langue de leur auteur.
   Textes natifs (notification de repos, canaux, partage) : `res/values*/textes.xml` dans
@@ -291,7 +328,8 @@ ensuite. Revenir en arrière = recopier à la main le contenu de cette copie dan
 Les deux appareils partagent `etat.json` dans le dossier Nextcloud privé `ExziFit-sync`
 (format et règles de fusion : modèle de données, « Synchro »). Transport : `src-tauri/src/synchro.rs`
 (WebDAV authentifié) ; fusion : `src/donnees/synchro.ts`. Synchro au lancement, au retour dans
-l'app (1 par minute au plus) et 5 s après une écriture de séance, bloc ou pesée ; hors réseau, rien.
+l'app (1 par minute au plus) et 5 s après une écriture de séance, bloc, pesée, programme perso, salle
+ou réglage ; hors réseau, rien. Thème, langue et envoi restent propres à chaque appareil.
 
 Mise en place (faite le 2026-10-14, VM `services`, Nextcloud en Docker) :
 1. `occ user:add --password-from-env --display-name 'ExziFit synchro' exzifit`, quota 200 Mo

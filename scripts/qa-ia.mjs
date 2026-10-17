@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs"
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
+import { controlerFichier } from "../src/donnees/controle.ts";
 
 const RACINE = fileURLToPath(new URL("..", import.meta.url));
 const URL_APP = "http://localhost:1420";
@@ -65,7 +66,7 @@ function delai(p, ms, quoi) {
 
 // ---------- Jeu de données « exemple » (docs/modele-donnees.md) ----------
 
-function isoLocal(d) {
+export function isoLocal(d) {
   const p = (n) => String(n).padStart(2, "0");
   const off = -d.getTimezoneOffset();
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
@@ -134,7 +135,7 @@ async function repond(url) {
   try { return (await fetch(url, { signal: AbortSignal.timeout(2000) })).ok; } catch { return false; }
 }
 
-async function lancerDev() {
+export async function lancerDev() {
   if (await repond(URL_APP)) return null;
   const p = spawn("npm run dev", { shell: true, stdio: "ignore", cwd: RACINE });
   for (let i = 0; i < 60; i++) {
@@ -146,7 +147,7 @@ async function lancerDev() {
   throw new Error(`${URL_APP} ne répond pas 60 s après npm run dev`);
 }
 
-function arreterDev(p) {
+export function arreterDev(p) {
   if (!p || p.exitCode !== null) return;
   // shell: true → l'arbre npm / node / vite ; sous Windows seul taskkill /T le ferme en entier.
   if (process.platform === "win32") execFile("taskkill", ["/pid", String(p.pid), "/T", "/F"], () => {});
@@ -258,6 +259,7 @@ function observerPage(max) {
     aspects: [...document.querySelectorAll(sel + ", details")].map((e) =>
       [e.className, e.getAttribute("aria-pressed"), e.getAttribute("aria-expanded"), e.getAttribute("aria-current"), e.open, e.checked].join(",")).join("|"),
     stockage,
+    fichiers: Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith("exzifit/")).map((k) => [k.slice(8), localStorage.getItem(k)])),
     racineTexte: net(racine?.innerText).length,
     racineNoeuds: racine ? racine.querySelectorAll("*").length : 0,
     erreursApp: [...document.querySelectorAll(".erreurs .erreur")].map((e) => net(e.innerText)),
@@ -274,6 +276,7 @@ async function observer(page) {
   const o = await delai(page.evaluate(observerPage, MAX_ELEMENTS), FIGEE_MS, "observation");
   o.signature = empreinte(o.ecran + JSON.stringify(o.elements.map(({ role, texte, valeur, actif, courant }) => [role, texte, valeur, actif, courant])));
   o.effet = empreinte(o.texte + o.valeurs + o.aspects + o.stockage + o.url);
+  o.controle = Object.entries(o.fichiers).flatMap(([chemin, texte]) => controlerFichier(chemin, texte));
   return o;
 }
 
@@ -477,6 +480,7 @@ async function main() {
     tampon = tampon.filter((x) => x.type !== "console.error" || !/Failed to load resource/.test(x.message));
 
     let etat = await observer(page);
+    if (etat.controle.length) throw new Error(`données de départ déjà fautives (jeu « ${o.donnees} ») :\n${etat.controle.join("\n")}`);
     let memeEtat = 0;
     let surEcran = 0;
     let ecranPrecedent = null;
@@ -542,6 +546,8 @@ async function main() {
           anomalies.push({ cle: `blanc|${etat.ecran}|${description}`, gravite: "bug", type: "écran blanc", message: `racine React vide après « ${description} »` });
         for (const d of apres.debordements)
           anomalies.push({ cle: `deborde|${d}`, gravite: "suspect", type: "débordement", message: `« ${d} » dépasse de sa boîte (scrollWidth > clientWidth)` });
+        for (const m of apres.controle.filter((m) => !etat.controle.includes(m)))
+          anomalies.push({ cle: `donnee|${m.replace(/\d+/g, "#")}`, gravite: "bug", type: "donnée impossible", message: `enregistré : ${m}` });
         for (const m of apres.erreursApp.filter((m) => !etat.erreursApp.includes(m)))
           anomalies.push({ cle: `app|${m.replace(/\d+/g, "#")}`, gravite: "bug", type: "erreur affichée", message: m });
         const mauvais = [...new Set(apres.texte.match(/\bNaN\b|\bundefined\b|\[object Object\]|\bInfinity\b/g) ?? [])]

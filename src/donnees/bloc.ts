@@ -1,4 +1,4 @@
-import { ecrireJson, FORMAT, horodatage, lireJson } from "./fichier";
+import { dater, ecrireJson, FORMAT, horodatage, lireJson } from "./fichier";
 import type { Pesee } from "./stats";
 
 /** Types de `blocs.json` et `poids.json` (docs/modele-donnees.md, « Bloc » et « Fichiers »). */
@@ -23,18 +23,9 @@ export async function lireBlocs(): Promise<Bloc[]> {
   return (await lireJson<Blocs>(BLOCS, () => ({ format: FORMAT, blocs: [] }))).blocs;
 }
 
-const sansDate = ({ modifie: _, ...b }: Bloc) => JSON.stringify(b);
-
-/** Écrit la liste ; un bloc nouveau ou changé (hors `modifie`) reçoit l'instant présent. */
+/** Écrit la liste ; un bloc nouveau ou changé reçoit l'instant présent (`dater`). */
 export async function ecrireBlocs(blocs: Bloc[]): Promise<void> {
-  // Inchangé : la version du fichier, avec sa date (l'écran peut tenir une copie sans la dernière).
-  const avant = new Map((await lireBlocs()).map((b) => [b.id, b]));
-  const le = horodatage(new Date());
-  const dates = blocs.map((b) => {
-    const f = avant.get(b.id);
-    return f && sansDate(f) === sansDate(b) ? f : { ...b, modifie: le };
-  });
-  await ecrireJson(BLOCS, { format: FORMAT, blocs: dates } as Blocs);
+  await ecrireJson(BLOCS, { format: FORMAT, blocs: dater(await lireBlocs(), blocs, new Date()) } as Blocs);
 }
 
 /** Toutes les pesées, dans l'ordre d'écriture (la dernière notée en dernier). */

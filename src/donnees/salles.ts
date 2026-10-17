@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 import { exercice, type Exercice } from "./exercices";
-import { ecrireJson, FORMAT, lireJson } from "./fichier";
+import { dater, ecrireJson, FORMAT, lireJson } from "./fichier";
 import type { Seance } from "./journal";
 
 /**
@@ -21,21 +21,32 @@ export interface Salle {
   nom: string;
   /** Par identifiant d'exercice. */
   machines: Record<string, Montage>;
+  /** Dernier changement (synchro : le plus récent gagne), posé par `ecrireSalles`. */
+  modifie?: string;
 }
 
 interface Fichier { format: number; salles: Salle[] }
 
-const CHEMIN = "salles.json";
+export const SALLES = "salles.json";
+const CHEMIN = SALLES;
 /** Nommée dans la langue du moment ; une fois écrite dans salles.json, c'est un nom comme un autre. */
 const premiere = (): Salle => ({ id: "salle-1", nom: t.salleDefaut, machines: {} });
 
 /** Jamais vide : sans fichier, une salle « Ma salle » sans réglage. */
 export async function lireSalles(): Promise<Salle[]> {
-  const f = await lireJson<Fichier>(CHEMIN, () => ({ format: FORMAT, salles: [premiere()] }));
-  return f.salles.length ? f.salles : [premiere()];
+  const l = await sallesEcrites();
+  return l.length ? l : [premiere()];
 }
 
-export const ecrireSalles = (salles: Salle[]) => ecrireJson(CHEMIN, { format: FORMAT, salles } as Fichier);
+/** Le fichier tel quel, sans la salle par défaut (la synchro n'envoie que ce qui a été écrit). */
+export async function sallesEcrites(): Promise<Salle[]> {
+  return (await lireJson<Fichier>(CHEMIN, () => ({ format: FORMAT, salles: [] }))).salles;
+}
+
+/** Écrit la liste ; une salle nouvelle ou changée reçoit l'instant présent (`dater`). */
+export async function ecrireSalles(salles: Salle[]): Promise<void> {
+  await ecrireJson(CHEMIN, { format: FORMAT, salles: dater(await sallesEcrites(), salles, new Date()) } as Fichier);
+}
 
 /** Salle d'une séance ; une séance d'avant les salles (sans `salle`) compte dans la première. */
 export const salleDe = (salles: Salle[], s: Seance): Salle =>

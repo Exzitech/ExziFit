@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBoutonRetour } from "../boutonRetour";
+import { chargeDouteuse, repsDouteuses, rirDouteux } from "../donnees/aberrant";
 import { exercice } from "../donnees/exercices";
 import { corrigerListe, corrigerSeance, facteurPoulie, lireSeances, type Seance, type Serie } from "../donnees/journal";
 import { jourDeSeance } from "../donnees/programme";
@@ -39,6 +40,8 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
   const [probleme, setProbleme] = useState<string | null>(null);
   // Supprimer en deux taps, comme Terminer : un geste raté ne doit rien effacer.
   const [suppressionDemandee, setSuppressionDemandee] = useState(false);
+  /** Brouillon (JSON) dont les valeurs douteuses ont déjà été montrées : le toucher suivant enregistre. */
+  const [douteVu, setDouteVu] = useState<string | null>(null);
 
   useEffect(() => {
     lireSeances().then(setSeances).catch(onErreur);
@@ -100,17 +103,27 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
   };
   const reste = brouillon.reduce((n, l) => n + l.length, 0);
 
+  const cle = JSON.stringify(brouillon);
   const enregistrer = () => {
     const exercices = [];
+    const doutes: string[] = [];
     for (const [ei, x] of s.exercices.entries()) {
       const f = facteurPoulie(s, exercice(x.exo));
       const series: Serie[] = [];
       for (const b of brouillon[ei]) {
         const r = relire(b, f);
         if (typeof r === "string") return setProbleme(t.journal.probleme(exercice(x.exo).nom, r));
+        // Seules les valeurs changées, comparées à celles qu'elles remplacent.
+        if (r.kg !== b.serie.kg && chargeDouteuse(r.kg, b.serie.kg)) doutes.push(`${b.kg} kg`);
+        if (r.reps !== b.serie.reps && repsDouteuses(r.reps, b.serie.reps)) doutes.push(`${b.reps} ${t.seance.reps}`);
+        if (r.rir !== undefined && r.rir !== b.serie.rir && rirDouteux(r.rir)) doutes.push(`RIR ${b.rir}`);
         series.push(r);
       }
       exercices.push({ ...x, series });
+    }
+    if (doutes.length && douteVu !== cle) {
+      setDouteVu(cle);
+      return setProbleme(t.journal.douteux(doutes.join(", ")));
     }
     ecrire(s.debut, { ...s, exercices });
   };
@@ -143,7 +156,7 @@ export default function EcranJournal({ onErreur }: { onErreur: (e: unknown) => v
       <p className="doux petit">{t.journal.corbeille}</p>
       <div className="bas">
         <button className="principal valider espace-bas" disabled={!modifie || reste === 0} onClick={enregistrer}>
-          {reste === 0 ? t.journal.viderSeance : t.commun.enregistrer}
+          {reste === 0 ? t.journal.viderSeance : douteVu === cle ? t.seance.sur(t.commun.enregistrer) : t.commun.enregistrer}
         </button>
         <button onClick={supprimer}>{suppressionDemandee ? t.journal.confirmer : t.journal.supprimer}</button>
       </div>

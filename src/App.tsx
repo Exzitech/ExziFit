@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
-import { jourLocal, quandEcrit } from "./donnees/fichier";
+import { jourLocal, quandAnomalies, quandEcrit } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
 import { chargerProgrammesPerso } from "./donnees/programmes-perso";
 import EcranBienvenue from "./ecrans/Bienvenue";
@@ -32,6 +32,9 @@ export default function App() {
   // `undefined` : en lecture ; `null` : premier lancement (écran de bienvenue).
   const [reglages, setReglages] = useState<Reglages | null | undefined>(undefined);
   const [erreurs, setErreurs] = useState<string[]>([]);
+  const [anomalies, setAnomalies] = useState<string[]>([]);
+  // Déjà montrées (même masquées) : un fichier se relit souvent, l'avertissement ne revient pas avant la relance.
+  const anomaliesVues = useRef(new Set<string>());
   // Pendant une séance, le bas de l'écran est à la saisie (pouce) : pas de barre de navigation.
   const [enSeance, setEnSeance] = useState(false);
   const [bilan, setBilan] = useState<Bilan | null>(null);
@@ -55,16 +58,30 @@ export default function App() {
         if (b.etat !== "ok" || !b.recues) return;
         // En séance ou en pleine correction au Journal, relire ferait perdre l'écran en cours : bandeau.
         if (ici.current.enSeance || ici.current.ecran === "journal") setARelire(true);
-        else setGeneration((g) => g + 1);
+        else recharger();
       })
       .catch(signaler(ctx.synchro));
 
+  /** Programmes perso et profil (prénom, programme choisi) arrivent aussi par la synchro. */
+  const recharger = () =>
+    chargerProgrammesPerso()
+      .then(lireReglages)
+      .then((r) => r && setReglages(r))
+      .catch(signaler(ctx.synchro))
+      .finally(() => setGeneration((g) => g + 1));
+
   const relire = () => {
     setARelire(false);
-    setGeneration((g) => g + 1);
+    recharger();
   };
 
   useEffect(() => {
+    quandAnomalies((liste) => {
+      const neuves = liste.filter((a) => !anomaliesVues.current.has(a));
+      if (!neuves.length) return;
+      neuves.forEach((a) => anomaliesVues.current.add(a));
+      setAnomalies((l) => [...l, ...neuves]);
+    });
     let minuterie: ReturnType<typeof setTimeout> | undefined;
     quandEcrit((chemin) => {
       if (!estSynchronise(chemin)) return;
@@ -121,6 +138,15 @@ export default function App() {
       {erreurs.length > 0 && (
         <div className="erreurs" role="alert">
           {erreurs.map((m, i) => <div className="erreur" key={i}>{m}</div>)}
+        </div>
+      )}
+      {anomalies.length > 0 && (
+        <div className="erreurs">
+          <div className="avertissement">
+            <p>{t.app.anomalies}</p>
+            <ul>{anomalies.map((a) => <li key={a}>{a}</li>)}</ul>
+            <button onClick={() => setAnomalies([])}>{t.app.compris}</button>
+          </div>
         </div>
       )}
       {surAndroid && nextcloud && <MiseAJour />}

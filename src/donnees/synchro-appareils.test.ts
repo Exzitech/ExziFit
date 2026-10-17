@@ -28,6 +28,9 @@ vi.mock("../stockage", () => ({
 
 const { archiverSeance, corrigerSeance, lireSeances } = await import("./journal");
 const { synchroniser } = await import("./synchro");
+const { enregistrerProgramme, lireProgrammesPerso, versProgramme } = await import("./programmes-perso");
+const { ecrireSalles, lireSalles } = await import("./salles");
+const { ecrireReglages, lireReglages } = await import("./reglages");
 
 const sur = async <T>(a: typeof ici, f: () => Promise<T>) => {
   ici = a;
@@ -83,5 +86,60 @@ describe("synchro entre deux appareils", () => {
     for (const a of ["tel", "pc"] as const) {
       expect((await sur(a, lireSeances)).map((s) => s.debut)).toEqual([autre.debut, seance.debut]);
     }
+  });
+});
+
+describe("synchro des programmes, salles et profil", () => {
+  const reglages = (a: typeof ici) => JSON.parse(appareils[a].get("reglages.json") as string);
+
+  beforeEach(() => {
+    appareils.tel.clear();
+    appareils.pc.clear();
+    serveur.texte = null;
+    serveur.version = 0;
+  });
+
+  it("programme perso et réglage de machine du téléphone → PC", async () => {
+    const p = versProgramme({ nom: "Haut / bas", jours: [{ nom: "Haut", objectif: "force", exos: [{ exo: "developpe-couche" }] }] }, "perso-test");
+    await sur("tel", () => enregistrerProgramme(p));
+    await sur("tel", () => ecrireSalles([{ id: "salle-1", nom: "Basic-Fit", machines: { "presse-cuisses": { aVide: 70 } } }]));
+    await sur("tel", synchroniser);
+    expect(await sur("pc", synchroniser)).toMatchObject({ recues: true });
+    expect((await sur("pc", lireProgrammesPerso)).map((x) => x.nom)).toEqual(["Haut / bas"]);
+    expect((await sur("pc", lireSalles))[0].machines).toEqual({ "presse-cuisses": { aVide: 70 } });
+  });
+
+  it("salle par défaut jamais écrite : n'écrase pas celle de l'autre appareil", async () => {
+    await sur("tel", () => ecrireSalles([{ id: "salle-1", nom: "Basic-Fit", machines: {} }]));
+    await sur("tel", synchroniser);
+    await sur("pc", synchroniser);
+    expect((await sur("pc", lireSalles))[0].nom).toBe("Basic-Fit");
+    // Le PC ne renvoie rien : sa salle par défaut n'était qu'affichée.
+    expect(await sur("pc", synchroniser)).toMatchObject({ recues: false, envoyees: false });
+  });
+
+  it("profil : la première écriture ne s'impose pas, un changement suit, le thème reste à chaque appareil", async () => {
+    await sur("tel", () => ecrireReglages({ format: 1, theme: "braise", prenom: "Tom", programme: "bloc-force" }));
+    await sur("pc", () => ecrireReglages({ format: 1, theme: "nuit", programme: "ppl" }));
+    await sur("tel", synchroniser);
+    await sur("pc", synchroniser);
+    expect(reglages("pc")).toEqual({ format: 1, theme: "nuit", programme: "ppl" });
+
+    const tel = (await sur("tel", lireReglages))!;
+    await sur("tel", () => ecrireReglages({ ...tel, programme: "endurance" }));
+    await sur("tel", synchroniser);
+    expect(await sur("pc", synchroniser)).toMatchObject({ recues: true });
+    expect(reglages("pc")).toMatchObject({ theme: "nuit", prenom: "Tom", programme: "endurance", profilModifie: expect.any(String) });
+    // Un changement de thème garde la date du profil (l'écran n'a pas forcément la dernière).
+    const avant = reglages("pc").profilModifie;
+    await sur("pc", () => ecrireReglages({ format: 1, theme: "braise", prenom: "Tom", programme: "endurance" }));
+    expect(reglages("pc").profilModifie).toBe(avant);
+  });
+
+  it("etat.json écrit avant 0.1.47 (sans programmes ni salles) : lu comme vide", async () => {
+    serveur.texte = JSON.stringify({ format: 1, seances: [seance], suppressions: [], blocs: [], pesees: [] });
+    // Complété à la lecture ; rien à renvoyer tant que rien ne change.
+    expect(await sur("pc", synchroniser)).toMatchObject({ etat: "ok", recues: true, envoyees: false });
+    expect((await sur("pc", lireSeances)).map((s) => s.debut)).toEqual([seance.debut]);
   });
 });

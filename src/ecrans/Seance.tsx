@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { ecrireBlocs, lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bloc";
 import { EXERCICES, exercice, libelleCharge, remplacants, type Exercice } from "../donnees/exercices";
+import { chargeDouteuse, poidsCorpsDouteux, repsDouteuses } from "../donnees/aberrant";
 import { horodatage, jourLocal } from "../donnees/fichier";
 import {
   ajusterKg, archiverSeance, ecrireEnCours, historique, lireEnCours, lireSeances, proposition, supprimerEnCours,
@@ -18,6 +19,7 @@ import { seuilConstance, stats, type Pesee, type Sexe, type Stats } from "../don
 import { useBoutonRetour } from "../boutonRetour";
 import { t } from "../i18n";
 import { Ecarts, seuilActuel } from "./Personnage";
+import ChampSur from "./ChampSur";
 import EcranProgrammes from "./Programmes";
 import { annulerRepos, lancerRepos, useReste } from "../minuteur";
 
@@ -235,6 +237,8 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const [rattChoisis, setRattChoisis] = useState<{ jour: number; cles: string[] } | null>(null);
   // Terminer en deux taps : un geste raté avec les mains moites ne doit pas clore la séance.
   const [finDemandee, setFinDemandee] = useState(false);
+  /** Série douteuse (`exo|kg|reps`) dont le premier toucher a demandé « Sûr ? ». */
+  const [douteVu, setDouteVu] = useState<string | null>(null);
   /** Résumé de la séance qui vient d'être terminée. */
   const [resume, setResume] = useState<{ seance: Seance; bilan: Bilan; avant: Stats; apres: Stats } | null>(null);
   /** Page de choix du programme, ouverte depuis l'accueil. */
@@ -677,16 +681,17 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const suivante = premiereAFaire(ctx, seance, ligne);
   const leste = e.charge === "poids-corps-leste";
   const montee = enCalibrage(seance, l, id, c);
-  const raison = prerempli(ctx, seance, l, id).raison;
+  const pre = prerempli(ctx, seance, l, id);
+  const raison = pre.raison;
   const test = testEnCours(ctx, seance, l, id);
   const enAttente = attente ? duJourTout(seance, attente).slice(-1)[0] : undefined;
 
   const valider = () => {
     setFinDemandee(false);
+    setDouteVu(null);
     // `prevu` = la prescription quand il y en a une : c'est elle qui mesure le point 3 de la v1.
     // Série en plus : ce que l'app a prérempli (charge de retour après une série ratée).
     // Recalage par le RIR : la série prévue est la charge recalée, pas la prescription brute.
-    const pre = prerempli(ctx, seance, l, id);
     const prevu = finie || pre.raison ? { kg: pre.kg, reps: pre.reps }
       : c && c.kg !== null ? { kg: c.kg, reps: c.reps } : proposition(ctx.p, seance, e);
     const s: Serie = { type: "travail", kg, reps, prevu, a: horodatage(new Date()), ...(test ? { test: true as const } : {}) };
@@ -746,6 +751,15 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   const plaques = e.charge === "barre" ? disques(kg) : e.disques ? disques(kg, 0) : null;
   const passe = historique(ctx.p, id, 2);
 
+  // Charge ou reps sans commune mesure avec ce que l'exo a connu (faute de frappe) : un toucher de
+  // plus, « Sûr ? », au lieu d'un faux record. Distance : les reps sont des mètres.
+  const vus = [...tout, ...historique(ctx.p, id, 5).flatMap((h) => h.series)];
+  const cle = `${id}|${kg}|${reps}`;
+  const douteuse = chargeDouteuse(kg, Math.max(pre.kg, ...vus.map((s) => s.kg))) ||
+    (l.poste?.prescription.type !== "distance" && repsDouteuses(reps, Math.max(pre.reps, ...vus.map((s) => s.reps))));
+  const validerSur = () => (douteuse && douteVu !== cle ? setDouteVu(cle) : valider());
+  const libelle = (texte: string) => (douteuse && douteVu === cle ? t.seance.sur(texte) : texte);
+
   return (
     <div className="saisie">
       <div className="haut">
@@ -764,6 +778,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
           {" "}· {t.seance.repos(duree(l.poste.repos))}
         </p>
       )}
+      <Consignes key={e.id} id={e.id} />
       {(e.disques || e.charge === "poulie") && (
         <ReglageMachine key={`${salle.id}/${e.id}`} e={e} salle={salle} m={montage(salle, e)} onChange={changerMontage} />
       )}
@@ -820,7 +835,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         ) : test ? (
           <>
             <Reglage kg={kg} reps={reps} e={e} setKg={setKg} setReps={setReps} />
-            <button className="principal valider espace-bas" onClick={valider}>{t.seance.tentativeBouton(nombre(kg), reps)}</button>
+            <button className="principal valider espace-bas" onClick={validerSur}>{libelle(t.seance.tentativeBouton(nombre(kg), reps))}</button>
             {suivante !== null
               ? <button onClick={() => ouvrir(ctx, seance, suivante)}>{t.seance.passerTest}</button>
               : boutonTerminer()}
@@ -829,7 +844,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
           <>
             <p className="encourage">{encouragement(e, duJour, ctx.p, seance.debut + id, pdc)}</p>
             <Reglage kg={kg} reps={reps} e={e} setKg={setKg} setReps={setReps} distance={l.poste?.prescription.type === "distance"} />
-            <button className="espace-bas" onClick={valider}>{t.seance.enPlus(nombre(kg), reps)}</button>
+            <button className="espace-bas" onClick={validerSur}>{libelle(t.seance.enPlus(nombre(kg), reps))}</button>
             {suivante !== null
               ? <button className="principal valider" onClick={() => ouvrir(ctx, seance, suivante)}>
                   {t.seance.suivant(nomLigne(ls[suivante].membres.map((m) => reel(seance, m))))}
@@ -840,7 +855,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
         ) : (
           <>
             <Reglage kg={kg} reps={reps} e={e} setKg={setKg} setReps={setReps} distance={l.poste?.prescription.type === "distance"} />
-            <button className="principal valider" onClick={valider}>{t.seance.valider(nombre(kg), reps)}</button>
+            <button className="principal valider" onClick={validerSur}>{libelle(t.seance.valider(nombre(kg), reps))}</button>
           </>
         )}
       </div>
@@ -878,6 +893,19 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
  * hack squat) ou poulie à moufle. On note toujours ce qui se lit sur la machine. Machine à disques
  * sans poids à vide noté dans cette salle : déplié d'office, avec un avertissement.
  */
+/** Points de technique de l'exo, repliés : la saisie reste à deux gestes. */
+function Consignes({ id }: { id: string }) {
+  const [ouvert, setOuvert] = useState(false);
+  const points = t.consignes[id];
+  if (!points) return null;
+  return (
+    <div className="consignes">
+      <button className="lien" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)}>{t.seance.technique} {ouvert ? "▴" : "▾"}</button>
+      {ouvert && <ul className="petit">{points.map((p) => <li key={p}>{p}</li>)}</ul>}
+    </div>
+  );
+}
+
 function ReglageMachine({ e, salle, m, onChange }: { e: Exercice; salle: Salle; m: Montage; onChange: (m: Montage) => void }) {
   const manque = e.disques && !m.aVide;
   const [ouvert, setOuvert] = useState(manque);
@@ -969,13 +997,13 @@ function Formulaire1RM({ exos, bloc, pdc, assurerBloc, changerBloc, onPdc, onErr
       {exos.map((id) => (
         <label key={id}>
           {x(id).nom}{x(id).charge === "poids-corps-leste" ? t.rm.leste : x(id).aVide ? t.rm.aVide(nombre(x(id).aVide as number)) : ""}
-          <input type="number" inputMode="decimal" defaultValue={bloc?.rm[id] ?? ""} placeholder={estime(id) === undefined ? t.rm.calibrer : `≈ ${nombre(Math.round(estime(id) as number))}`}
-                 onBlur={(ev) => rm(id, ev.target.value)} />
+          <ChampSur defaut={bloc?.rm[id]} placeholder={estime(id) === undefined ? t.rm.calibrer : `≈ ${nombre(Math.round(estime(id) as number))}`}
+                    douteux={(kg) => chargeDouteuse(kg, bloc?.rm[id] ?? estime(id))} onValeur={(v) => rm(id, v)} />
         </label>
       ))}
       <label>
         {t.commun.poidsCorps}
-        <input type="number" inputMode="decimal" defaultValue={pdc ?? ""} onBlur={(ev) => poids(ev.target.value)} />
+        <ChampSur defaut={pdc} douteux={(kg) => poidsCorpsDouteux(kg, pdc)} onValeur={poids} />
       </label>
       {exos.length > 0 && <p className="doux petit">{t.rm.note}</p>}
     </details>

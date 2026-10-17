@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { poidsCorpsDouteux } from "../donnees/aberrant";
 import { noterPoidsCorps } from "../donnees/bloc";
 import { FORMAT, jourLocal } from "../donnees/fichier";
 import { PROGRAMMES } from "../donnees/programme";
@@ -26,6 +27,9 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
 
   const kg = Number(poids.replace(",", "."));
   const poidsOk = !poids.trim() || (Number.isFinite(kg) && kg > 0);
+  // Poids douteux (820 pour 82) : « Sûr ? » au premier toucher de Commencer.
+  const [poidsVu, setPoidsVu] = useState<string | null>(null);
+  const doute = poids.trim() !== "" && poidsOk && poidsCorpsDouteux(kg);
 
   const changerLangue = (l: Langue) => {
     appliquerLangue(l);
@@ -33,6 +37,7 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
   };
 
   const commencer = async () => {
+    if (doute && poidsVu !== poids) return setPoidsVu(poids);
     try {
       if (poids.trim()) await noterPoidsCorps(jourLocal(new Date()), kg);
       // Pas d'envoi Nextcloud : le dossier de dépôt est celui de Tom. Sauvegarde = export manuel (Réglages).
@@ -93,11 +98,16 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
       {choisi ? <Apercu p={choisi} /> : <p className="doux petit">{t.bienvenue.choisir}</p>}
       <p className="doux petit">{t.bienvenue.ensuite}</p>
 
-      <button className="principal" disabled={!poidsOk || !prog} onClick={commencer}>{t.bienvenue.commencer}</button>
+      <button className="principal" disabled={!poidsOk || !prog} onClick={commencer}>
+        {doute && poidsVu === poids ? t.seance.sur(`${poids} kg · ${t.bienvenue.commencer}`) : t.bienvenue.commencer}
+      </button>
       <p className="doux petit">{t.bienvenue.donnees}</p>
 
-      <h2>{t.bienvenue.nouveau}</h2>
-      <Restaurer remplace={false} onErreur={onErreur} />
+      {/* Ni barre d'onglets ni bandeau du bas ici : la place de la barre système est à réserver. */}
+      <div className="fin-sans-nav">
+        <h2>{t.bienvenue.nouveau}</h2>
+        <Restaurer remplace={false} onErreur={onErreur} />
+      </div>
     </>
   );
 }

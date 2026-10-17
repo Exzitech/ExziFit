@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 import { stockage } from "../stockage";
+import { controlerDonnees } from "./controle";
 
 /** Version du format des fichiers de données (docs/modele-donnees.md, principe 3). */
 export const FORMAT = 1;
@@ -27,8 +28,18 @@ export async function lireJson<T extends { format: number }>(chemin: string, vid
   } catch (e) {
     throw new Error(`${chemin} illisible : ${(e as Error).message}`);
   }
-  return verifierFormat<T>(chemin, donnees);
+  const lu = verifierFormat<T>(chemin, donnees);
+  const anomalies = controlerDonnees(chemin, lu);
+  if (anomalies.length) surAnomalies(anomalies);
+  return lu;
 }
+
+let surAnomalies: (anomalies: string[]) => void = () => {};
+/**
+ * Valeurs impossibles trouvées à la lecture (controle.ts). Avertissement seulement : le fichier
+ * reste lu, refuser bloquerait l'accès à tout l'historique pour une série fausse.
+ */
+export const quandAnomalies = (f: (anomalies: string[]) => void) => { surAnomalies = f; };
 
 /** JSON indenté, relisible et corrigeable à la main. */
 export const texteJson = (donnees: unknown) => JSON.stringify(donnees, null, 2) + "\n";
@@ -37,7 +48,7 @@ let surEcriture: (chemin: string) => void = () => {};
 /** Appelé après chaque écriture de l'app (la synchro s'y abonne ; ses propres écritures n'y passent pas). */
 export const quandEcrit = (f: (chemin: string) => void) => { surEcriture = f; };
 
-export async function ecrireJson(chemin: string, donnees: { format: number }): Promise<void> {
+export async function ecrireJson<T extends { format: number }>(chemin: string, donnees: T): Promise<void> {
   await stockage.ecrire(chemin, texteJson(donnees));
   surEcriture(chemin);
 }
@@ -63,6 +74,21 @@ export function horodatage(d: Date): string {
     `${jourLocal(d)}T${deux(d.getHours())}:${deux(d.getMinutes())}:${deux(d.getSeconds())}` +
     `${signe}${deux(Math.floor(abs / 60))}:${deux(abs % 60)}`
   );
+}
+
+/**
+ * Date de dernier changement (synchro : le plus récent gagne) : un élément nouveau ou changé
+ * (hors `modifie`) reçoit l'instant présent, un inchangé garde la version du fichier, avec sa date
+ * (l'écran peut tenir une copie sans la dernière).
+ */
+export function dater<T extends { id: string; modifie?: string }>(fichier: T[], liste: T[], maintenant: Date): T[] {
+  const sansDate = ({ modifie: _, ...x }: T) => JSON.stringify(x);
+  const avant = new Map(fichier.map((x) => [x.id, x]));
+  const le = horodatage(maintenant);
+  return liste.map((x) => {
+    const f = avant.get(x.id);
+    return f && sansDate(f) === sansDate(x) ? f : { ...x, modifie: le };
+  });
 }
 
 /** Ce qu'un export contient, montré avant de remplacer les données. Erreur si ce n'en est pas un. */

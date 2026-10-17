@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 import { exercice } from "./exercices";
-import { ecrireJson, FORMAT, lireJson } from "./fichier";
+import { dater, ecrireJson, FORMAT, lireJson } from "./fichier";
 import { poserProgrammesPerso, PROGRAMMES, type Jour, type Programme } from "./programme";
 
 /**
@@ -102,18 +102,22 @@ export function versBrouillon(p: Programme): Brouillon {
 
 /** Pose au lancement les programmes écrits dans l'app ; fichier absent = aucun. */
 export async function chargerProgrammesPerso(): Promise<void> {
-  const f = await lireJson<{ format: number; programmes: Programme[] }>(PROGRAMMES_PERSO, () => ({ format: FORMAT, programmes: [] }));
-  if (!Array.isArray(f.programmes)) throw new Error(`${PROGRAMMES_PERSO} : « programmes » n'est pas une liste`);
-  poserProgrammesPerso(f.programmes);
+  poserProgrammesPerso(await lireProgrammesPerso());
 }
 
-/** Enregistre un programme (nouveau ou modifié) et le rend disponible tout de suite. */
+/** Le contenu de `programmes.json` ; fichier absent = aucun. */
+export async function lireProgrammesPerso(): Promise<Programme[]> {
+  const f = await lireJson<{ format: number; programmes: Programme[] }>(PROGRAMMES_PERSO, () => ({ format: FORMAT, programmes: [] }));
+  if (!Array.isArray(f.programmes)) throw new Error(`${PROGRAMMES_PERSO} : « programmes » n'est pas une liste`);
+  return f.programmes;
+}
+
+/** Enregistre un programme (nouveau ou modifié, daté par `dater`) et le rend disponible tout de suite. */
 export async function enregistrerProgramme(p: Programme): Promise<void> {
   const perso = PROGRAMMES.filter((x) => estPerso(x.id));
   const i = perso.findIndex((x) => x.id === p.id);
-  const l = i < 0 ? [...perso, p] : perso.map((x) => (x.id === p.id ? p : x));
-  const fichier = { format: FORMAT, programmes: l };
-  await ecrireJson(PROGRAMMES_PERSO, fichier);
+  const l = dater(await lireProgrammesPerso(), i < 0 ? [...perso, p] : perso.map((x) => (x.id === p.id ? p : x)), new Date());
+  await ecrireJson(PROGRAMMES_PERSO, { format: FORMAT, programmes: l });
   poserProgrammesPerso(l);
 }
 

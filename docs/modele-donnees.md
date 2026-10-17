@@ -245,7 +245,8 @@ Chaque programme garde son bloc ouvert ; y revenir reprend sa rotation là où e
 ## Synchro PC ↔ téléphone (0.1.22)
 
 `etat.json` dans le dossier Nextcloud privé `ExziFit-sync` : `{ format, seances, suppressions,
-blocs, pesees }`, tout ce qui se synchronise. Chaque appareil le lit, fusionne
+blocs, pesees, programmes, salles, profil }` (les trois derniers depuis 0.1.47 ; absents d'un
+fichier plus ancien, lus comme vides), tout ce qui se synchronise. Chaque appareil le lit, fusionne
 (`src/donnees/synchro.ts`, `fusionner`), écrit chez lui ce qui change, puis renvoie la fusion si
 elle diffère (`If-Match` sur l'ETag ; un autre appareil a écrit entre-temps → relire, refusionner).
 
@@ -255,10 +256,21 @@ elle diffère (`If-Match` sur l'ETag ; un autre appareil a écrit entre-temps �
 - **Suppressions** : retirent la séance de l'autre appareil, sauf si elle a été corrigée après.
 - **Blocs** par `id`, le plus récent `modifie` (posé par `ecrireBlocs` sur un bloc changé).
   **Pesées** par jour, le plus récent `le`. Champs ajoutés en 0.1.22, absents avant : pas de migration.
+- **Programmes perso** (`programmes.json`) et **salles** (`salles.json`) par `id`, le plus récent
+  `modifie` (posé par `enregistrerProgramme` et `ecrireSalles` sur un élément changé, via `dater`).
+  Triés par id, salle-2 avant salle-10 : la première salle (celle des séances d'avant les salles)
+  reste la même partout. La salle par défaut jamais écrite n'est pas envoyée. Ni l'un ni l'autre ne
+  se supprime : pas de trace de suppression.
+- **Profil** : `prenom`, `sexe`, `programme` de `reglages.json`, le plus récent `profilModifie`.
+  Posé par `ecrireReglages` quand l'un d'eux change, **sauf à la première écriture** (écran de
+  bienvenue) : une installation neuve n'impose pas ses choix à l'appareil qui a l'historique. Un
+  profil sans date n'est pas envoyé.
 - Avant d'appliquer : copie `sauvegardes/sync-…` de tout le dossier ; séances remplacées ou
   retirées par la fusion → `corbeille.json`.
 - Pas synchronisés : `en-cours.json` (la séance en cours reste sur son appareil), `corbeille.json`,
-  `reglages.json` (thème propre à chaque appareil).
+  et dans `reglages.json` le thème, la langue et `envoi` (propres à chaque appareil).
+- Limite : deux salles créées chacune sur un appareil avant toute synchro reçoivent le même id
+  (`salle-2`) ; la plus récente gagne, l'autre reste dans la copie `sync-…`.
 
 ## Hors du modèle pour l'instant
 

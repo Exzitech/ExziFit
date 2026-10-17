@@ -1,13 +1,14 @@
 {
   "name": "exzifit",
   "private": true,
-  "version": "0.1.44",
+  "version": "0.1.50",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "qa": "node scripts/qa-ia.mjs",
+    "scenarios": "node scripts/qa-scenarios.mjs",
     "tauri": "tauri",
     "publier": "node scripts/publier.cjs",
     "publier-play": "node scripts/publier-play.cjs",
