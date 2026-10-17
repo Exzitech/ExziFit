@@ -155,6 +155,7 @@ export const pt: Textes = {
     nouveauBloc: "Novo bloco · ", demarrer: "Começar ",
     confirmerFin: "Confirmar o fim", terminer: "Encerrar o treino",
     pourquoi: { programme: "previsto pelo programa", mouvement: "mesmo movimento", muscles: "mesmos músculos" },
+    changerJour: "‹ Mudar de dia",
     retour: "‹ Voltar", remplacerExo: (nom) => `Substituir ${nom}`, ajouterExercice: "Adicionar um exercício",
     gardees: (reste, n) => `Séries já feitas mantidas: faltam ${reste} de ${n}.`,
     autres: "Outros exercícios", top: "top", rattrapageBadge: (j) => `recuperação ${j}`, ajouterExo: "Adicionar exercício",

@@ -281,11 +281,21 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   useEffect(() => onEnSeance(seance !== null), [seance !== null]);
 
   // Retour = le lien « ‹ » de l'écran : saisie et choix d'exo reviennent à la vue du jour, le
-  // résumé se ferme. Depuis la vue du jour, Android ferme l'app (la séance en cours est sur disque).
+  // résumé se ferme. Depuis la vue du jour, retour à l'accueil si la séance est vide ; sinon Android
+  // ferme l'app (la séance en cours est sur disque).
   const sousVue = seance
     ? vue !== "jour" && (vue !== "saisie" || lignes(seance)[ligne] !== undefined)
     : resume !== null;
-  useBoutonRetour(sousVue ? () => (seance ? setVue("jour") : setResume(null)) : null, onErreur);
+  /** Séance démarrée sans aucune série : la quitter ne perd rien, elle s'annule sans confirmation. */
+  const vide = seance !== null && !seance.exercices.some((x) => x.series.length);
+  const annuler = () => {
+    supprimerEnCours().then(() => {
+      setSeance(null);
+      setAttente(null);
+      setFinDemandee(false);
+    }, onErreur);
+  };
+  useBoutonRetour(sousVue ? () => (seance ? setVue("jour") : setResume(null)) : vide ? annuler : null, onErreur);
   useBoutonRetour(voirProgrammes && !seance ? () => setVoirProgrammes(false) : null, onErreur);
 
   function proposer(pr: Programme, p: Seance[], blocId: string) {
@@ -637,6 +647,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
   if (vue === "jour" || !ls[ligne]) {
     return (
       <>
+        {vide && <button className="lien" onClick={annuler}>{t.seance.changerJour}</button>}
         <h1>{jour ? titreJour(jour) : t.seance.libreTitre}</h1>
         {jour && prog.semaines.length > 1 && <p className="doux petit">{titreSemaine(semaineDeSeance(seance))}</p>}
         <div className="liste">

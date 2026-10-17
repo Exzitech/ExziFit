@@ -739,3 +739,9 @@ Pas vu sur le S23 (rendu selon le masque du lanceur Samsung).
   (cfg `maj_nextcloud` séparé de `canal_dev`, `majNextcloud` dans `canal.ts`). `npm run publier-potes`
   (`publier.cjs --potes`) : depuis `main` propre, jamais de montée de version. Le téléphone de Tom
   (ExziFit, identifiant prod) reçoit la même mise à jour. Format de données inchangé depuis 0.1.43.
+
+**Retour au choix du jour (2026-10-17, 0.1.51)** — quitter une séance démarrée par erreur demandait
+  « Terminer » deux fois. Tant qu'aucune série n'est notée, la vue du jour montre « ‹ Changer de jour »
+  et le bouton retour d'Android fait pareil : la séance vide s'annule en un tap (`annuler`, Seance.tsx),
+  rien n'est archivé. Dès la première série, seul « Terminer » sort (rien n'est perdu sans confirmation).
+  `tsc`, 145 tests, publié en dev 0.1.51. Pas vu sur téléphone.

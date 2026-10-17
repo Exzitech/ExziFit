@@ -160,6 +160,7 @@ export const fr = {
     nouveauBloc: "Nouveau bloc · ", demarrer: "Démarrer ",
     confirmerFin: "Confirmer la fin", terminer: "Terminer la séance",
     pourquoi: { programme: "prévu par le programme", mouvement: "même mouvement", muscles: "mêmes muscles" },
+    changerJour: "‹ Changer de jour",
     retour: "‹ Retour", remplacerExo: (nom: string) => `Remplacer ${nom}`, ajouterExercice: "Ajouter un exercice",
     gardees: (reste: number, n: number) => `Séries déjà faites gardées : il en reste ${reste} sur ${n}.`,
     autres: "Autres exercices", top: "top", rattrapageBadge: (j: string) => `rattrapage ${j}`, ajouterExo: "Ajouter un exo",
