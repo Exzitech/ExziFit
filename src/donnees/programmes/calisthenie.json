@@ -1,0 +1,38 @@
+{
+  "format": 1,
+  "programmes": [
+    {
+      "id": "calisthenie",
+      "nom": "Calisthénie",
+      "semaines": [{ "nom": "S1", "label": "Continu", "schemas": {} }],
+      "jours": [
+        { "id": "J1", "nom": "Tirage + dips", "objectif": "hypertrophie", "lourd": false,
+          "note": "Au poids du corps d'abord ; le lest vient quand le haut de fourchette passe avec de la réserve.",
+          "exercices": [
+            {"exo": "tractions-lestees", "role": "principal", "prescription": {"type": "fourchette", "series": 4, "repsMin": 5, "repsMax": 8, "rir": 2}, "repos": 150},
+            {"exo": "dips-lestes", "prescription": {"type": "fourchette", "series": 3, "repsMin": 6, "repsMax": 10, "rir": 2}, "repos": 120},
+            {"exo": "tractions-australiennes", "prescription": {"type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 15, "rir": 2}, "repos": 90},
+            {"exo": "releve-jambes", "prescription": {"type": "fourchette", "series": 3, "repsMin": 8, "repsMax": 15, "rir": 2}, "repos": 60}
+          ] },
+        { "id": "J2", "nom": "Jambes", "objectif": "hypertrophie", "lourd": false,
+          "note": "Pistol assisté (une main sur un poteau) tant que 5 reps propres ne passent pas.",
+          "exercices": [
+            {"exo": "pistol-squat", "role": "principal", "note": "par jambe", "prescription": {"type": "fourchette", "series": 4, "repsMin": 5, "repsMax": 8, "rir": 2}, "repos": 120, "alternatives": ["fentes-bulgares", "split-squat"]},
+            {"exo": "pont-fessier", "prescription": {"type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 20, "rir": 2}, "repos": 60},
+            {"exo": "mollets-poids-corps", "prescription": {"type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 20, "rir": 2}, "repos": 60},
+            {"exo": "crunch-jambes-levees", "prescription": {"type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 20, "rir": 2}, "repos": 60}
+          ] },
+        { "id": "J3", "nom": "Pompes + chin-ups", "objectif": "hypertrophie", "lourd": false,
+          "note": "Pompes lestées avec un sac ou un disque sur le dos, une fois les 15 reps passées.",
+          "exercices": [
+            {"exo": "pompes", "role": "principal", "prescription": {"type": "fourchette", "series": 4, "repsMin": 8, "repsMax": 15, "rir": 2}, "repos": 120},
+            {"exo": "tractions-supination", "prescription": {"type": "fourchette", "series": 3, "repsMin": 6, "repsMax": 10, "rir": 2}, "repos": 120},
+            {"exo": "pompes-piquees", "prescription": {"type": "fourchette", "series": 3, "repsMin": 6, "repsMax": 12, "rir": 2}, "repos": 90},
+            {"exo": "sit-up", "prescription": {"type": "fourchette", "series": 3, "repsMin": 12, "repsMax": 20, "rir": 2}, "repos": 60}
+          ] }
+      ],
+      "regles": [],
+      "notes": ["Barre de traction et barres parallèles suffisent. 1 à 2 reps en réserve ; le lest remplace la charge."]
+    }
+  ]
+}

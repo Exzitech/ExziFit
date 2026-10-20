@@ -146,10 +146,11 @@ les notifications et la reprise après veille.
   une séance ouverte = charge (affichée × 2 sur poulie double), reps et RIR modifiables par série,
   ✕ pour retirer une série, suppression de la séance en deux taps.
 - `src/donnees/programme.ts` : programmes proposés (`src/donnees/programmes/*.json` : Bloc Force,
-  Push / Pull / Legs, Capacité de travail, Haut / bas express ; puis ceux de `programmes.json`), choisi sur l'accueil (« Changer de programme », `reglages.json`), jour
+  Push / Pull / Legs, Capacité de travail, Haut / bas express, Calisthénie ; puis ceux de `programmes.json`), choisi sur l'accueil (« Changer de programme », `reglages.json`), jour
   et semaine proposés (rotation, jour optionnel sauté après 5 jours lourds d'affilée), charge
   prescrite (% du 1RM du bloc relevé par la dernière séance, double progression, RPE), recalage
-  série par série par le RIR (`recalage`), échauffement et disques par côté, avertissements des
+  série par série par le RIR (`recalage` ; `tropFacile` sur une fourchette à 4+), repos changés
+  sur les programmes fournis (`poserRepos`, `reglages.repos`), échauffement et disques par côté (barre seulement), avertissements des
   règles `ecart`, semaine de test (`etatTest`, `resultatTest`), fin de bloc (`blocFini`,
   `rmNouveauBloc`) et résumé de fin de séance (`bilan`).
   `bloc.ts` : `blocs.json` (1RM figés du bloc) et `poids.json` (poids de corps, pour les lestés et la Force).
@@ -197,7 +198,7 @@ les notifications et la reprise après veille.
   sur le catalogue) et les textes des programmes du code (`t.programmesTextes`, texte français →
   traduction). Consignes de technique (2–3 par exo du catalogue, `t.consignes`, repliées sous
   « Technique » en saisie) : une entrée par langue, l'oubli fait échouer le test. Langue choisie à la bienvenue et dans Réglages (`langue` de `reglages.json`,
-  absent = langue du téléphone). Les fichiers ne gardent que des identifiants : changer de langue
+  absent = première langue proposée dans la liste du téléphone, `langueDe` : la langue, jamais le pays, « fr-BE » donne le français). Les fichiers ne gardent que des identifiants : changer de langue
   ne réécrit rien ; les programmes écrits dans l'app restent dans la langue de leur auteur.
   Textes natifs (notification de repos, canaux, partage) : `res/values*/textes.xml` dans
   `gen/android`, selon la langue du téléphone. Ajouter un texte : la clé dans `fr.ts`, le

@@ -42,6 +42,12 @@ describe("versBrouillon", () => {
     expect(b.jours[0].exos).toEqual([{ exo: "developpe-couche" }, { exo: "rowing-haltere", series: 4 }]);
     expect(versProgramme(b, "perso-x")).toEqual(p);
   });
+  it("repos changé gardé à l'aller-retour ; revenu à celui de l'objectif, plus noté", () => {
+    const b: Brouillon = { nom: "x", jours: [{ nom: "", objectif: "force", exos: [{ exo: "developpe-couche", repos: 240 }, { exo: "rowing-haltere", repos: 120 }] }] };
+    const p = versProgramme(b, "perso-x");
+    expect(p.jours[0].exercices.map((x) => x.repos)).toEqual([240, 120]);
+    expect(versBrouillon(p).jours[0].exos).toEqual([{ exo: "developpe-couche", repos: 240 }, { exo: "rowing-haltere" }]);
+  });
 });
 
 describe("brouillonComplet", () => {

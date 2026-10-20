@@ -31,7 +31,7 @@ export interface Exercice {
    * coefficient dans la moyenne. Absent : l'exo ne compte pas (poids du corps sans lest, distance).
    */
   force?: { ref: number; poids: number };
-  /** Machine chargée de disques (Smith, presse, hack squat) : `kg` = disques seuls, affichés par côté. */
+  /** Machine chargée de disques (Smith, presse, hack squat) : `kg` = disques seuls, en kg (pas de détail par côté). */
   disques?: true;
   /**
    * Montage de la salle du jour (salles.ts, `exerciceEn`), jamais dans le catalogue. `aVide` :
@@ -114,6 +114,12 @@ export const EXERCICES: Exercice[] = [
   exo("sit-up", "Sit-up", "poids-corps", "abdos", 1, ["abdos"], []),
   exo("crunch-jambes-levees", "Legs-up crunch", "poids-corps", "abdos", 1, ["abdos"], []),
   exo("mollets-poids-corps", "Bodyweight calf raise", "poids-corps", "mollets", 1, ["mollets"], []),
+  // Calisthénie (0.1.52) : lestables (sac, gilet, disque) pour que la progression continue après
+  // le haut de fourchette ; sans part dans la Force (pas de référence connue).
+  exo("pompes", "Push-up", "poids-corps-leste", "poussee-horizontale", 2.5, ["pectoraux"], ["triceps", "epaules"]),
+  exo("pompes-piquees", "Pike push-up", "poids-corps", "poussee-verticale", 1, ["epaules"], ["triceps"]),
+  exo("pistol-squat", "Pistol squat", "poids-corps-leste", "squat", 2.5, ["quadriceps", "fessiers"], []),
+  exo("tractions-supination", "Chin-up", "poids-corps-leste", "tirage-vertical", 2.5, ["dos", "biceps"], []),
 ];
 
 const PAR_ID = new Map(EXERCICES.map((e) => [e.id, e]));
@@ -131,9 +137,12 @@ export function exercice(id: string): Exercice {
   return e;
 }
 
-/** Libellé du champ charge : sur un lesté, `kg` est le lest seul ; sur une machine à disques, les disques seuls. */
+/**
+ * Libellé du champ charge : sur un lesté, `kg` est le lest seul ; sur une machine à disques, des kg
+ * aussi (les disques seuls, sans le chariot : rappelé par le réglage de la machine).
+ */
 export const libelleCharge = (e: Exercice) =>
-  e.charge === "poids-corps-leste" ? t.charge.leste : e.disques ? t.charge.disques : e.poulie ? t.charge.pile : t.charge.kg;
+  e.charge === "poids-corps-leste" ? t.charge.leste : e.poulie ? t.charge.pile : t.charge.kg;
 
 export interface Remplacant { e: Exercice; raison: "programme" | "mouvement" | "muscles" | null }
 

@@ -73,57 +73,60 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
         ))}
       </div>
 
-      <h2>{t.commun.personnage}</h2>
-      <div className="choix">
-        {(["homme", "femme"] as const).map((x) => (
-          <button key={x} aria-pressed={(reglages.sexe ?? "homme") === x} onClick={() => onChange({ ...reglages, sexe: x })}>
-            {t.commun[x]}
-          </button>
-        ))}
-      </div>
-      <p className="doux petit">{t.reglages.sexe}</p>
-      <div className="carte rm">
+      <details className="carte rm">
+        <summary>{t.commun.personnage}</summary>
+        <div className="choix">
+          {(["homme", "femme"] as const).map((x) => (
+            <button key={x} aria-pressed={(reglages.sexe ?? "homme") === x} onClick={() => onChange({ ...reglages, sexe: x })}>
+              {t.commun[x]}
+            </button>
+          ))}
+        </div>
+        <p className="doux petit">{t.reglages.sexe}</p>
         <label>
           {t.commun.prenom}
           <input defaultValue={reglages.prenom ?? ""}
                  onBlur={(ev) => ev.target.value.trim() !== (reglages.prenom ?? "") && onChange({ ...reglages, prenom: ev.target.value.trim() || undefined })} />
         </label>
-      </div>
+      </details>
 
-      <h2>{t.reglages.salles}</h2>
-      <div className="carte rm">
+      <details className="carte rm">
+        <summary>{t.reglages.salles}</summary>
         {salles.map((x) => (
-          <label key={x.id} className="petit">
-            {t.reglages.machines(Object.keys(x.machines).length)}
-            <input defaultValue={x.nom} onBlur={(ev) => renommer(x.id, ev.target.value)} />
-          </label>
+          <div key={x.id}>
+            <label className="petit">
+              {t.reglages.machines(Object.keys(x.machines).length)}
+              <input defaultValue={x.nom} onBlur={(ev) => renommer(x.id, ev.target.value)} />
+            </label>
+          </div>
         ))}
         <button onClick={ajouter}>{t.reglages.ajouterSalle}</button>
         <p className="doux petit">{t.reglages.sallesNote}</p>
-      </div>
+      </details>
 
-      <h2>{t.reglages.minuteur}</h2>
-      <div className="carte">
+      <details className="carte rm">
+        <summary>{t.reglages.donnees}</summary>
+        <button onClick={() => stockage.exporter(jourLocal(new Date())).then((x) => setExport(t.reglages.exporte(x)), onErreur)}>
+          {t.reglages.exporter}
+        </button>
+        {export_ && <p className="doux petit">{export_}</p>}
+        <Restaurer remplace onErreur={onErreur} />
+        <p className="doux petit">{envoi ? t.reglages.envoyee(envoyee) : t.reglages.copieLocale}</p>
+        <p className="doux petit">{dossier}</p>
+      </details>
+
+      {nextcloud && <Synchro bilan={bilan} onSynchro={onSynchro} onErreur={onErreur} />}
+
+      <details className="carte rm">
+        <summary>{t.reglages.minuteur}</summary>
         <div className="compte">{fin ? `${reste} s` : "–"}</div>
         <button className="principal" onClick={() => lancerRepos(15).then(setFin, onErreur)}>
           {t.reglages.tester}
         </button>
         <p className="doux petit">{t.reglages.verrouiller}</p>
-      </div>
+      </details>
 
-      <h2>{t.reglages.donnees}</h2>
-      <p className="doux petit">{dossier}</p>
-      <button onClick={() => stockage.exporter(jourLocal(new Date())).then((x) => setExport(t.reglages.exporte(x)), onErreur)}>
-        {t.reglages.exporter}
-      </button>
-      {export_ && <p className="doux petit">{export_}</p>}
-      <Restaurer remplace onErreur={onErreur} />
-      <p className="doux petit">{envoi ? t.reglages.envoyee(envoyee) : t.reglages.copieLocale}</p>
-
-      {nextcloud && <Synchro bilan={bilan} onSynchro={onSynchro} onErreur={onErreur} />}
-
-      <h2>{t.reglages.version}</h2>
-      <p className="doux petit">ExziFit {version}</p>
+      <p className="doux petit">{t.reglages.version} : ExziFit {version}</p>
     </>
   );
 }
@@ -177,9 +180,9 @@ function Synchro({ bilan, onSynchro, onErreur }: { bilan: Bilan | null; onSynchr
   if (!dansTauri) return null;
   const compte = info?.compte;
   return (
-    <>
-      <h2>{t.synchro.titre}</h2>
-      <div className="carte">
+    <details className="carte rm">
+      <summary>{t.synchro.titre}</summary>
+      <div>
         {compte && !edition ? (
           <>
             <p className="petit">{compte.utilisateur} · {compte.serveur.replace("https://", "")}</p>
@@ -200,6 +203,6 @@ function Synchro({ bilan, onSynchro, onErreur }: { bilan: Bilan | null; onSynchr
           </>
         )}
       </div>
-    </>
+    </details>
   );
 }

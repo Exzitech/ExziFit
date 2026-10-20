@@ -1,17 +1,55 @@
 import { useState } from "react";
-import { PROGRAMMES } from "../donnees/programme";
+import { exercice } from "../donnees/exercices";
+import {
+  clePoste, duree, membres, PROGRAMMES, reposActuels, reposDuCode, type Programme,
+} from "../donnees/programme";
 import { estPerso } from "../donnees/programmes-perso";
 import type { Stats } from "../donnees/stats";
 import { t } from "../i18n";
 import Apercu from "./Apercu";
 import EditeurProgramme from "./EditeurProgramme";
+import Repos from "./Repos";
 
 /**
  * Choix du programme, avec l'aperçu de ses stats : ce que donneraient 4 semaines de ce programme,
  * à côté des stats d'aujourd'hui. On y écrit aussi ses propres programmes.
  */
-export default function EcranProgrammes({ actuel, stats, onChoisir, onRetour, onErreur }: {
-  actuel: string; stats: Stats; onChoisir: (id: string) => void; onRetour: () => void; onErreur: (e: unknown) => void;
+/** Repos de chaque poste d'un programme fourni, changeables ; un repos revenu à celui du programme n'est plus noté. */
+function ReposDuProgramme({ p, onRepos }: { p: Programme; onRepos: (r: Record<string, number>) => void }) {
+  const changer = (cle: string, s: number, defaut: number) => {
+    const r = reposActuels();
+    if (s === defaut) delete r[cle];
+    else r[cle] = s;
+    onRepos(r);
+  };
+  return (
+    <details className="carte rm">
+      <summary>{t.programmes.repos}</summary>
+      {p.jours.map((j) => (
+        <div key={j.id}>
+          <p className="doux petit">{t.idJour(j.id)} · {j.nom}</p>
+          {j.exercices.map((x) => {
+            const cle = clePoste(p.id, j.id, x);
+            const defaut = reposDuCode(p.id, j.id, x);
+            return (
+              <div key={cle} className="repos-poste">
+                <span>
+                  {membres(x).map((id) => exercice(id).nom).join(" + ")}
+                  {x.repos !== defaut && <small className="doux">{t.programmes.reposDefaut(duree(defaut))}</small>}
+                </span>
+                <Repos valeur={x.repos} onChange={(s) => changer(cle, s, defaut)} />
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </details>
+  );
+}
+
+export default function EcranProgrammes({ actuel, stats, onChoisir, onRetour, onRepos, onErreur }: {
+  actuel: string; stats: Stats; onChoisir: (id: string) => void; onRetour: () => void;
+  onRepos: (r: Record<string, number>) => void; onErreur: (e: unknown) => void;
 }) {
   const [vu, setVu] = useState(actuel);
   // `null` : pas d'éditeur ; `"nouveau"` ou l'id du programme modifié.
@@ -41,6 +79,7 @@ export default function EcranProgrammes({ actuel, stats, onChoisir, onRetour, on
       </div>
 
       <Apercu p={p} stats={stats} />
+      {!estPerso(p.id) && <ReposDuProgramme p={p} onRepos={onRepos} />}
       <p className="doux petit">{t.programmes.bloc}</p>
 
       <div className="bas">

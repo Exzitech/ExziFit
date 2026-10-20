@@ -21,12 +21,14 @@ export interface Reglages {
   /** Envoi des sauvegardes sur Nextcloud, dans le dossier de Tom (lien dans l'APK). Absent = actif :
    *  seule l'installation de Tom date d'avant l'accueil du premier lancement, qui écrit `false`. */
   envoi?: boolean;
+  /** Repos changés sur les programmes fournis, en s, par poste (programme.ts, `clePoste`). */
+  repos?: Record<string, number>;
   /** Dernier changement du profil (synchro : le plus récent gagne), posé par `ecrireReglages`. */
   profilModifie?: string;
 }
 
-/** Ce qui suit la personne d'un appareil à l'autre ; thème, langue et envoi restent à chaque appareil. */
-const CHAMPS_PROFIL = ["prenom", "sexe", "programme"] as const;
+/** Ce qui suit la personne d'un appareil à l'autre (repos des programmes compris) ; thème, langue et envoi restent à chaque appareil. */
+const CHAMPS_PROFIL = ["prenom", "sexe", "programme", "repos"] as const;
 export type Profil = Pick<Reglages, (typeof CHAMPS_PROFIL)[number]> & { modifie: string };
 
 const texteProfil = (r: Partial<Reglages>) => JSON.stringify(CHAMPS_PROFIL.map((k) => r[k] ?? null));
@@ -41,7 +43,7 @@ export function profilDe(r: Partial<Reglages>): Profil | null {
 
 /** Réglages de cet appareil avec le profil d'un autre (un champ absent chez lui le devient ici). */
 export function avecProfil(r: Partial<Reglages>, { modifie, ...champs }: Profil): Partial<Reglages> {
-  const { prenom: _p, sexe: _s, programme: _g, profilModifie: _m, ...reste } = r;
+  const { prenom: _p, sexe: _s, programme: _g, repos: _r, profilModifie: _m, ...reste } = r;
   return { ...reste, ...champs, profilModifie: modifie };
 }
 

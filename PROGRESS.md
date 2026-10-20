@@ -3,7 +3,32 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.48 (consignes de technique par exo, repliées en saisie ; 0.1.47 : synchro des programmes perso, salles et profil ; 0.1.46 : sauvegarde du jour relue et contrôlée ; 0.1.45 : valeurs aberrantes à confirmer, avertissement sur données impossibles ; 0.1.44 : agent de QA, blocage sur charge démesurée corrigé ; 0.1.43 : marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.52 (retours de Tom du 2026-10-20, ci-dessous ; 0.1.51 : séance vide annulée en un tap ; 0.1.48 : consignes de technique par exo, repliées en saisie ; 0.1.47 : synchro des programmes perso, salles et profil ; 0.1.46 : sauvegarde du jour relue et contrôlée ; 0.1.45 : valeurs aberrantes à confirmer, avertissement sur données impossibles ; 0.1.44 : agent de QA, blocage sur charge démesurée corrigé ; 0.1.43 : marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+
+**Retours de Tom (2026-10-20), 0.1.52** — liste de Tom, précisée avec lui :
+1. ~~**Surcharge progressive**~~ : presse à cuisses du PPL (4 × 10–15) à 200 kg et 4+ RIR, l'app
+   restait à 200. Cause : une fourchette ne se recalait jamais en séance, et d'une fois à l'autre
+   ne gagnait qu'une rep tant que les 4 séries n'étaient pas à 15. `tropFacile` (programme.ts) :
+   dernière série à RIR ≥ visé + 2 → Epley au RIR visé, au moins un pas (200 × 10 à 4+ → 210),
+   en séance et pour la fois suivante. Base de la double progression = la série la plus lourde.
+2. ~~**« disques » au lieu de kg**~~ : libellé « kg » sur les machines à disques, plus de détail
+   par côté sur une machine (Tom : salles aux disques différents, souvent mélangés). Détail gardé
+   sur la barre. Un réglage « disques présents par salle » a été essayé puis retiré à sa demande.
+3. ~~**Langue**~~ : `langueDe` parcourt les langues du téléphone dans l'ordre (fr-BE → français,
+   nl-BE puis fr-BE → français), jamais le pays.
+4. ~~**Courbe du poids**~~ : onglet Perso, sous la pesée, un an de pesées.
+5. ~~**Repos modifiable**~~ : éditeur (− / + par 15 s) et programmes fournis (Programmes › Repos,
+   `reglages.repos`, suit le profil à la synchro ; revenu au défaut = plus noté).
+6. ~~**Calisthénie**~~ : programme fourni de 3 jours, progression reps puis lest ; 4 exos nouveaux
+   (pompes, pompes piquées, pistol squat, tractions supination). Sans lest (pompes piquées,
+   relevés de jambes…), le haut de fourchette reste visé : pas de variante plus dure proposée.
+7. ~~**Réglages raccourcis**~~ : langue et thème visibles, le reste en sections repliées.
+8. **Onboarding** : maquettes à choisir par Tom (artifact), puis code.
+9. **Illustrations des exos, en ligne / hors ligne** (onboarding + réglages) : source d'images à
+   décider avec Tom.
+Vérifié : `tsc`, 153 tests Vitest (régression presse à cuisses, disques par salle, langue,
+repos, poids du corps), build, 3 scénarios de QA, captures 390 px des écrans touchés (sans erreur
+JS). Pas encore essayé à la salle.
 
 **Dev et prod, préparation Google Play (2026-10-17)** — README, « Dev et prod » ; démarches :
 [docs/play-store.md](docs/play-store.md). Deux apps depuis le même code (`EXZIFIT_CANAL`) :

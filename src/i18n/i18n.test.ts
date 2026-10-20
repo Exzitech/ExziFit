@@ -5,7 +5,7 @@ import { cible, encouragement, nombre, preparation, PROGRAMMES } from "../donnee
 import { appliquerLangue } from "../langue";
 import { en } from "./en";
 import { fr } from "./fr";
-import { langueDuSysteme, t } from "./index";
+import { langueDe, t } from "./index";
 import { pt } from "./pt";
 
 const AUTRES = { en, pt };
@@ -77,12 +77,12 @@ describe("appliquerLangue", () => {
   });
 });
 
-describe("langueDuSysteme", () => {
+describe("langueDe", () => {
   it("français, portugais, sinon anglais", () => {
-    const l = (x: string) => {
-      Object.defineProperty(globalThis.navigator, "language", { value: x, configurable: true });
-      return langueDuSysteme();
-    };
-    expect([l("fr-BE"), l("pt-PT"), l("pt-BR"), l("de-DE"), l("en-US")]).toEqual(["fr", "pt-BR", "pt-BR", "en", "en"]);
+    expect([["fr-BE"], ["pt-PT"], ["pt-BR"], ["de-DE"], ["en-US"], []].map(langueDe)).toEqual(["fr", "pt-BR", "pt-BR", "en", "en", "en"]);
+  });
+  it("la première langue proposée dans l'ordre du téléphone, jamais le pays", () => {
+    expect(langueDe(["nl-BE", "fr-BE", "en-GB"])).toBe("fr");
+    expect(langueDe(["de-CH", "en-US", "fr-CH"])).toBe("en");
   });
 });

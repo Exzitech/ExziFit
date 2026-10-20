@@ -5,6 +5,7 @@ import blocForce from "./programmes/bloc-force.json";
 import endurance from "./programmes/endurance.json";
 import pushPullLegs from "./programmes/push-pull-legs.json";
 import supersetExpress from "./programmes/superset-express.json";
+import calisthenie from "./programmes/calisthenie.json";
 
 /** Types du programme (docs/modele-donnees.md, « Programme »). */
 export type Prescription =
@@ -59,16 +60,38 @@ export interface Programme {
  * Programmes proposés : ceux du code, puis ceux écrits dans l'app (`programmes.json`, posés au
  * lancement par programmes-perso.ts). Un seul tableau, lu partout sans attendre de fichier.
  */
-export const PROGRAMMES: Programme[] = [blocForce, pushPullLegs, endurance, supersetExpress]
+export const PROGRAMMES: Programme[] = [blocForce, pushPullLegs, endurance, supersetExpress, calisthenie]
   .flatMap((f) => (f as unknown as { programmes: Programme[] }).programmes);
 const DU_CODE = PROGRAMMES.length;
 /** Programmes du code tels qu'écrits (en français) : chaque langue repart d'eux. */
 const ORIGINAUX = PROGRAMMES.slice(0, DU_CODE);
 
+/** Repos changés sur les programmes du code, par `clePoste` (`repos` de reglages.json). */
+let reposChanges: Record<string, number> = {};
+
+/** Poste d'un programme par ses exos, pas par son rang : un exo ajouté au programme ne décale rien. */
+export const clePoste = (programme: string, jour: string, x: Poste) => `${programme}/${jour}/${membres(x).join("+")}`;
+
+/** Repos écrit dans le programme du code, avant tout changement. */
+export const reposDuCode = (programme: string, jour: string, x: Poste): number =>
+  ORIGINAUX.find((p) => p.id === programme)?.jours.find((j) => j.id === jour)?.exercices
+    .find((y) => clePoste(programme, jour, y) === clePoste(programme, jour, x))?.repos ?? x.repos;
+
+export const reposActuels = (): Record<string, number> => ({ ...reposChanges });
+
+/** Pas et bornes du réglage du repos (Programmes, éditeur). */
+export const REPOS_PAS = 15, REPOS_MIN = 15, REPOS_MAX = 600;
+
+/** Pose les repos changés par l'utilisateur sur les programmes du code. */
+export function poserRepos(r: Record<string, number>): void {
+  reposChanges = r;
+  traduireProgrammes();
+}
+
 /**
- * Textes affichés des programmes du code dans la langue courante (`t.programmesTextes`, texte français
- * → traduction ; absent = gardé). Les ids ne changent pas : séances et blocs y renvoient toujours.
- * Les programmes écrits dans l'app restent dans la langue de leur auteur.
+ * Programmes du code dans la langue courante (`t.programmesTextes`, texte français → traduction ;
+ * absent = gardé), avec les repos changés. Les ids ne changent pas : séances et blocs y renvoient
+ * toujours. Les programmes écrits dans l'app restent dans la langue de leur auteur.
  */
 export function traduireProgrammes(): void {
   const tr = (x: string) => t.programmesTextes[x] ?? x;
@@ -80,7 +103,11 @@ export function traduireProgrammes(): void {
       ...j,
       nom: tr(j.nom),
       ...(j.note ? { note: tr(j.note) } : {}),
-      exercices: j.exercices.map((x) => (x.note ? { ...x, note: tr(x.note) } : x)),
+      exercices: j.exercices.map((x) => ({
+        ...x,
+        ...(x.note ? { note: tr(x.note) } : {}),
+        repos: reposChanges[clePoste(p.id, j.id, x)] ?? x.repos,
+      })),
     })),
   })));
 }
@@ -425,6 +452,23 @@ export function recalage(
   return chargeDe(e, suivant, poidsCorps);
 }
 
+/** RIR visé d'une fourchette : le sien, sinon la règle des accessoires (2 RIR). */
+export const rirFourchette = (pr: Extract<Prescription, { type: "fourchette" }>) => pr.rir ?? 2;
+
+/**
+ * Fourchette trop facile (hors poids du corps sans lest : rien à ajouter) : série finie avec au moins 2 RIR de plus que visé (« 4+ » pour 2 visés) →
+ * charge recalée par Epley pour `reps` reps au RIR visé, au moins un pas de plus (200 × 10 à 4+ →
+ * 210). `null` sinon : une réserve proche du but laisse la double progression faire.
+ */
+export function tropFacile(
+  e: Exercice, pr: Extract<Prescription, { type: "fourchette" }>, der: Serie, reps: number, poidsCorps?: number,
+): number | null {
+  const vise = rirFourchette(pr);
+  if (e.charge === "poids-corps" || der.rir === undefined || der.rir < vise + 2 || der.reps < pr.repsMin) return null;
+  const kg = recalage(e, der, reps, vise, poidsCorps, false);
+  return kg === null ? null : Math.max(kg, arrondir(der.kg + e.pas, e.pas));
+}
+
 /** Charge et reps prescrites pour un exo d'un poste (docs/modele-donnees.md, « Prescriptions »). */
 export function cible(e: Exercice, pr: Prescription, c: Contexte): Cible {
   const leste = e.charge === "poids-corps-leste";
@@ -442,12 +486,19 @@ export function cible(e: Exercice, pr: Prescription, c: Contexte): Cible {
       const texte = `${pr.repsMin === pr.repsMax ? pr.repsMin : `${pr.repsMin}–${pr.repsMax}`} reps`;
       if (!derniere) return { series: pr.series, reps: pr.repsMin, kg: null, texte };
       // Double progression : toutes les séries en haut de fourchette, réserve tenue → un cran.
+      // Base : la série la plus lourde dans la fourchette (la charge a pu monter en séance).
+      const ref = derniere.filter((s) => s.reps >= pr.repsMin).reduce((a, s) => (s.kg > a.kg ? s : a), derniere[0]);
       const monte = derniere.length >= pr.series &&
         derniere.every((s) => s.reps >= pr.repsMax && (pr.rir === undefined || (s.rir ?? -1) >= pr.rir));
-      const kg = derniere[0].kg;
-      if (monte) return { series: pr.series, reps: pr.repsMin, kg: arrondir(kg + e.pas, e.pas), texte };
-      const reps = Math.min(pr.repsMax, Math.max(pr.repsMin, derniere[0].reps + 1));
-      return { series: pr.series, reps, kg, texte };
+      // Au poids du corps sans lest, rien à ajouter : le haut de fourchette reste visé.
+      if (monte && e.charge === "poids-corps") return { series: pr.series, reps: pr.repsMax, kg: ref.kg, texte };
+      if (monte) return { series: pr.series, reps: pr.repsMin, kg: arrondir(ref.kg + e.pas, e.pas), texte };
+      const reps = Math.min(pr.repsMax, Math.max(pr.repsMin, ref.reps + 1));
+      // Dernière série encore trop facile : la charge suit la réserve au lieu d'une rep de plus.
+      const der = derniere[derniere.length - 1];
+      const facile = tropFacile(e, pr, der, Math.min(pr.repsMax, der.reps), c.poidsCorps);
+      if (facile !== null && facile > ref.kg) return { series: pr.series, reps: Math.min(pr.repsMax, der.reps), kg: facile, texte };
+      return { series: pr.series, reps, kg: ref.kg, texte };
     }
     case "rpe": {
       const texte = `RPE ${pr.rpe}`;
@@ -539,6 +590,9 @@ export function disques(kg: number, barre = 20): number[] | null {
   }
   return reste === 0 ? res : null;
 }
+
+/** Durée de repos lisible : « 45 s », « 2 min », « 1 min 30 ». */
+export const duree = (s: number) => (s < 60 ? `${s} s` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60}` : `${s / 60} min`);
 
 export const nombre = (n: number) => n.toLocaleString(t.locale, { maximumFractionDigits: 2 });
 

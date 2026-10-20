@@ -39,6 +39,7 @@ export const fr = {
     nouveau: "Nouveau téléphone ?",
   },
   programmes: {
+    repos: "Repos", reposDefaut: (d: string) => `programme : ${d}`, moinsRepos: "15 s de repos en moins", plusRepos: "15 s de repos en plus",
     retour: "‹ Séance", titre: "Programmes", enCours: "en cours", creer: "+ Créer un programme",
     bloc: "Chaque programme garde son bloc : y revenir reprend au jour où il en était.",
     actuel: "Programme en cours", passer: (nom: string) => `Passer à ${nom}`,
@@ -114,6 +115,7 @@ export const fr = {
     nouveau: "nouveau",
     avant: "Personnage il y a 8 semaines", ilYa: "Il y a 8 sem.", aujourdhuiNom: "Personnage aujourd'hui",
     aujourdhui: "Aujourd'hui", meme: "Même silhouette qu'il y a 8 sem.",
+    courbe: (min: string, max: string) => `De ${min} à ${max} kg`, depuis: (ecart: string, date: string) => `${ecart} kg depuis le ${date}`,
     aNoter: "à noter", pesee: (date: string) => `Dernière pesée : ${date}.`,
     sansPesee: "Sans pesée, pas de Force (elle se rapporte au poids de corps).",
     aucunExoForce: "aucun exo de force", peseeManquante: "pesée manquante", pasDeComparaison: "pas encore de comparaison",
@@ -128,7 +130,7 @@ export const fr = {
     explication: "Une rotation de jours : on passe au suivant quand le précédent est fait. Le premier exo de chaque " +
       "jour est le principal (échauffement, plus de repos). Charges calculées en séance, à 2 reps en réserve.",
     jour: (n: number) => `Jour ${n}`, principal: "principal · ",
-    reglage: (series: number, min: number, max: number, repos: number) => `${series} × ${min}–${max} · repos ${repos} s`,
+    reglage: (series: number, min: number, max: number) => `${series} × ${min}–${max}`,
     moinsSerie: "une série de moins", plusSerie: "une série de plus", retirer: "retirer",
     ajouterExo: "+ Ajouter un exercice", ajouterExoNom: "Ajouter un exercice",
     retirerJour: "Retirer ce jour", ajouterJour: "+ Ajouter un jour", resultat: "Ce que ça donne",
@@ -222,7 +224,7 @@ export const fr = {
     plusReps: (n: number) => `${n} rep${s(n)} de plus que la dernière fois.`,
   },
   /** Libellé sous le champ charge (exercices.ts, `libelleCharge`). */
-  charge: { leste: "lest kg", disques: "disques", pile: "pile", kg: "kg" },
+  charge: { leste: "lest kg", pile: "pile", kg: "kg" },
   objectifs: { force: "Force", hypertrophie: "Hypertrophie", endurance: "Endurance" },
   themes: { braise: "Braise", nuit: "Nuit", foret: "Forêt", craie: "Craie (clair)" },
   stats: { force: "Force", endurance: "Endurance", constance: "Constance", progression: "Progression" },
@@ -308,6 +310,10 @@ export const fr = {
     "sit-up": ["Pieds au sol, bras croisés sur la poitrine", "Enrouler le dos pour monter", "Redescendre lentement, vertèbre par vertèbre"],
     "crunch-jambes-levees": ["Jambes levées à la verticale", "Décoller les épaules, côtes vers le bassin", "Menton loin de la poitrine"],
     "mollets-poids-corps": ["Avant du pied sur une marche, talons dans le vide", "Descendre en étirement complet", "Monter haut, sans rebond"],
+    "pompes": ["Corps gainé des talons à la tête", "Mains sous les épaules, coudes à ~45°", "Poitrine au sol, finir bras tendus"],
+    "pompes-piquees": ["Hanches hautes, corps en V inversé", "Tête vers le sol entre les mains", "Pousser vers le haut et l'arrière"],
+    "pistol-squat": ["Jambe libre tendue devant", "Talon au sol, genou dans l'axe du pied", "Descendre contrôlé, remonter sans élan"],
+    "tractions-supination": ["Paumes vers soi, mains largeur d'épaules", "Partir bras tendus, épaules engagées", "Menton au-dessus de la barre"],
   } as Record<string, string[]>,
   /** Textes des programmes du code (JSON en français) : texte français → traduction. */
   programmesTextes: {} as Record<string, string>,

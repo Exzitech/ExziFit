@@ -11,8 +11,8 @@ import {
   ecrireSalles, exerciceEn, lireSalles, montage, normaliser, salleDe, salleRetenue, type Montage, type Salle,
 } from "../donnees/salles";
 import {
-  aRattraper, avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
-  jourDeSeance, preparation, programme, programmeDe, prochainJour, recalage, retour, rirVise, rmEffectif, rmNouveauBloc,
+  aRattraper, avertissements, bilan, blocFini, cible, disques, duree, echauffement, encouragement, etatTest, exosPct1rm, membres, nombre, ouvertureTest,
+  jourDeSeance, preparation, programme, programmeDe, prochainJour, recalage, retour, rirFourchette, rirVise, rmEffectif, tropFacile, rmNouveauBloc,
   semaineDe, type Bilan, type Cible, type Poste, type Programme, type Semaine,
 } from "../donnees/programme";
 import { seuilConstance, stats, type Pesee, type Sexe, type Stats } from "../donnees/stats";
@@ -40,7 +40,6 @@ interface Ligne { membres: string[]; poste?: Poste; rattrapage?: string }
 const date = (iso: string) =>
   new Date(iso).toLocaleDateString(t.locale, { weekday: "short", day: "numeric", month: "short" });
 const serie = (s: Serie) => `${nombre(s.kg)}×${s.reps}${s.rir === undefined ? "" : ` R${s.rir}`}`;
-const duree = (s: number) => (s < 60 ? `${s} s` : s % 60 ? `${Math.floor(s / 60)} min ${s % 60}` : `${s / 60} min`);
 const charge = (e: Exercice, kg: number) =>
   e.charge === "poids-corps-leste" ? (kg ? `+${nombre(kg)} kg` : t.seance.pdc) : `${nombre(kg)} kg`;
 /** Jour d'une séance tel qu'affiché : « J1 · Bench lourd ». */
@@ -189,6 +188,11 @@ function prerempli(ctx: Ctx, s: Seance, l: Ligne, id: string): { kg: number; rep
       return { kg, reps: c.reps, raison: t.seance.recale(serie(avant), sens, c.reps, vise) };
     }
   }
+  const pr = l.poste?.prescription;
+  if (c && avant && pr?.type === "fourchette") {
+    const kg = tropFacile(e, pr, avant, c.reps, poids);
+    if (kg !== null) return { kg, reps: c.reps, raison: t.seance.recale(serie(avant), t.seance.monte, c.reps, rirFourchette(pr)) };
+  }
   const duJour = faites(s, id);
   const der = duJour[duJour.length - 1];
   if (c && der && faitesPoste(s, l, id) >= c.series && der.reps < c.reps) {
@@ -209,9 +213,11 @@ function premiereAFaire(c: Ctx, s: Seance, depuis: number) {
 }
 
 
-export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErreur, onEnSeance }: {
+export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onRepos, onErreur, onEnSeance }: {
   /** Programme de `reglages.json` : celui de l'accueil. Une séance en cours garde le sien. */
   programmeChoisi: string | undefined; onProgramme: (id: string) => void;
+  /** Repos changés sur les programmes fournis (`reglages.repos`), déjà posés par `poserRepos`. */
+  onRepos: (r: Record<string, number>) => void;
   sexe: Sexe;
   onErreur: (e: unknown) => void; onEnSeance: (oui: boolean) => void;
 }) {
@@ -397,7 +403,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     return (
       <EcranProgrammes actuel={prog.id} stats={stats(normaliser(passees, salles), pesees, sexe, seuilConstance(prog), maintenant)}
                        onChoisir={(id) => { changerProgramme(id); setVoirProgrammes(false); }} onRetour={() => setVoirProgrammes(false)}
-                       onErreur={onErreur} />
+                       onRepos={onRepos} onErreur={onErreur} />
     );
   }
 
@@ -758,8 +764,9 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onErre
     ecrireSalles(tous).then(() => setSalles(tous), onErreur);
   };
 
-  // Disques par côté : sur une barre de 20 kg, ou sur une machine (disques seuls).
-  const plaques = e.charge === "barre" ? disques(kg) : e.disques ? disques(kg, 0) : null;
+  // Disques par côté sur une barre de 20 kg. Pas sur une machine : les salles n'ont pas les mêmes
+  // disques et on en mélange souvent plusieurs (retour de Tom), seule la charge en kg compte.
+  const plaques = e.charge === "barre" ? disques(kg) : null;
   const passe = historique(ctx.p, id, 2);
 
   // Charge ou reps sans commune mesure avec ce que l'exo a connu (faute de frappe) : un toucher de

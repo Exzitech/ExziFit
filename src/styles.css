@@ -178,6 +178,9 @@ p.alerte { word-break: normal; }
 .avatars { display: flex; justify-content: center; align-items: flex-end; gap: 28px; margin-bottom: 12px; }
 .avatars figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .avatars figcaption { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.courbe { margin: 12px 0 0; }
+.courbe svg { display: block; width: 100%; height: auto; border: 2px solid var(--trait); background: var(--fond); }
+.courbe figcaption { margin-top: 6px; }
 .avatar .px1 { fill: var(--peau); }
 .avatar .px2 { fill: var(--cheveux); }
 .avatar .px3 { fill: var(--fond); }
@@ -196,6 +199,11 @@ p.alerte { word-break: normal; }
             padding: 6px 0; border-bottom: 2px solid var(--bord); }
 .exo-prog small { display: block; font-size: 13px; }
 .exo-prog button.puce { width: 48px; min-height: 48px; padding: 0; }
+.repos-reglage { display: inline-grid; grid-template-columns: 48px minmax(64px, auto) 48px; gap: 6px; align-items: center; text-align: center; }
+.repos-reglage button.puce { width: 48px; min-height: 48px; padding: 0; }
+.repos-ligne { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+.repos-poste { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; margin: 6px 0; }
+.repos-poste small { display: block; font-size: 13px; }
 select.ajout-exo { display: block; width: 100%; min-height: 52px; margin: 10px 0 4px; padding: 0 10px; font: 600 17px var(--police);
                    background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; }
 .seg.objectifs button { font-size: 13px; }

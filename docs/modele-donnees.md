@@ -35,7 +35,7 @@ du Bloc Force : [src/donnees/programmes/bloc-force.json](../src/donnees/programm
 | `exercices.json` | exercices **perso** uniquement | à la création d'un exercice |
 | `poids.json` | pesées | à chaque pesée |
 | `salles.json` | salles et réglages de leurs machines (voir « Salles ») | à l'ajout ou au renommage d'une salle (Réglages), au réglage d'une machine (saisie) |
-| `reglages.json` | thème, programme choisi (`programme`, absent = Bloc Force), `sexe` (`"homme"` / `"femme"`, absent = homme : références de Force et dessin), `prenom` (optionnel, titre de l'onglet Perso), `langue` (`"fr"` / `"en"` / `"pt-BR"`, absent = langue du téléphone), `envoi` (`false` = pas d'envoi Nextcloud ; absent = actif, installation de Tom), disques disponibles, barre | dans les réglages ; au changement de programme (accueil) ; créé par l'écran de bienvenue (installation neuve) |
+| `reglages.json` | thème, programme choisi (`programme`, absent = Bloc Force), `sexe` (`"homme"` / `"femme"`, absent = homme : références de Force et dessin), `prenom` (optionnel, titre de l'onglet Perso), `langue` (`"fr"` / `"en"` / `"pt-BR"`, absent = la première langue proposée dans les langues du téléphone, dans leur ordre), `repos` (repos changés sur les programmes fournis, en s, par `programme/jour/exo` ou `exo+exo` pour un superset ; suit le profil à la synchro), `envoi` (`false` = pas d'envoi Nextcloud ; absent = actif, installation de Tom), disques disponibles, barre | dans les réglages ; au changement de programme (accueil) ; créé par l'écran de bienvenue (installation neuve) |
 | `suppressions.json` | séances supprimées depuis le Journal (`debut` + `le`), pour que la synchro les retire aussi de l'autre appareil | à chaque suppression |
 | `sauvegardes/` | copies datées de tout le dossier ; `sync-AAAAMMJJ-HHMMSS/` avant chaque fusion de synchro (20 gardées) | au lancement, une fois par jour ; avant d'appliquer une synchro |
 
@@ -82,7 +82,7 @@ reste de l'ordre de la milliseconde pendant des années ; aucun index ni base de
 - `force` : part dans la stat Force ([stats.md](stats.md)) : `ref` = e1RM ÷ poids de corps qui vaut
   100, `poids` = coefficient dans la moyenne. Absent : l'exo ne compte pas.
 - `disques: true` : machine chargée de disques (Smith, presse, hack squat) ; `kg` = disques seuls,
-  affichés par côté. Le poids à vide de la machine vient de la salle.
+  saisis en kg sans détail par côté (les salles n'ont pas les mêmes disques). Le poids à vide de la machine vient de la salle.
 - `mouvement` : schéma (`squat`, `fente`, `charniere`, `poussee-horizontale`…), pour proposer les
   remplaçants : alternatives du programme, même schéma (le premier est le « top »), mêmes muscles
   principaux, puis le reste.
@@ -129,7 +129,7 @@ Un programme sans périodisation a une seule semaine, répétée.
 | `type` | Charge proposée | Progression |
 |---|---|---|
 | `pct1rm` | % du 1RM du bloc **relevé** par la dernière séance du bloc (jamais baissé), schéma de la semaine en cours ; en séance, chaque série recale la suivante sur le RIR visé (1) | change avec la semaine et les séries réelles |
-| `fourchette` | dernière charge faite sur cet exo | double progression (toutes séries en haut de fourchette avec RIR ≥ cible → un `pas` de plus ; sinon même charge, +1 rep visée) |
+| `fourchette` | charge de la série la plus lourde de la dernière fois (dans la fourchette) | double progression (toutes séries en haut de fourchette avec RIR ≥ cible → un `pas` de plus ; sinon même charge, +1 rep visée). **Trop facile** (`tropFacile`, dernière série à RIR ≥ cible + 2, « 4+ » pour 2 visés) : charge recalée par Epley au RIR visé, au moins un `pas`, en séance pour la série suivante comme pour la fois suivante. Au poids du corps sans lest : jamais de kg ajouté, le haut de fourchette reste visé |
 | `rpe` | tirée du 1RM estimé courant et du RPE visé ; en séance, recalée série par série (RIR visé = 10 − RPE) | suit le 1RM estimé |
 | `distance` | dernière charge, distance fixe (`metres`) | manuelle |
 

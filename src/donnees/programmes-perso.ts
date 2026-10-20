@@ -6,8 +6,8 @@ import { poserProgrammesPerso, PROGRAMMES, type Jour, type Programme } from "./p
 /**
  * Programmes écrits dans l'app (docs/modele-donnees.md, « programmes.json ») : une rotation de
  * jours, sans périodisation (une seule semaine répétée), accessoires en double progression.
- * L'éditeur ne choisit que les jours, leur objectif, les exos et leur nombre de séries ; le reste
- * vient de l'objectif.
+ * L'éditeur ne choisit que les jours, leur objectif, les exos, leur nombre de séries et leur repos ;
+ * le reste vient de l'objectif.
  */
 export const PROGRAMMES_PERSO = "programmes.json";
 
@@ -35,8 +35,8 @@ export const OBJECTIFS: Record<Objectif, { principal: Reglage; accessoire: Regla
 };
 const RIR = 2;
 
-/** Ce que l'éditeur manipule. `series` absent = celui de l'objectif ; `id` absent = jour nouveau. */
-export interface ExoBrouillon { exo: string; series?: number }
+/** Ce que l'éditeur manipule. `series`, `repos` absents = ceux de l'objectif ; `id` absent = jour nouveau. */
+export interface ExoBrouillon { exo: string; series?: number; repos?: number }
 export interface JourBrouillon { id?: string; nom: string; objectif: Objectif; exos: ExoBrouillon[] }
 /** `dernierJour` : plus grand `J<n>` déjà attribué, pour qu'un jour retiré ne prête jamais son id. */
 export interface Brouillon { id?: string; nom: string; jours: JourBrouillon[]; dernierJour?: number }
@@ -46,7 +46,7 @@ export const estPerso = (id: string) => id.startsWith("perso-");
 /** Réglage d'un exo selon sa place dans le jour. */
 export const reglageExo = (objectif: Objectif, rang: number, x: ExoBrouillon): Reglage => {
   const r = OBJECTIFS[objectif][rang === 0 ? "principal" : "accessoire"];
-  return { ...r, series: x.series ?? r.series };
+  return { ...r, series: x.series ?? r.series, repos: x.repos ?? r.repos };
 };
 
 /** Prêt à enregistrer : un nom, au moins un jour, au moins un exo par jour. */
@@ -82,7 +82,7 @@ export function versProgramme(b: Brouillon, id: string): Programme {
   };
 }
 
-/** Brouillon d'un programme écrit par l'éditeur ; un nombre de séries égal à l'objectif redevient « absent ». */
+/** Brouillon d'un programme écrit par l'éditeur ; séries ou repos égaux à ceux de l'objectif redeviennent « absents ». */
 export function versBrouillon(p: Programme): Brouillon {
   return {
     id: p.id,
@@ -92,8 +92,12 @@ export function versBrouillon(p: Programme): Brouillon {
       const objectif: Objectif = j.objectif in OBJECTIFS ? (j.objectif as Objectif) : "hypertrophie";
       const exos = j.exercices.filter((x) => x.exo).map((x, rang) => {
         const series = x.prescription.type === "fourchette" ? x.prescription.series : undefined;
-        const defaut = OBJECTIFS[objectif][rang === 0 ? "principal" : "accessoire"].series;
-        return { exo: x.exo!, ...(series !== undefined && series !== defaut ? { series } : {}) };
+        const defaut = OBJECTIFS[objectif][rang === 0 ? "principal" : "accessoire"];
+        return {
+          exo: x.exo!,
+          ...(series !== undefined && series !== defaut.series ? { series } : {}),
+          ...(x.repos !== defaut.repos ? { repos: x.repos } : {}),
+        };
       });
       return { id: j.id, nom: j.nom, objectif, exos };
     }),

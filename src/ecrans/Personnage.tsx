@@ -4,7 +4,7 @@ import { lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bl
 import { exercice } from "../donnees/exercices";
 import { jourLocal } from "../donnees/fichier";
 import { lireSeances } from "../donnees/journal";
-import { programme } from "../donnees/programme";
+import { nombre, programme } from "../donnees/programme";
 import { lireSalles, normaliser } from "../donnees/salles";
 import { monte, MUSCLES, progres, seuilConstance, stats, type Pesee, type Progres, type Sexe, type Stats } from "../donnees/stats";
 import { poidsCorpsDouteux } from "../donnees/aberrant";
@@ -98,6 +98,35 @@ function ecart(x: Progres): string {
   return monte(x) ? `▲ +${pct}` : x.actuel <= x.avant * 0.99 ? `▼ −${pct}` : "=";
 }
 
+/** Fenêtre de la courbe du poids : un an, assez pour voir une prise de masse ou une sèche. */
+const JOURS_COURBE = 365;
+
+/** Courbe des pesées de l'année ; rien sous deux pesées. Échelle serrée sur les valeurs (±1 kg). */
+function CourbePoids({ pesees }: { pesees: Pesee[] }) {
+  const jour = (d: string) => Date.parse(`${d}T12:00:00`) / 86_400_000;
+  const tri = [...pesees].sort((a, b) => a.date.localeCompare(b.date));
+  const fin = tri.length ? jour(tri[tri.length - 1].date) : 0;
+  const l = tri.filter((x) => jour(x.date) > fin - JOURS_COURBE);
+  if (l.length < 2) return null;
+  const [L, H, M] = [300, 90, 6];
+  const kgs = l.map((x) => x.kg);
+  const bas = Math.min(...kgs) - 1, haut = Math.max(...kgs) + 1;
+  const debut = jour(l[0].date), duree = Math.max(1, fin - debut);
+  const pts = l.map((x) => [M + ((jour(x.date) - debut) / duree) * (L - 2 * M), M + ((haut - x.kg) / (haut - bas)) * (H - 2 * M)]);
+  const ecart = l[l.length - 1].kg - l[0].kg;
+  return (
+    <figure className="courbe">
+      <svg viewBox={`0 0 ${L} ${H}`} role="img" aria-label={t.perso.courbe(nombre(Math.min(...kgs)), nombre(Math.max(...kgs)))}>
+        <polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="miter" />
+        {pts.map(([x, y], i) => <rect key={i} x={x - 2.5} y={y - 2.5} width="5" height="5" fill="var(--accent)" />)}
+      </svg>
+      <figcaption className="doux petit">
+        {t.perso.courbe(nombre(Math.min(...kgs)), nombre(Math.max(...kgs)))} · {t.perso.depuis(`${ecart > 0 ? "+" : ecart < 0 ? "−" : "±"}${nombre(Math.abs(ecart))}`, l[0].date)}
+      </figcaption>
+    </figure>
+  );
+}
+
 export default function EcranPersonnage(
   { programmeChoisi, prenom, sexe, onErreur }: {
     programmeChoisi: string | undefined; prenom: string | undefined; sexe: Sexe; onErreur: (e: unknown) => void;
@@ -159,6 +188,7 @@ export default function EcranPersonnage(
           <ChampSur defaut={derniere?.kg} placeholder={t.perso.aNoter} douteux={(kg) => poidsCorpsDouteux(kg, derniere?.kg)} onValeur={peser} />
         </label>
         <p className="doux petit">{derniere ? t.perso.pesee(derniere.date) : t.perso.sansPesee}</p>
+        <CourbePoids pesees={pesees} />
       </div>
       <div className="carte">
         <Ligne nom={t.stats.force} valeur={s.force} vide={pesees.length ? t.perso.aucunExoForce : t.perso.peseeManquante} />

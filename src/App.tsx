@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useBoutonRetour } from "./boutonRetour";
 import { jourLocal, quandAnomalies, quandEcrit } from "./donnees/fichier";
 import { ecrireReglages, lireReglages, type Reglages } from "./donnees/reglages";
+import { poserRepos } from "./donnees/programme";
 import { chargerProgrammesPerso } from "./donnees/programmes-perso";
 import EcranBienvenue from "./ecrans/Bienvenue";
 import { estSynchronise, synchroniser, type Bilan } from "./donnees/synchro";
@@ -66,7 +67,7 @@ export default function App() {
   const recharger = () =>
     chargerProgrammesPerso()
       .then(lireReglages)
-      .then((r) => r && setReglages(r))
+      .then((r) => { if (r) { poserRepos(r.repos ?? {}); setReglages(r); } })
       .catch(signaler(ctx.synchro))
       .finally(() => setGeneration((g) => g + 1));
 
@@ -109,6 +110,7 @@ export default function App() {
       .then((r) => {
         if (r) {
           appliquerTheme(r.theme);
+          poserRepos(r.repos ?? {});
           appliquerLangue(langueDe(r));
         }
         setReglages(r);
@@ -128,6 +130,7 @@ export default function App() {
 
   const changerReglages = (r: Reglages) => {
     appliquerTheme(r.theme);
+    poserRepos(r.repos ?? {});
     appliquerLangue(langueDe(r));
     setReglages(r);
     ecrireReglages(r).catch(signaler(ctx.enregistrement));
@@ -161,6 +164,7 @@ export default function App() {
         {reglages === null && <EcranBienvenue onFini={changerReglages} onErreur={signaler(ctx.bienvenue)} />}
         {ecran === "seance" && reglages && (
           <EcranSeance programmeChoisi={reglages.programme} sexe={reglages.sexe ?? "homme"} onProgramme={(programme) => changerReglages({ ...reglages, programme })}
+                       onRepos={(repos) => changerReglages({ ...reglages, repos })}
                        onErreur={signaler(ctx.seance)} onEnSeance={setEnSeance} />
         )}
         {ecran === "journal" && <EcranJournal onErreur={signaler(ctx.journal)} />}

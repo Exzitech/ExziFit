@@ -3,7 +3,7 @@ import { exercice } from "./exercices";
 import type { Seance, Serie } from "./journal";
 import {
   aRattraper, avertissements, bilan, blocFini, cible, disques, echauffement, encouragement, etatTest, preparation, exosPct1rm, membres, ouvertureTest, programme,
-  programmeDe, PROGRAMMES, prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe,
+  programmeDe, PROGRAMMES, prochainJour, recalage, resultatTest, retour, rmEffectif, rmNouveauBloc, semaineDe, tropFacile, clePoste, poserRepos, reposDuCode,
 } from "./programme";
 
 const PROGRAMME = programme("bloc-force");
@@ -47,6 +47,26 @@ describe("cible", () => {
       expect(avec([t(60, 8, 2), t(60, 8, 2), t(60, 7, 2)])).toMatchObject({ kg: 60, reps: 9 });
       expect(avec([t(60, 10, 1), t(60, 10, 2), t(60, 10, 2)])).toMatchObject({ kg: 60, reps: 10 });
     });
+    // Régression (retour de Tom, presse à cuisses) : 200 kg à 4+ RIR partout, l'app restait à 200.
+    it("dernière série à 4+ RIR pour 2 visés → la charge suit la réserve", () => {
+      const presse = exercice("presse-cuisses");
+      const pp = { type: "fourchette" as const, series: 4, repsMin: 10, repsMax: 15, rir: 2 };
+      const c = cible(presse, pp, { semaine: S1, passees: [faite("2026-10-01", presse.id, [t(200, 10, 4), t(200, 10, 4)])] });
+      // 200 × (1 + 14/30) = 293,3 ; 10 reps à 2 RIR → 293,3 / 1,4 = 209,5 → 210.
+      expect(c).toMatchObject({ kg: 210, reps: 10 });
+      // 3 RIR pour 2 visés : proche du but, la double progression continue.
+      expect(cible(presse, pp, { semaine: S1, passees: [faite("2026-10-01", presse.id, [t(200, 10, 3)])] }))
+        .toMatchObject({ kg: 200, reps: 11 });
+    });
+    it("charge montée en séance → base = la série la plus lourde dans la fourchette", () => {
+      expect(avec([t(55, 9, 4), t(60, 9, 2), t(60, 8, 2)])).toMatchObject({ kg: 60, reps: 10 });
+    });
+    it("poids du corps : lestable → un cran de lest ; sans lest → le haut de fourchette reste visé", () => {
+      const pp = { type: "fourchette" as const, series: 2, repsMin: 8, repsMax: 15, rir: 2 };
+      const fait = (id: string, kg: number) => cible(exercice(id), pp, { semaine: S1, passees: [faite("2026-10-01", id, [t(kg, 15, 4), t(kg, 15, 4)])] });
+      expect(fait("pompes", 0)).toMatchObject({ kg: 2.5, reps: 8 });
+      expect(fait("pompes-piquees", 0)).toMatchObject({ kg: 0, reps: 15 });
+    });
     it("jamais fait → pas de charge, bas de fourchette", () => {
       expect(cible(e, pr, { semaine: S1, passees: [] })).toMatchObject({ kg: null, reps: 8, texte: "8–10 reps" });
     });
@@ -57,6 +77,24 @@ describe("cible", () => {
     // 60 × 5 à 2 RIR → e1RM 74 ; RPE 8 sur 5 reps = 7 « reps » → 74 / 1,2333 = 60.
     const c = cible(e, { type: "rpe", series: 4, reps: 5, rpe: 8 }, { semaine: S1, passees: [faite("2026-10-01", e.id, [t(60, 5, 2)])] });
     expect(c).toMatchObject({ series: 4, reps: 5, kg: 60, texte: "RPE 8" });
+  });
+});
+
+describe("repos changés sur un programme fourni", () => {
+  it("posés par poste (par ses exos), défaut gardé, retirés → ceux du programme", () => {
+    const ppl = () => programme("push-pull-legs");
+    const jour = ppl().jours.find((j) => j.exercices.some((x) => x.exo === "presse-cuisses"))!;
+    const poste = () => ppl().jours.find((j) => j.id === jour.id)!.exercices.find((x) => x.exo === "presse-cuisses")!;
+    const cle = clePoste("push-pull-legs", jour.id, poste());
+    expect(cle).toBe(`push-pull-legs/${jour.id}/presse-cuisses`);
+    try {
+      poserRepos({ [cle]: 180 });
+      expect(poste().repos).toBe(180);
+      expect(reposDuCode("push-pull-legs", jour.id, poste())).toBe(120);
+    } finally {
+      poserRepos({});
+    }
+    expect(poste().repos).toBe(120);
   });
 });
 
@@ -115,6 +153,21 @@ describe("retour", () => {
     expect(retour(e, 20, 90)).toBe(10);
     expect(retour(e, 5, 90)).toBe(0);
     expect(retour(e, 20)).toBe(17.5);
+  });
+});
+
+describe("fourchette trop facile en séance", () => {
+  const presse = exercice("presse-cuisses");
+  const pr = { type: "fourchette" as const, series: 4, repsMin: 10, repsMax: 15, rir: 2 };
+  it("4+ pour 2 visés → recalée, au moins un pas ; moins de réserve → rien", () => {
+    expect(tropFacile(presse, pr, t(200, 10, 4), 10)).toBe(210);
+    expect(tropFacile(presse, pr, t(20, 10, 4), 10)).toBe(25);
+    expect(tropFacile(presse, pr, t(200, 10, 3), 10)).toBeNull();
+    expect(tropFacile(presse, pr, t(200, 10), 10)).toBeNull();
+    expect(tropFacile(presse, pr, t(200, 8, 4), 10)).toBeNull();
+  });
+  it("sans RIR noté, 2 visés", () => {
+    expect(tropFacile(presse, { ...pr, rir: undefined }, t(200, 10, 4), 10)).toBe(210);
   });
 });
 

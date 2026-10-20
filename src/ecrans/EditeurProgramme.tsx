@@ -9,6 +9,7 @@ import {
 import { MUSCLES } from "../donnees/stats";
 import { t } from "../i18n";
 import Apercu from "./Apercu";
+import Repos from "./Repos";
 
 /**
  * Exos proposés, rangés par premier muscle principal puis par nom (celui de la langue courante) ;
@@ -77,19 +78,24 @@ export default function EditeurProgramme({ initial, onEnregistre, onAnnuler, onE
           </div>
           {j.exos.map((x, rang) => {
             const r = reglageExo(j.objectif, rang, x);
-            const series = (n: number) => changerJour(i, (y) => ({
-              ...y, exos: y.exos.map((z, k) => (k === rang ? { ...z, series: Math.min(8, Math.max(1, n)) } : z)),
+            const changerExo = (f: (z: typeof x) => typeof x) => changerJour(i, (y) => ({
+              ...y, exos: y.exos.map((z, k) => (k === rang ? f(z) : z)),
             }));
+            const series = (n: number) => changerExo((z) => ({ ...z, series: Math.min(8, Math.max(1, n)) }));
             return (
               <div key={rang} className="exo-prog">
                 <span>
                   {exercice(x.exo).nom}
-                  <small className="doux">{rang === 0 ? t.editeur.principal : ""}{t.editeur.reglage(r.series, r.repsMin, r.repsMax, r.repos)}</small>
+                  <small className="doux">{rang === 0 ? t.editeur.principal : ""}{t.editeur.reglage(r.series, r.repsMin, r.repsMax)}</small>
                 </span>
                 <button className="puce" onClick={() => series(r.series - 1)} aria-label={t.editeur.moinsSerie}>−</button>
                 <button className="puce" onClick={() => series(r.series + 1)} aria-label={t.editeur.plusSerie}>+</button>
                 <button className="puce" aria-label={t.editeur.retirer}
                         onClick={() => changerJour(i, (y) => ({ ...y, exos: y.exos.filter((_, k) => k !== rang) }))}>✕</button>
+                <span className="repos-ligne">
+                  <span className="doux petit">{t.programmes.repos}</span>
+                  <Repos valeur={r.repos} onChange={(repos) => changerExo((z) => ({ ...z, repos }))} />
+                </span>
               </div>
             );
           })}

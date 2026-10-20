@@ -21,10 +21,24 @@ export let t: Textes = fr;
 
 export const estLangue = (x: unknown): x is Langue => LANGUES.some((l) => l.id === x);
 
-/** Langue du téléphone si elle est proposée, sinon l'anglais. */
+/**
+ * Première langue proposée dans les langues du téléphone, dans l'ordre choisi par l'utilisateur ;
+ * sinon l'anglais. On lit la langue, jamais le pays : « fr-BE » donne le français, pas le
+ * néerlandais ; « nl-BE » puis « fr-BE » donne aussi le français (le néerlandais n'est pas proposé).
+ */
+export function langueDe(liste: readonly string[]): Langue {
+  for (const x of liste) {
+    const n = x.toLowerCase();
+    if (n.startsWith("fr")) return "fr";
+    if (n.startsWith("pt")) return "pt-BR";
+    if (n.startsWith("en")) return "en";
+  }
+  return "en";
+}
+
 export function langueDuSysteme(): Langue {
-  const n = (typeof navigator === "undefined" ? "fr" : navigator.language).toLowerCase();
-  return n.startsWith("fr") ? "fr" : n.startsWith("pt") ? "pt-BR" : "en";
+  if (typeof navigator === "undefined") return "fr";
+  return langueDe(navigator.languages?.length ? navigator.languages : [navigator.language]);
 }
 
 /** Change `t` seulement ; `appliquerLangue` (langue.ts) traduit aussi exercices et programmes. */
