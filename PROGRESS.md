@@ -3,7 +3,7 @@
 Journal de bord. Lire [CLAUDE.md](CLAUDE.md) d'abord.
 Mis à jour à chaque fin d'étape et avant tout `/clear`.
 
-## Statut : 0.1.53 (onboarding en 3 étapes ; 0.1.52 : retours de Tom du 2026-10-20, ci-dessous ; 0.1.51 : séance vide annulée en un tap ; 0.1.48 : consignes de technique par exo, repliées en saisie ; 0.1.47 : synchro des programmes perso, salles et profil ; 0.1.46 : sauvegarde du jour relue et contrôlée ; 0.1.45 : valeurs aberrantes à confirmer, avertissement sur données impossibles ; 0.1.44 : agent de QA, blocage sur charge démesurée corrigé ; 0.1.43 : marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
+## Statut : 0.1.54 (illustrations des exos ; 0.1.53 : onboarding en 3 étapes ; 0.1.52 : retours de Tom du 2026-10-20, ci-dessous ; 0.1.51 : séance vide annulée en un tap ; 0.1.48 : consignes de technique par exo, repliées en saisie ; 0.1.47 : synchro des programmes perso, salles et profil ; 0.1.46 : sauvegarde du jour relue et contrôlée ; 0.1.45 : valeurs aberrantes à confirmer, avertissement sur données impossibles ; 0.1.44 : agent de QA, blocage sur charge démesurée corrigé ; 0.1.43 : marge sous la barre d'état Android ; 0.1.42 : personnage revu sur données réelles : palier de Force 100, Constance des débutants ; 0.1.41 : trois langues ; 0.1.40 : aperçu des stats à la bienvenue, éditeur de programmes ; 0.1.39 : icône = le personnage ; 0.1.38 : fusion avec la synchro ; 0.1.37 : échauffement spécifique, sans jumping jacks ; 0.1.36 : poids à vide signalé en saisie ; 0.1.35 : échauffement 3 min, page Programmes, sauvegarde Android), retours de salle traités ; synchro PC ↔ téléphone (0.1.22–0.1.24, autre branche) fusionnée
 
 **Retours de Tom (2026-10-20), 0.1.52** — liste de Tom, précisée avec lui :
 1. ~~**Surcharge progressive**~~ : presse à cuisses du PPL (4 × 10–15) à 200 kg et 4+ RIR, l'app
@@ -27,8 +27,14 @@ Mis à jour à chaque fin d'étape et avant tout `/clear`.
    onboarding ») : trois étapes, qui / comment (programme proposé d'après le but) / série
    d'exemple. Vérifié dans Chromium à 390 px, locale fr-BE : français, 4+ → 85 kg, réglages et
    pesée écrits, accueil sur le PPL. Choix des illustrations à ajouter avec la fonction (point 9).
-9. **Illustrations des exos, en ligne / hors ligne** (onboarding + réglages) : source d'images à
-   décider avec Tom.
+9. ~~**Illustrations des exos**~~ (0.1.54) : pistes comparées avec Tom (artifact « ExziFit
+   illustrations » : pixel art maison, free-exercise-db, wger en ligne, Everkinetic). Choix de Tom :
+   dessins Everkinetic, photo free-exercise-db quand le dessin manque ou montre un autre geste
+   (soulevé de terre, Smith…), rien sinon ; embarqués, hors ligne. 58 exos sur 62, 1,4 Mo. Vignette
+   dans les listes de la séance, départ + fin dans « Technique » et à la bienvenue, crédits dans
+   Réglages. README, « Illustrations des exos ». Vérifié : 116 images regardées une à une (2
+   corrigées : hack squat, pullover poulie), captures 390 px (bienvenue, jour, saisie, remplacement,
+   ajout, réglages, thème Craie) sans erreur JS. Pas vu sur le S23.
 Vérifié : `tsc`, 153 tests Vitest (régression presse à cuisses, disques par salle, langue,
 repos, poids du corps), build, 3 scénarios de QA, captures 390 px des écrans touchés (sans erreur
 JS). Pas encore essayé à la salle.

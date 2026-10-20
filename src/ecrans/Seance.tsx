@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { ecrireBlocs, lireBlocs, lirePesees, noterPoidsCorps, type Bloc } from "../donnees/bloc";
 import { EXERCICES, exercice, libelleCharge, remplacants, type Exercice } from "../donnees/exercices";
+import { illustration } from "../donnees/illustrations";
 import { chargeDouteuse, poidsCorpsDouteux, repsDouteuses } from "../donnees/aberrant";
 import { horodatage, jourLocal } from "../donnees/fichier";
 import {
@@ -20,6 +21,7 @@ import { useBoutonRetour } from "../boutonRetour";
 import { t } from "../i18n";
 import { Ecarts, seuilActuel } from "./Personnage";
 import ChampSur from "./ChampSur";
+import Illustration from "./Illustration";
 import EcranProgrammes from "./Programmes";
 import { annulerRepos, lancerRepos, useReste } from "../minuteur";
 
@@ -638,6 +640,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onRepo
             <Fragment key={e.id}>
               {remplace && !raison && liste[i - 1]?.raison && <p className="doux petit">{t.seance.autres}</p>}
               <button className="ligne" onClick={() => ajouterExo(e.id, remplace)}>
+                <Illustration id={e.id} taille="vignette" />
                 <span>
                   <b>{e.nom}</b>{remplace && i === 0 && raison && <span className="badge">{t.seance.top}</span>}
                   {remplace && raison && <small>{t.seance.pourquoi[raison]}</small>}
@@ -664,6 +667,7 @@ export default function EcranSeance({ programmeChoisi, sexe, onProgramme, onRepo
             const ok = complete(ctx, seance, l);
             return (
               <button key={i} className={ok ? "ligne faite" : "ligne"} onClick={() => { setAttente(null); ouvrir(ctx, seance, i); }}>
+                <Illustration id={id} taille="vignette" />
                 <span>
                   <b>{nomLigne(l.membres.map((m) => reel(seance, m)))}</b>
                   {l.poste?.optionnel && <span className="badge">{t.commun.option}</span>}
@@ -911,15 +915,16 @@ function Reglage({ kg, reps, e, setKg, setReps, distance }: {
  * hack squat) ou poulie à moufle. On note toujours ce qui se lit sur la machine. Machine à disques
  * sans poids à vide noté dans cette salle : déplié d'office, avec un avertissement.
  */
-/** Points de technique de l'exo, repliés : la saisie reste à deux gestes. */
+/** Image et points de technique de l'exo, repliés : la saisie reste à deux gestes. */
 function Consignes({ id }: { id: string }) {
   const [ouvert, setOuvert] = useState(false);
   const points = t.consignes[id];
-  if (!points) return null;
+  if (!points && !illustration(id)) return null;
   return (
     <div className="consignes">
       <button className="lien" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)}>{t.seance.technique} {ouvert ? "▴" : "▾"}</button>
-      {ouvert && <ul className="petit">{points.map((p) => <li key={p}>{p}</li>)}</ul>}
+      {ouvert && <Illustration id={id} taille="grande" />}
+      {ouvert && points && <ul className="petit">{points.map((p) => <li key={p}>{p}</li>)}</ul>}
     </div>
   );
 }

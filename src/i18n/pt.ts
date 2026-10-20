@@ -95,6 +95,7 @@ export const pt: Textes = {
     envoyee: (j) => `Última cópia enviada ao Nextcloud: ${j}`,
     copieLocale: "Cópia diária neste celular; para guardar em outro lugar, exporte.",
     version: "Versão",
+    illustrations: "Ilustrações dos exercícios: Everkinetic (CC BY-SA 3.0) e free-exercise-db (domínio público).",
   },
   synchro: {
     titre: "Sincronização PC ↔ celular",

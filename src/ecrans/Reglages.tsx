@@ -127,6 +127,7 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
       </details>
 
       <p className="doux petit">{t.reglages.version} : ExziFit {version}</p>
+      <p className="doux petit">{t.reglages.illustrations}</p>
     </>
   );
 }

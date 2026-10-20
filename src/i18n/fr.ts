@@ -100,6 +100,7 @@ export const fr = {
     envoyee: (j: string) => `Dernière copie envoyée sur Nextcloud : ${j}`,
     copieLocale: "Copie quotidienne sur ce téléphone ; pour la garder ailleurs, exporter.",
     version: "Version",
+    illustrations: "Illustrations des exercices : Everkinetic (CC BY-SA 3.0) et free-exercise-db (domaine public).",
   },
   synchro: {
     titre: "Synchro PC ↔ téléphone",

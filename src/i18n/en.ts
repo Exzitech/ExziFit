@@ -95,6 +95,7 @@ export const en: Textes = {
     envoyee: (j) => `Last copy sent to Nextcloud: ${j}`,
     copieLocale: "Daily copy on this phone; to keep it elsewhere, export.",
     version: "Version",
+    illustrations: "Exercise illustrations: Everkinetic (CC BY-SA 3.0) and free-exercise-db (public domain).",
   },
   synchro: {
     titre: "PC ↔ phone sync",

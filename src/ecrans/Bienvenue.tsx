@@ -14,6 +14,7 @@ import { appliquerLangue } from "../langue";
 import { THEME_DEFAUT } from "../themes";
 import Apercu from "./Apercu";
 import EditeurProgramme from "./EditeurProgramme";
+import Illustration from "./Illustration";
 import { Avatar } from "./Personnage";
 import Restaurer from "./Restaurer";
 
@@ -201,6 +202,7 @@ function Exemple() {
   return (
     <div className="carte">
       <h2 className="titre-carte">{e.nom}</h2>
+      <Illustration id={e.id} taille="grande" />
       <p className="doux petit">{t.bienvenue.exSerie}</p>
       <p className="exemple-serie"><b>80</b> kg · <b>10</b> reps</p>
       {!validee ? (

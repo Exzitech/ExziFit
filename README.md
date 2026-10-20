@@ -18,6 +18,7 @@ Tauri 2 + React 18 / TypeScript / Vite 5.
 | `npm run scenarios` | scénarios dirigés (séance complète, remplacement, relance) ; lancés par les deux publications (voir « Scénarios dirigés ») |
 | `cargo test --manifest-path src-tauri/Cargo.toml` | tests Rust (chemins, sauvegardes) |
 | `npm run build` | vérification des types + build de l'interface |
+| `node scripts/illustrations.mjs` | régénère les images des exos depuis `src/illustrations/sources.json` (voir « Illustrations des exos ») |
 | `npm run publier` | APK **dev** release signé (« ExziFit Dev »), déposé sur Nextcloud ; l'app dev le propose au lancement |
 | `npm run publier-potes` | APK de l'app des potes (« ExziFit », identifiant prod), déposé sur Nextcloud depuis `main` propre ; leur app le propose au lancement |
 | `npm run publier-play` | AAB **prod** pour Google Play, depuis `main` propre seulement ; pose le tag `vX.Y.Z` (voir « Dev et prod ») |
@@ -216,6 +217,28 @@ les notifications et la reprise après veille.
   `avatar.ts`. `npm run icone` écrit les sources dans `icone/` puis `tauri icon` régénère
   `src-tauri/icons/` et les mipmaps Android (`gen/android`, icône adaptative : premier plan
   réduit au disque visible, fond `#15110f`). Les PNG ne se retouchent pas à la main.
+
+## Illustrations des exos
+
+Deux images par exo (départ, fin), **embarquées** dans l'app (hors ligne, ~1,4 Mo pour 58 exos) :
+vignette (position de fin) en tête des listes de la séance (jour, ajout, remplacement), départ et
+fin dans le pli « Technique » de la saisie et dans la série d'exemple de la bienvenue.
+
+- `src/illustrations/sources.json` : id d'exo → `[source, clé]`. Sources : `ek` (dessins
+  Everkinetic, copie github.com/JAlbertoGonzalez/everkinetic-data), `ek-wger` (dessins Everkinetic
+  absents de cette copie, pris chez wger.de), `fedb` (photos github.com/yuhonas/free-exercise-db).
+  Règle : le dessin Everkinetic quand il montre le même geste, sinon la photo ; rien si aucune ne
+  correspond (exos perso, abduction à quatre pattes, fente latérale, crunch jambes levées, pompes piquées).
+- `node scripts/illustrations.mjs` télécharge, recadre et réduit (300 px de haut, WebP, par le
+  Chromium de Playwright) dans `src/illustrations/<id>-1.webp` / `-2.webp`. Fichiers générés : on
+  change `sources.json` et on relance, jamais de retouche à la main. Vérifier chaque nouvelle image
+  à l'œil : les noms des sources trompent (le « hack squat » Everkinetic est à la barre, pas à la machine).
+- Dessins : trait noir sur fond transparent, affichés en masque CSS peint en `--texte` (suivent le
+  thème). Photos : telles quelles.
+- Licences : Everkinetic CC BY-SA 3.0 (attribution dans Réglages, images dérivées sous la même
+  licence), free-exercise-db Unlicense ; l'origine de ses photos (marques de matériel visibles)
+  reste à vérifier avant une version payante.
+- `src/donnees/illustrations.ts` (`illustration(id)`), `src/ecrans/Illustration.tsx`.
 
 ## Dev et prod
 

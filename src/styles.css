@@ -151,6 +151,14 @@ details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: poi
 .machine .carte { margin-top: 6px; }
 .consignes { margin: 0 0 8px; }
 .consignes ul { margin: 6px 0 0; padding-left: 20px; }
+/* Illustrations : dessin = masque peint en --texte (suit le thème), photo telle quelle. */
+.illustration { display: flex; gap: 6px; margin: 6px 0 8px; }
+.illustration > * { flex: 1 1 0; min-width: 0; height: 150px; }
+.photo { object-fit: cover; display: block; }
+.trait { display: block; background: var(--texte); mask-size: contain; mask-repeat: no-repeat; mask-position: center;
+         -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
+.vignette { width: 44px; height: 44px; flex: none; }
+button.ligne > .vignette + span { flex: 1; min-width: 0; }
 /* La saisie occupe l'écran : les commandes restent collées en bas même quand la page est courte. */
 .saisie { display: flex; flex-direction: column; min-height: calc(100dvh - 36px - env(safe-area-inset-top)); }
 .saisie .bas { margin-top: auto; }
