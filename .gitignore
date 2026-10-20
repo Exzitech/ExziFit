@@ -10,3 +10,5 @@ src-tauri/sauvegarde.json
 livraisons/
 # Rapports de l'agent de QA (npm run qa) : captures et journaux locaux.
 qa-rapports/
+# Réglages locaux de l'éditeur.
+.vscode/
