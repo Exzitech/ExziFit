@@ -131,12 +131,14 @@ les notifications et la reprise après veille.
   l'agent de QA. `aberrant.ts` : valeurs saisies à faire confirmer (« Sûr ? », un toucher de plus,
   jamais un refus) : charge plus du double de ce que l'exo a connu (et +20 kg ; > 300 kg sans
   historique), plus de 50 reps et du double, poids de corps hors 30–200 kg ou à plus de 15 % de la
-  dernière pesée, RIR > 10. Sur Valider en séance, la correction au Journal, Commencer (bienvenue),
+  dernière pesée, RIR > 10. Sur Valider en séance, la correction au Journal, Suivant (bienvenue, étape 2),
   et les champs 1RM et poids de corps (`ChampSur.tsx` : bouton « Sûr ? » sous le champ).
 - `src/ecrans/Bienvenue.tsx` : premier lancement d'une installation neuve (ni `reglages.json` ni
-  journal) : langue (proposée d'après le téléphone), prénom, poids de corps, homme / femme, programme (avec l'aperçu de ses stats, ou
-  « Créer mon programme ») ; écrit `reglages.json` avec `envoi: false` (pas d'envoi Nextcloud,
-  voir « Données »).
+  journal), en trois étapes : qui (langue proposée d'après le téléphone, prénom, homme / femme,
+  personnage de départ), comment (but et séances par semaine → programme proposé,
+  `donnees/bienvenue.ts` ; liste complète et « Créer mon programme » ; poids de corps), puis une
+  série d'exemple (Valider, réserve, vrai calcul de `tropFacile`, rien d'écrit). « Commencer » écrit
+  `reglages.json` avec `envoi: false` (pas d'envoi Nextcloud, voir « Données »).
 - `src/ecrans/Programmes.tsx` : choix du programme et aperçu de ses stats (`Apercu.tsx`, partagé
   avec la bienvenue et l'éditeur). `EditeurProgramme.tsx` : écrire ou modifier un programme
   (jours en rotation, objectif force / hypertrophie / endurance par jour, exos du catalogue et

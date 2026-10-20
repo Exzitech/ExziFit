@@ -156,6 +156,12 @@ details.rm summary { font: 600 18px var(--police); min-height: 32px; cursor: poi
 .saisie .bas { margin-top: auto; }
 p.series { padding-left: 0; font: inherit; }
 .espace-haut { margin-top: 16px; }
+.etapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 12px; }
+.etapes span { height: 6px; background: var(--bord); }
+.etapes span.faite { background: var(--accent); }
+.exemple-serie { font-size: 20px; margin: 8px 0 12px; }
+.exemple-serie b { font-size: 30px; }
+.accent { color: var(--accent); }
 .record { font-weight: 600; color: var(--accent); }
 /* Journal : correction d'une série (n°, charge, reps, RIR, supprimer). */
 .corr { display: grid; grid-template-columns: 2.6ch minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 6px;
