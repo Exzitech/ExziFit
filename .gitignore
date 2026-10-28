@@ -12,3 +12,4 @@ livraisons/
 qa-rapports/
 # Réglages locaux de l'éditeur.
 .vscode/
+.kotlin/
