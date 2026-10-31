@@ -218,7 +218,7 @@ p.alerte { word-break: normal; }
 .repos-ligne { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
 .repos-poste { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: center; margin: 6px 0; }
 .repos-poste small { display: block; font-size: 13px; }
-select.ajout-exo { display: block; width: 100%; min-height: 52px; margin: 10px 0 4px; padding: 0 10px; font: 600 17px var(--police);
+select.ajout-exo, select.langue { display: block; width: 100%; min-height: 52px; margin: 10px 0 4px; padding: 0 10px; font: 600 17px var(--police);
                    background: var(--fond); color: var(--texte); border: var(--trait) solid var(--bord); border-radius: 0; }
 .seg.objectifs button { font-size: 13px; }
 .liens { display: flex; flex-wrap: wrap; gap: 0 16px; }

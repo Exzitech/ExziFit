@@ -89,11 +89,9 @@ export default function EcranBienvenue({ onFini, onErreur }: { onFini: (r: Regla
       <>
         {haut}
         <h1>{t.bienvenue.qui}</h1>
-        <div className="seg" style={{ gridTemplateColumns: "1fr 1fr 1fr" }} aria-label={t.commun.langue}>
-          {LANGUES.map((l) => (
-            <button key={l.id} lang={l.id} aria-pressed={langue === l.id} onClick={() => changerLangue(l.id)}>{l.nom}</button>
-          ))}
-        </div>
+        <select className="langue" value={langue} aria-label={t.commun.langue} onChange={(e) => changerLangue(e.target.value as Langue)}>
+          {LANGUES.map((l) => <option key={l.id} value={l.id} lang={l.id}>{l.nom}</option>)}
+        </select>
         <p className="doux petit">{t.bienvenue.quiNote}</p>
         <div className="avatars">
           <Avatar p={DEBUTANT} sexe={sexe} taille={5} nom={t.commun.personnage} />

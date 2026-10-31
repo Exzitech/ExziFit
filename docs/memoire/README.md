@@ -4,7 +4,7 @@ Copie des notes que Claude garde d'une session à l'autre sur ExziFit. Elles viv
 normalement **hors du dépôt**, dans le dossier de mémoire du poste :
 
 ```
-<profil>\.claude\projects\c--Users-tomro-Desktop-ExziFit\memory\
+<profil>\.claude\projects\c--Users-tomro-Projets-ExziTech-ExziFit\memory\
 ```
 
 (le nom du dossier dérive du chemin du projet : adapter si le dépôt est cloné ailleurs).

@@ -5,7 +5,7 @@ import { ecrireSalles, lireSalles, type Salle } from "../donnees/salles";
 import type { Bilan } from "../donnees/synchro";
 import { lancerRepos, useReste } from "../minuteur";
 import { jourLocal } from "../donnees/fichier";
-import { LANGUES, langueDuSysteme, t } from "../i18n";
+import { LANGUES, langueDuSysteme, t, type Langue } from "../i18n";
 import { nextcloud } from "../canal";
 import { dansTauri, stockage, type InfoSynchro } from "../stockage";
 import { THEMES } from "../themes";
@@ -54,11 +54,10 @@ export default function EcranReglages({ reglages, onChange, onErreur, bilan, onS
       <h1>{t.reglages.titre}</h1>
 
       <h2>{t.commun.langue}</h2>
-      <div className="seg" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-        {LANGUES.map((l) => (
-          <button key={l.id} lang={l.id} aria-pressed={langue === l.id} onClick={() => onChange({ ...reglages, langue: l.id })}>{l.nom}</button>
-        ))}
-      </div>
+      <select className="langue" value={langue} aria-label={t.commun.langue}
+              onChange={(e) => onChange({ ...reglages, langue: e.target.value as Langue })}>
+        {LANGUES.map((l) => <option key={l.id} value={l.id} lang={l.id}>{l.nom}</option>)}
+      </select>
 
       <h2>{t.reglages.theme}</h2>
       <div className="choix">
